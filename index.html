@@ -19,7 +19,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)
 body{max-width:760px;margin:0 auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:12px}
 h1{font-size:1rem;margin:0;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
 form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
-.flightrow{display:flex;flex-direction:column;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.flightrow{display:flex;flex-direction:column;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 @font-face{font-family:"DSEG14";src:url("fonts/DSEG14Classic-Bold.woff2") format("woff2");font-display:swap}
 .fr1{display:flex;align-items:stretch;gap:6px;min-width:0}
 .fsearch{position:relative;flex:1 1 0;min-width:104px}
@@ -159,8 +159,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .kpigrid .cv{font:700 1.05rem var(--mono);font-variant-numeric:tabular-nums}
 .kpigrid .cv small{font-size:.66rem;color:var(--muted);font-weight:600;margin-left:3px}
 .kpigrid .cl{font-size:.7rem;color:var(--muted);overflow-wrap:anywhere}
-.frow{display:grid;grid-template-columns:minmax(0,1fr) 118px;align-items:center;gap:10px;min-height:32px;padding:6px 0}
-.frow+.frow{border-top:1px solid var(--line)}
+.frow{display:grid;grid-template-columns:minmax(0,1fr) 118px;align-items:center;gap:10px;min-height:28px;padding:3px 0}
 .frow:first-child{padding-top:0}.frow:last-child{padding-bottom:0}
 .frow>.fr-ph,.frow>button{width:100%;box-sizing:border-box}
 .frow>button{display:flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 8px;font-size:.7rem;border-radius:6px;line-height:1;white-space:nowrap}
@@ -197,9 +196,10 @@ canvas.spark{display:block;width:100%;height:112px;border-radius:6px;border:1px 
 
 .kpihead{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap}
 .kpihead .k{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;flex:none}
-.kpilabel{font-size:.95rem;font-weight:700;line-height:1.25;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.kpifor{font:700 .8rem var(--mono);color:var(--muted);flex:none}
-.hbar{flex:1 1 64px;min-width:56px;max-width:120px;margin-left:auto;height:14px;display:flex;gap:2px;padding:3px;background:#030805;border:1px solid #1d3a2a;border-radius:4px;box-sizing:border-box}
+.kpititle{display:flex;align-items:baseline;gap:8px;white-space:nowrap;min-width:0;margin-top:-2px}
+.kpilabel{font-size:1rem;font-weight:700;line-height:1.25;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.kpifor{font:700 .85rem var(--mono);color:var(--muted);flex:none}
+.hbar{flex:0 1 140px;min-width:80px;margin-left:auto;height:14px;display:flex;gap:2px;padding:3px;background:#030805;border:1px solid #1d3a2a;border-radius:4px;box-sizing:border-box}
 .hbar i{flex:1;border-radius:1px;background:var(--c);opacity:.13}
 .hbar i.on{opacity:1;box-shadow:0 0 4px var(--c)}
 .vbar{flex:none;width:12px;align-self:stretch;display:flex;flex-direction:column-reverse;gap:2px;padding:3px;background:#030805;border:1px solid #1d3a2a;border-radius:3px;box-sizing:border-box}
@@ -275,7 +275,8 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 </details>
 
 <section class="kpi" id="turb" aria-live="polite">
-  <div class="kpihead"><span class="k">Turbulence<sup class="ref" data-n="1" role="button" tabindex="0" aria-label="Note 1">1</sup></span><span class="kpilabel" id="tLabel">Waiting…</span><span class="kpifor" id="tFor"></span><span class="hbar" id="tBar" aria-hidden="true"></span></div>
+  <div class="kpihead"><span class="k">Turbulence<sup class="ref" data-n="1" role="button" tabindex="0" aria-label="Note 1">1</sup></span><span class="hbar" id="tBar" aria-hidden="true"></span></div>
+  <div class="kpititle"><span class="kpilabel" id="tLabel">Waiting…</span><span class="kpifor" id="tFor"></span></div>
   <div class="kpinote" id="tNote"><span>Shows once the plane's position is known.</span></div>
   <div class="kpigrid" id="tDrivers">
     <div class="c" id="c_sh"><div class="ct"><div class="k">Shear</div><div class="cv" id="v_sh">—</div><div class="cl" id="l_sh"><span>kt/1k ft</span><span>waiting</span></div></div><span class="vbar" id="b_sh" aria-hidden="true"></span></div>
