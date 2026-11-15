@@ -19,18 +19,23 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)
 body{max-width:760px;margin:0 auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:12px}
 h1{font-size:1rem;margin:0;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
 form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
-.flightrow{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+.flightrow{display:flex;flex-direction:column;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 10px}
+.fr1{display:flex;align-items:center;gap:10px}
+.fr-ph{margin-left:auto;font:700 .66rem var(--sans);text-transform:uppercase;letter-spacing:.05em;padding:2px 7px;border-radius:5px;white-space:nowrap}
+.ph-idle{background:rgba(142,163,183,.18);color:var(--muted)}.ph-go{background:rgba(111,208,140,.18);color:var(--good)}
+.ph-warn{background:rgba(240,160,75,.18);color:var(--warn)}.ph-done{background:rgba(111,195,223,.18);color:var(--route)}
 .fr-id{font:700 1.1rem var(--mono);color:var(--accent)}
 .fr-rt{font:700 1rem var(--mono)}.fr-rt .arr{color:var(--muted);margin:0 5px;font-weight:400}
-.fr-dt{font:600 .74rem var(--mono);color:var(--muted);margin-left:auto;white-space:nowrap}
+.fr-dt{font:600 .7rem var(--mono);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 label{display:flex;flex-direction:column;gap:4px;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px;font:600 1rem var(--mono);text-transform:uppercase}
 .f-flight{flex:2 1 110px}.f-apt{flex:1 1 70px}
 button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px 14px;font:600 .9rem var(--sans);cursor:pointer}
 button.primary{background:var(--accent);border-color:var(--accent);color:#1b1206}
 button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-offset:2px}
-.status{display:flex;gap:8px;align-items:flex-start;font-size:.8rem;color:var(--muted);line-height:1.35;height:2.7em}
-#msg{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.status{display:flex;gap:6px;align-items:center;font-size:.7rem;color:var(--muted);line-height:1.35;height:1.35em;cursor:pointer}
+.status .dot{width:7px;height:7px;margin-top:0}
+#msg{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .dot{flex:none;width:10px;height:10px;border-radius:50%;margin-top:4px;background:var(--muted)}
 .dot.live{background:var(--good)}.dot.search{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.demo{background:var(--route)}
 .status b{color:var(--ink)}
@@ -200,9 +205,11 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 
 <!-- This page follows one flight only. -->
 <input type="hidden" id="flight" value="AA3101"><input type="hidden" id="from" value="CLT"><input type="hidden" id="to" value="DFW">
-<div class="flightrow"><span class="fr-id">AA3101</span><span class="fr-rt">CLT<span class="arr">→</span>DFW</span><span class="fr-dt" id="frDate">Nov-14-26</span></div>
-
-<div class="status"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
+<div class="flightrow">
+  <div class="fr1"><span class="fr-id">AA3101</span><span class="fr-rt">CLT<span class="arr">→</span>DFW</span><span class="fr-ph ph-idle" id="frPhase">Not seen yet</span></div>
+  <div class="fr-dt" id="frDate">Nov-14-26</div>
+  <div class="status" id="statusLine" role="button" tabindex="0" title="Tap for data sources"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
+</div>
 <details class="srcs" id="srcBox" aria-label="Data source status">
   <summary>
     <div class="srchead"><span class="k">Data sources<sup class="ref" data-n="7" role="button" tabindex="0" aria-label="Note 7">7</sup></span><span><span id="relayState"></span><span class="chev" aria-hidden="true">▾</span></span></div>
@@ -352,7 +359,7 @@ function candidates(f){
   if(m&&PREFIX[m[1]])return PREFIX[m[1]].map(p=>p+m[2]);
   return f?[f]:[];
 }
-function status(kind,html){$("dot").className="dot "+kind;$("msg").innerHTML=html;}
+function status(kind,html){$("dot").className="dot "+kind;if($("msg").innerHTML!==html){$("msg").innerHTML=html;$("statusLine").title=$("msg").textContent+" (tap for data sources)";}}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 /* Direct first; if the browser blocks cross-site reads, go through a public relay.
    A relay's answer counts only if it really is the service's data (checked by `ok`).
@@ -457,6 +464,7 @@ function renderSrcs(){
   const rs=relayBase()?"Your relay: set":"Your relay: not set";
   if($("relayState").textContent!==rs)$("relayState").textContent=rs;
 }
+$("statusLine").addEventListener("click",()=>{const b=$("srcBox");b.open=true;b.scrollIntoView({block:"nearest"});});
 ["srcList","srcList2"].forEach(id=>{const L=$(id);
 L.addEventListener("click",e=>{const li=e.target.closest("li");if(li){selSrc=selSrc===li.dataset.n?"":li.dataset.n;renderSrcs();}});
 L.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){const li=e.target.closest("li");if(li){e.preventDefault();selSrc=selSrc===li.dataset.n?"":li.dataset.n;renderSrcs();}}});});
@@ -504,7 +512,7 @@ function fromReadsb(j,cs){
   const alt=a.alt_baro==="ground"?0:(a.alt_baro!=null?a.alt_baro:a.alt_geom);
   return {lat:a.lat,lon:a.lon,altFt:alt,gsKt:a.gs,track:a.track!=null?a.track:a.true_heading,
     vsFpm:a.baro_rate!=null?a.baro_rate:a.geom_rate,mach:a.mach,oatC:a.oat,windDir:a.wd,windKt:a.ws,
-    reg:a.r,type:a.t,hex:a.hex,callsign:cs,t:Date.now()-(a.seen_pos||0)*1000};
+    reg:a.r,type:a.t,hex:a.hex,ground:a.alt_baro==="ground",callsign:cs,t:Date.now()-(a.seen_pos||0)*1000};
 }
 const SOURCES=[
   {name:"adsb.lol",url:c=>"https://api.adsb.lol/v2/callsign/"+c,gap:500,poll:8000},
@@ -518,7 +526,7 @@ async function openSky(){
   const s=(j.states||[]).find(x=>cands.includes((x[1]||"").trim())&&x[5]!=null&&x[6]!=null);
   if(!s)return null;
   const m=s[7]!=null?s[7]:s[13];
-  return {lat:s[6],lon:s[5],altFt:s[8]?0:(m!=null?m*3.28084:null),gsKt:s[9]!=null?s[9]*1.94384:null,track:s[10],
+  return {ground:!!s[8],lat:s[6],lon:s[5],altFt:s[8]?0:(m!=null?m*3.28084:null),gsKt:s[9]!=null?s[9]*1.94384:null,track:s[10],
     vsFpm:s[11]!=null?s[11]*196.85:null,callsign:s[1].trim(),hex:s[0],t:(s[3]||j.time)*1000};
 }
 /* Ask all four services at once. Preference order (best first) is the SOURCES order, then OpenSky:
@@ -586,7 +594,7 @@ async function track(){
       }
       src=f;miss=0;activeSrc=f.key;renderSrcs();apply(f.first,f.name);backfill(f.first.hex,id);aircraftInfo(f.first.hex);
     }
-    await sleep(src.poll);if(id!==run)return;
+    await sleep(["arrived","gate"].includes(phase())?60000:src.poll);if(id!==run)return;
     try{const p=await src.get();if(p){apply(p,src.name);miss=0;}else miss++;}catch(e){miss++;}
     if(miss>=3){src=null;activeSrc="";renderSrcs();}
   }
@@ -721,7 +729,7 @@ function readouts(){
   const f=fix,age=Math.round((Date.now()-f.t)/1000);
   if(mode!=="demo"&&lastSource){
     const stale=age>45;
-    status(stale?"search":"live",`<b>${f.callsign||"Your position"}</b> ${stale?"last seen":"live"} · ${lastSource} · ${age<60?age+"s":Math.round(age/60)+"m"} ago`);
+    status(stale?"search":"live",`${stale?"Last seen":"Live"} · ${lastSource} · ${age<60?age+"s":Math.round(age/60)+"m"} ago`);
   }
   set("alt",f.altFt!=null?lcd(Math.max(0,Math.round(f.altFt)),5,"ft"):LCD_BLANK.alt);
   set("altS",f.altFt!=null?"FL"+String(Math.round(f.altFt/100)).padStart(3,"0")+" · "+fmt(f.altFt*0.3048)+" m":"");
@@ -1112,7 +1120,7 @@ function prep(cv){
 }
 function drawChart(ch){
   const c=prep(ch.el);if(!c)return;const {g,w,h}=c;
-  const tNow=Date.now(),span=winSpan(tNow),t0=tNow-span;
+  const frozen=chartsFrozen(),tNow=frozen?lastDataT():Date.now(),span=winSpan(tNow),t0=tNow-span;
   const d=ch.data();
   // scale is fixed like Task Manager, but grows if the data goes past it
   let hi=ch.hi,lo=ch.lo;
@@ -1130,7 +1138,7 @@ function drawChart(ch){
   const vis=[];for(let i=0;i<d.length;i++){if(d[i][0]>=t0||(d[i+1]&&d[i+1][0]>=t0))vis.push(d[i]);}
   if(vis.length){
     const last=vis[vis.length-1];
-    const pts=vis.slice();if(tNow-last[0]<90000)pts.push([tNow,last[1]]);
+    const pts=vis.slice();if(!frozen&&tNow-last[0]<90000)pts.push([tNow,last[1]]);
     g.strokeStyle=SCOPE.trace;g.lineWidth=2;g.lineJoin="round";g.shadowColor=SCOPE.trace;g.shadowBlur=4;
     g.beginPath();
     pts.forEach((q,i)=>{const x=X(q[0]),y=Y(q[1]);
@@ -1215,6 +1223,54 @@ CHARTS.forEach(ch=>{
   ch.el.addEventListener("pointerup",e=>{if(e.pointerType!=="mouse")setTimeout(off,1500);});
 });
 
+/* ---------- flight phase, from the plane's own reports ---------- */
+const PH={
+  none:["Not seen yet","ph-idle"],gate:["At gate","ph-idle"],taxiOut:["Taxiing","ph-idle"],roll:["Takeoff roll","ph-go"],
+  climb:["Climbing","ph-go"],cruise:["Cruising","ph-go"],descent:["Descending","ph-go"],approach:["On approach","ph-warn"],
+  landed:["Landed","ph-done"],taxiIn:["Landed · taxiing","ph-done"],arrived:["Arrived","ph-done"],lost:["Signal lost","ph-warn"]};
+function wasAirborne(){return hist.alt.some(q=>q[1]>1500);}
+function landedAt(){   // first ground report after the last airborne one
+  const a=hist.alt;let i=a.length-1;if(i<0||a[i][1]>200)return null;
+  while(i>0&&a[i-1][1]<=200)i--;return i>0?a[i][0]:null;
+}
+function phase(){
+  if(!fix)return "none";
+  const age=Date.now()-fix.t,near=d=>d&&distNm([fix.lat,fix.lon],d)<6;
+  const ground=fix.ground||(fix.altFt!=null&&fix.altFt<=0);
+  if(age>180000){if(ground&&near(dst))return "arrived";return wasAirborne()&&near(dst)?"landed":"lost";}
+  const gs=fix.gsKt||0;
+  if(ground){
+    if(near(dst)&&(wasAirborne()||!near(org)))return gs<3?"arrived":gs<45?"taxiIn":"landed";
+    return gs<3?"gate":gs<45?"taxiOut":"roll";
+  }
+  const vs=fix.vsFpm||0,toGo=dst?distNm([fix.lat,fix.lon],dst):999;
+  if(toGo<45&&vs<-300)return "approach";
+  if(vs>400)return "climb";
+  if(vs<-400)return "descent";
+  return "cruise";
+}
+/* Charts stop scrolling when the plane is on the ground or its signal has gone quiet. */
+function chartsFrozen(){
+  if(!fix||mode==="demo")return mode!=="demo";
+  return phase()==="gate"||phase()==="arrived"||Date.now()-fix.t>120000;
+}
+function lastDataT(){let t=fix?fix.t:0;for(const k in hist){const a=hist[k];if(a.length&&a[a.length-1][0]>t)t=a[a.length-1][0];}return t||Date.now();}
+const dur=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=60?Math.floor(m/60)+"h "+p2(m%60)+"m":m+"m";};
+function renderFlightRow(){
+  const ph=phase(),[label,cls]=PH[ph];
+  const chip=$("frPhase");if(chip.textContent!==label)chip.textContent=label;chip.className="fr-ph "+cls;
+  const live=ac.legs.find(l=>l.live)||ac.legs.find(l=>Date.now()-l.t1<6*3600000);
+  const air=hist.alt.find(q=>q[1]>1500),t0=live?live.t0:air?air[0]:null;
+  const parts=[];
+  if(t0)parts.push("Dep "+fmtDT(t0).slice(10));else parts.push(fmtDT(Date.now()).slice(0,9));
+  const la=landedAt();
+  if(["landed","taxiIn","arrived"].includes(ph)&&la){if(t0)parts.push(dur(la-t0)+" flight");parts.push("Landed "+fmtDT(la).slice(10));}
+  else if(t0&&!["gate","none"].includes(ph))parts.push(dur(Date.now()-t0)+" in air");
+  if(fix&&dst&&fix.gsKt>80&&!fix.ground&&!["landed","taxiIn","arrived"].includes(ph)){
+    const s=distNm([fix.lat,fix.lon],dst)/fix.gsKt*3600*1000;parts.push("ETA "+new Date(Date.now()+s).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}).toLowerCase());}
+  set("frDate",parts.join(" · "));
+}
+
 /* ---------- this aircraft: photo, details, recent flights ---------- */
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const p2=n=>String(n).padStart(2,"0");
@@ -1265,7 +1321,8 @@ async function aircraftInfo(hex){
   acBusy=false;renderAircraft();
 }
 const httpsOk=u=>typeof u==="string"&&u.startsWith("https://");
-function renderFlightDate(){
+/* replaced by renderFlightRow */
+function renderFlightDate(){renderFlightRow();return;
   const live=ac.legs.find(l=>l.live);
   const txt=live&&live.from!=="?"?"Dep "+fmtDT(live.t0):live?"Up "+fmtDT(live.t0):hist.alt.length?"Since "+fmtDT(hist.alt[0][0]):fmtDT(Date.now()).slice(0,9);
   set("frDate",txt);
@@ -1487,8 +1544,8 @@ function renderNet(){
   const cn=navigator.connection||{},type=cn.type==="wifi"?"Wi-Fi":cn.type==="cellular"?"Cellular":cn.type==="ethernet"?"Wired":"Network";
   const off=navigator.onLine===false||net.ok===false;
   let mbps=net.mbps;if(mbps==null&&!off&&cn.downlink)mbps=cn.downlink;
-  const sp=mbps==null?"":" · "+(mbps>=10?Math.round(mbps):mbps.toFixed(1))+" Mbps";
-  const txt=type+" · "+(off?"Offline":net.ok==null?"Checking…":"Online"+sp);
+  const txt=off?"Offline":net.ok==null?"…":mbps==null?"Online":(mbps>=10?Math.round(mbps):mbps.toFixed(1))+" Mbps";
+  $("net").title=type+" · "+(off?"offline":"online")+(mbps!=null&&!off?" · ~"+mbps.toFixed(1)+" Mbps measured":"")+". Tap to re-test.";
   if($("netT").textContent!==txt)$("netT").textContent=txt;
   $("net").className="net"+(off?" bad":"");
   const lit=off||mbps==null?0:mbps<1?1:mbps<5?2:3;
@@ -1512,6 +1569,7 @@ $("demo").addEventListener("click",()=>{readForm();startDemo();});
 $("view").addEventListener("click",()=>{if(isCustom()){zoom=1;pan=[0,0];}else view=view==="route"?"follow":"route";viewChanged();});
 readForm();
 setInterval(readouts,500);
+setInterval(()=>{try{renderFlightRow();}catch(e){}},2000);
 setInterval(drawCharts,250);
 setInterval(renderSrcs,5000);renderSrcs();
 setInterval(renderAircraft,15000);renderAircraft();
