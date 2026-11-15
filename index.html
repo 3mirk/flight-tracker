@@ -19,7 +19,7 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans)
 body{max-width:760px;margin:0 auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:12px}
 h1{font-size:1rem;margin:0;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
 form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
-.flightrow{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.flightrow{display:flex;flex-direction:column;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 @font-face{font-family:"DSEG14";src:url("fonts/DSEG14Classic-Bold.woff2") format("woff2");font-display:swap}
 .fr1{display:flex;align-items:stretch;gap:6px;min-width:0}
 .fsearch{position:relative;flex:1 1 0;min-width:104px}
@@ -152,12 +152,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .kpigrid .cv{font:700 1.05rem var(--mono);font-variant-numeric:tabular-nums}
 .kpigrid .cv small{font-size:.66rem;color:var(--muted);font-weight:600;margin-left:3px}
 .kpigrid .cl{font-size:.7rem;color:var(--muted);overflow-wrap:anywhere}
-.frl{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
-.fr-rack{display:flex;flex-direction:column;gap:6px;flex:none;width:118px}
-.fr-rack>*{width:100%;box-sizing:border-box}
-.fr-rack button{display:flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 8px;font-size:.7rem;border-radius:6px;line-height:1;white-space:nowrap}
-.fr-rack button span{display:block;line-height:1}
-.fr-rack svg{display:block;flex:none;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.frow{display:grid;grid-template-columns:minmax(0,1fr) 118px;align-items:center;gap:10px;min-height:32px;padding:6px 0}
+.frow+.frow{border-top:1px solid var(--line)}
+.frow:first-child{padding-top:0}.frow:last-child{padding-bottom:0}
+.frow>.fr-ph,.frow>button{width:100%;box-sizing:border-box}
+.frow>button{display:flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 8px;font-size:.7rem;border-radius:6px;line-height:1;white-space:nowrap}
+.frow>button span{display:block;line-height:1}
+.frow>button svg{display:block;flex:none;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
 .mapwrap{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0d1b2b}
 canvas{display:block;width:100%;aspect-ratio:4/3;max-height:460px}
 #view{position:absolute;right:8px;top:8px;padding:6px 10px;font-size:.75rem;background:rgba(11,21,34,.85)}
@@ -234,20 +235,16 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 
 <input type="hidden" id="flight" value="AA3101"><input type="hidden" id="from" value="CLT"><input type="hidden" id="to" value="DFW">
 <div class="flightrow">
-  <div class="frl">
-    <div class="fr1">
+  <div class="frow"><div class="fr1">
       <div class="fsearch"><input id="fq" value="AA3101" aria-label="Flight number" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" maxlength="8">
         <ul id="fsug" role="listbox" hidden></ul></div>
       <select id="finst" aria-label="Which flight with this number"><option value="live">Live · today</option></select>
     </div>
-    <div class="fr-dt" id="frDate">—</div>
-    <div class="status" id="statusLine" role="button" tabindex="0" title="Tap for data sources"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
-  </div>
-  <div class="fr-rack">
-    <span class="fr-ph ph-idle" id="frPhase">Not seen yet</span>
-    <button type="button" id="gps" title="Use your phone's own GPS for position, speed and altitude"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg><span>Enable GPS</span></button>
-    <button type="button" id="demo" title="Play a simulated flight on this route"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg><span>Play Demo</span></button>
-  </div>
+    <span class="fr-ph ph-idle" id="frPhase">Not seen yet</span></div>
+  <div class="frow"><div class="fr-dt" id="frDate">—</div>
+    <button type="button" id="gps" title="Use your phone's own GPS for position, speed and altitude"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg><span>Enable GPS</span></button></div>
+  <div class="frow"><div class="status" id="statusLine" role="button" tabindex="0" title="Tap for data sources"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
+    <button type="button" id="demo" title="Play a simulated flight on this route"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg><span>Play Demo</span></button></div>
 </div>
 <details class="srcs" id="srcBox" aria-label="Data source status">
   <summary>
