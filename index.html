@@ -66,7 +66,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .zoom button{width:36px;height:36px;padding:0;font-size:1.2rem;line-height:1;background:rgba(11,21,34,.85)}
 .charts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .chart{padding:8px 10px;display:flex;flex-direction:column}
-.chart .head{cursor:pointer}
 .chart .v{font-size:1.25rem}
 .chart canvas{margin-top:auto}
 .kpigrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -117,6 +116,31 @@ canvas.spark{display:block;width:100%;height:112px;border-radius:6px;border:1px 
 .kpifoot{font-size:.7rem;color:var(--muted);line-height:1.4;border-top:1px solid var(--line);padding-top:6px}
 .relay{font-size:.85rem;color:var(--muted)}.relay summary{cursor:pointer;padding:4px 0}
 .relay form{margin-top:8px}.relay label{flex:1 1 220px}
+.ref{font-size:.62rem;color:var(--route);margin-left:2px;cursor:pointer;padding:0 3px;text-transform:none}
+.mapref{position:absolute;left:6px;top:4px;background:rgba(11,21,34,.85);border:1px solid var(--line);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
+.mapref .ref{margin:0;font-size:.7rem;vertical-align:baseline;line-height:1}
+.notes,.acard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.notes summary{cursor:pointer;font-size:.8rem;color:var(--muted)}
+.notes ol{margin:8px 0 0;padding-left:20px;font-size:.78rem;color:var(--muted);line-height:1.45;display:flex;flex-direction:column;gap:6px}
+.notes li.hit{color:var(--ink)}
+.seg{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.seg .k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:auto}
+.seg button{padding:5px 10px;font-size:.75rem}
+.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#1b1206}
+.acard{display:flex;flex-direction:column;gap:8px}
+.acard>.k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.acmain{display:grid;grid-template-columns:minmax(0,46%) 1fr;gap:10px;align-items:start}
+.acphoto{display:flex;align-items:center;justify-content:center;aspect-ratio:3/2;background:#0d1b2b;border:1px solid var(--line);border-radius:8px;overflow:hidden;color:var(--muted);font-size:.72rem;text-decoration:none}
+.acphoto img{width:100%;height:100%;object-fit:cover;display:block}
+.acphoto img[hidden],.acphoto span[hidden]{display:none}
+.acreg{font:700 1.4rem var(--mono)}
+.acid .s{font-size:.8rem;color:var(--muted);line-height:1.35;overflow-wrap:anywhere}
+.accredit{font-size:.62rem;color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+.acflights{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px;font-size:.8rem}
+.acflights li{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:4px}
+.acflights span:first-child{font-family:var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
+.acflights b{font-family:var(--mono)}
+.banner{left:32px}
 .extra{font-size:.8rem;color:var(--muted);line-height:1.5}
 .extra b{color:var(--ink);font-family:var(--mono)}
 footer{font-size:.72rem;color:var(--muted);line-height:1.45}
@@ -142,24 +166,25 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 </section>
 
 <section class="kpi" id="turb" aria-live="polite">
-  <div class="kpihead"><span class="k">Turbulence estimate</span><span class="meter" id="tMeter" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+  <div class="kpihead"><span class="k">Turbulence estimate<sup class="ref" data-n="1" role="button" tabindex="0" aria-label="Note 1">1</sup></span><span class="meter" id="tMeter" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
   <div class="kpilabel" id="tLabel">Waiting for your position</div>
   <div class="kpinote" id="tNote"></div>
   <div class="kpigrid" id="tDrivers"></div>
-  <div class="kpifoot">An estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable but airliners are built to handle far more than passengers feel.</div>
 </section>
 
 <div class="mapwrap">
   <canvas id="map"></canvas>
+  <span class="mapref"><sup class="ref" data-n="2" role="button" tabindex="0" aria-label="Note 2">2</sup></span>
   <span class="banner" id="banner" hidden>DEMO · SIMULATED</span>
   <button type="button" id="view">View: route</button>
   <button type="button" id="traf">Traffic: off</button>
   <div class="zoom"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button></div>
 </div>
-<div class="hint">Pinch or double-tap to zoom in. Tap with two fingers to zoom out. Drag to move once zoomed. Traffic shows up to 10 aircraft within 60 miles and 5,000 ft of you; tap one for details.</div>
 
 <div class="prog"><span id="pFrom">CLT</span><div class="bar"><i id="pBar"></i></div><span id="pTo">DFW</span></div>
 
+<div class="seg" id="win" role="group" aria-label="Chart time window"><span class="k">Charts show</span>
+  <button type="button" data-w="all">All</button><button type="button" data-w="60">60 min</button><button type="button" data-w="5">5 min</button><button type="button" data-w="1">1 min</button></div>
 <div class="charts">
   <div class="tile chart"><div class="head"><div class="k">Altitude</div><div class="v" id="alt">—</div><div class="s" id="altS"></div></div>
     <canvas class="spark" id="altChart" aria-label="Altitude over time, in feet"></canvas></div>
@@ -167,17 +192,40 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
     <canvas class="spark" id="spdChart" aria-label="Ground speed over time, in miles per hour"></canvas></div>
   <div class="tile chart"><div class="head"><div class="k">Vertical speed</div><div class="v" id="vs">—</div><div class="s" id="vsS"></div></div>
     <canvas class="spark" id="vsChart" aria-label="Vertical speed over time, in feet per minute; above the center line is climbing"></canvas></div>
-  <div class="tile chart"><div class="head"><div class="k">Heading</div><div class="v" id="hdg">—</div><div class="s" id="hdgS"></div></div>
+  <div class="tile chart"><div class="head"><div class="k">Heading<sup class="ref" data-n="3" role="button" tabindex="0" aria-label="Note 3">3</sup></div><div class="v" id="hdg">—</div><div class="s" id="hdgS"></div></div>
     <canvas class="dial" id="hdgChart" aria-label="Heading history: center is the start of tracking, outer ring is now"></canvas></div>
 </div>
-<div class="hint">Tap a chart's title to change its window (5, 15, 60 or 180 min). The heading trace spirals outward: center is when tracking began, the edge is now.</div>
 
 <div class="tiles">
   <div class="tile"><div class="k">Distance to go</div><div class="v" id="dist">—</div><div class="s" id="distS"></div></div>
-  <div class="tile"><div class="k">Time to go</div><div class="v" id="eta">—</div><div class="s" id="etaS"></div></div>
+  <div class="tile"><div class="k">Time to go<sup class="ref" data-n="4" role="button" tabindex="0" aria-label="Note 4">4</sup></div><div class="v" id="eta">—</div><div class="s" id="etaS"></div></div>
 </div>
 
-<div class="extra" id="extra"></div>
+<section class="acard">
+  <div class="kpihead"><span class="k">This aircraft<sup class="ref" data-n="5" role="button" tabindex="0" aria-label="Note 5">5</sup></span></div>
+  <div class="acmain">
+    <a class="acphoto" id="acPhotoL" target="_blank" rel="noopener"><img id="acImg" alt="" hidden><span id="acNoImg">No photo</span></a>
+    <div class="acid"><div class="acreg" id="acReg">—</div><div class="s" id="acType"></div><div class="s" id="acOwner"></div><div class="accredit" id="acCredit"></div></div>
+  </div>
+  <div class="kpigrid">
+    <div class="c"><div class="k">Flights today</div><div class="cv" id="acToday">—</div><div class="cl">from today's track</div></div>
+    <div class="c"><div class="k">Last 7 days</div><div class="cv" id="acWeek">—</div><div class="cl">may lag a day</div></div>
+    <div class="c"><div class="k">Lifetime flights</div><div class="cv">n/a</div><div class="cl">not in free data</div></div>
+    <div class="c"><div class="k">Built</div><div class="cv" id="acBuiltV">n/a</div><div class="cl" id="acBuiltS">not in free data</div></div>
+  </div>
+  <div class="k">Recent flights (your phone's time)</div>
+  <ol class="acflights" id="acFlights"><li><span>No flight history yet</span></li></ol>
+  <div class="extra" id="extra"></div>
+</section>
+
+<details class="notes" id="notes"><summary>Notes</summary><ol>
+  <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
+  <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 10 aircraft within 60 miles and 5,000 ft of you; tap one for details.</li>
+  <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
+  <li id="note4">Time to go assumes your current speed on a direct path. Clock times use your phone's time zone.</li>
+  <li id="note5">Aircraft details and photos come from volunteer databases (adsbdb, planespotters.net, OpenSky) and can be missing or out of date. Past flights come from OpenSky and can lag by a day. No free source has an aircraft's lifetime flight count or the factory that built it.</li>
+  <li id="note6">Positions come from community ADS-B receiver networks (adsb.lol, airplanes.live, adsb.fi, OpenSky), through a public relay if your browser blocks the direct request. Winds are from Open-Meteo. State outlines are US Census data. For curiosity only, not for navigation.</li>
+</ol></details>
 
 <details class="relay"><summary>Data relay settings</summary>
   <form id="relayForm"><label for="relay">Your Cloudflare Worker address<input id="relay" placeholder="https://flight-relay.yourname.workers.dev" autocomplete="off" spellcheck="false" style="text-transform:none"></label>
@@ -190,7 +238,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <button type="button" id="demo">Play demo</button>
 </div>
 
-<footer>Positions come from free community ADS-B receiver networks (adsb.lol, airplanes.live, adsb.fi, OpenSky), through a public relay if your browser blocks the direct request. Time to go assumes current speed on a direct path. State outlines from US Census data. For curiosity only, not for navigation.</footer>
+
 
 <script>
 "use strict";
@@ -265,7 +313,7 @@ const VIA=[
   {name:"corsproxy.io",wrap:u=>"https://corsproxy.io/?url="+E(u),ms:9000},
   {name:"allorigins",wrap:u=>"https://api.allorigins.win/raw?url="+E(u),ms:12000}
 ];
-let via=0;
+let via=0;const viaBy={};
 const log={};   // service -> what happened last time, shown in Details
 function why(e){
   if(e.name==="AbortError")return "timed out";
@@ -325,18 +373,19 @@ function failText(tried){
   return (all("blocked")?"Blocked on every route":all("timed out")?"Timed out on every route":"No route worked")+" ("+t.join(", ")+")";
 }
 async function getJSON(url,ok,svc){
+  const host=new URL(url).hostname,first=viaBy[host]||0;
   const t0=performance.now(),quiet=svc&&srcs[svc]&&srcs[svc].state==="ok";   // don't flicker a working source
   const rn=n=>VIA[n].name==="direct"?"direct":"via "+VIA[n].name;
-  if(svc&&!quiet)setSrc(svc,"try","Trying…",null,VIA[via].wrap(url)?rn(via):"direct");
+  if(svc&&!quiet)setSrc(svc,"try","Trying…",null,VIA[first].wrap(url)?rn(first):"direct");
   const tried=[];
   const good=n=>{if(svc){log[svc]="ok via "+VIA[n].name;setSrc(svc,"ok","Connected "+rn(n)+".",Math.round(performance.now()-t0),rn(n));}};
-  try{const r=await viaRoute(via,url,ok);good(via);return r.j;}
+  try{const r=await viaRoute(first,url,ok);via=first;good(first);return r.j;}
   catch(e){tried.push(e.message);}
   if(svc)setSrc(svc,"try","Trying backup routes…",null,(VIA.length-1)+" backup routes");
-  const rest=VIA.map((_,i)=>i).filter(i=>i!==via);
+  const rest=VIA.map((_,i)=>i).filter(i=>i!==first);
   try{
     const r=await Promise.any(rest.map(n=>viaRoute(n,url,ok).catch(e=>{tried.push(e.message);throw e;})));
-    via=r.n;good(r.n);return r.j;
+    via=viaBy[host]=r.n;good(r.n);return r.j;
   }catch(e){}
   if(svc){log[svc]=tried.filter(x=>!x.endsWith("not set")).join(", ");setSrc(svc,"fail",failText(tried),Math.round(performance.now()-t0));}
   throw new Error("unreachable");
@@ -442,7 +491,7 @@ async function track(){
         status("bad",head+" Retrying in 20 s.");
         await sleep(20000);continue;
       }
-      src=f;miss=0;activeSrc=f.key;renderSrcs();apply(f.first,f.name);backfill(f.first.hex,id);
+      src=f;miss=0;activeSrc=f.key;renderSrcs();apply(f.first,f.name);backfill(f.first.hex,id);aircraftInfo(f.first.hex);
     }
     await sleep(src.poll);if(id!==run)return;
     try{const p=await src.get();if(p){apply(p,src.name);miss=0;}else miss++;}catch(e){miss++;}
@@ -498,6 +547,7 @@ async function backfill(hex,id){
     }catch(e2){filled="";return;}
   }
   if(id!==run||!rows||!rows.length)return;
+  if(ac.hex===String(hex).toLowerCase()){ac.legs=legsFrom(rows);renderAircraft();}
   let s0=rows.length-1;     // keep only the current leg: back to the last time on the ground or a 20 min gap
   while(s0>0&&!rows[s0-1][7]&&rows[s0][0]-rows[s0-1][0]<20*60000)s0--;
   const cut=Date.now()-HIST_MS;
@@ -660,11 +710,16 @@ function draw(){
   for(let la=Math.ceil((clat-h/2/scale)/stepDeg)*stepDeg;la<clat+h/2/scale;la+=stepDeg){g.moveTo(0,Y(la));g.lineTo(w,Y(la));}
   for(let lo=Math.ceil((clon-w/2/scale/k)/stepDeg)*stepDeg;lo<clon+w/2/scale/k;lo+=stepDeg){g.moveTo(X(lo),0);g.lineTo(X(lo),h);}
   g.stroke();
-  // cities
-  g.font="11px "+C("--sans");g.textBaseline="middle";
+  // cities: label only where it won't collide with another label, an airport code or the plane
+  g.font="9px "+C("--sans");g.textBaseline="middle";
+  const taken=[];const hit=b=>taken.some(t=>b[0]<t[2]&&b[2]>t[0]&&b[1]<t[3]&&b[3]>t[1]);
+  for(const a of [org,dst,p]){if(a){const x=X(a[1]),y=Y(a[0]);taken.push([x-22,y-16,x+22,y+26]);}}
   for(const c of CITIES){const x=X(c[2]),y=Y(c[1]);if(x<4||x>w-4||y<4||y>h-4)continue;
-    g.fillStyle="rgba(142,163,183,.7)";g.beginPath();g.arc(x,y,1.8,0,7);g.fill();
-    g.fillStyle="rgba(142,163,183,.75)";g.textAlign=x>w-90?"right":"left";g.fillText(c[0],x+(x>w-90?-5:5),y);}
+    const tw=g.measureText(c[0]).width,right=x>w-tw-12,bx=right?x-5-tw:x+5,box=[bx-2,y-6,bx+tw+2,y+6];
+    if(hit(box)||hit([x-3,y-3,x+3,y+3]))continue;
+    taken.push(box);
+    g.fillStyle="rgba(142,163,183,.7)";g.beginPath();g.arc(x,y,1.6,0,7);g.fill();
+    g.fillStyle="rgba(142,163,183,.8)";g.textAlign="left";g.fillText(c[0],bx,y);}
   // winds at the plane's altitude: streaks flow where the air is going, faster = stronger
   if(wx)try{
     const alt=fix&&fix.altFt!=null?fix.altFt:33000;
@@ -889,8 +944,14 @@ function setMeter(l){document.querySelectorAll("#tMeter i").forEach((e,i)=>e.cla
 
 /* ---------- live scrolling charts, Task Manager style: fixed window, newest at right ---------- */
 const SCOPE={bg:"#000000",grid:"#00703a",trace:"#00ff41",dim:"#00b830",text:"#00ff41"};
-const WINDOWS=[5,15,60,180];   // minutes shown across the chart
-let winIdx=0;
+let win=5;   // minutes shown across each chart, or "all" for the whole flight so far
+try{const w0=localStorage.getItem("sfm-win");if(w0)win=w0==="all"?"all":(+w0||5);}catch(e){}
+function winSpan(tNow){
+  if(win!=="all")return win*60000;
+  let f=tNow;for(const k in hist)if(hist[k].length&&hist[k][0][0]<f)f=hist[k][0][0];
+  return Math.max(60000,tNow-f);
+}
+function winLabel(span){if(win!=="all")return win+" min";const m=Math.round(span/60000);return "all · "+(m>=60?Math.floor(m/60)+"h "+(m%60)+"m":m+" min");}
 const CHARTS=[
   {el:$("altChart"),data:()=>hist.alt,unit:"ft",lo:0,hi:40000,step:5000},
   {el:$("spdChart"),data:()=>hist.spd,unit:"mph",lo:0,hi:600,step:100},
@@ -905,7 +966,7 @@ function prep(cv){
 }
 function drawChart(ch){
   const c=prep(ch.el);if(!c)return;const {g,w,h}=c;
-  const span=WINDOWS[winIdx]*60000,tNow=Date.now(),t0=tNow-span;
+  const tNow=Date.now(),span=winSpan(tNow),t0=tNow-span;
   const d=ch.data();
   // scale is fixed like Task Manager, but grows if the data goes past it
   let hi=ch.hi,lo=ch.lo;
@@ -935,7 +996,7 @@ function drawChart(ch){
   g.fillStyle=SCOPE.text;g.textBaseline="top";g.textAlign="left";
   const lab=v=>(ch.sym&&v>0?"+":"")+(Math.abs(v)>=10000?(v/1000)+"k":fmt(v));
   g.fillText(lab(hi)+" "+ch.unit,4,3);g.textBaseline="bottom";g.fillText(lab(lo),4,h-3);
-  g.textAlign="right";g.fillText(WINDOWS[winIdx]+" min",w-4,h-3);
+  g.textAlign="right";g.fillText(winLabel(span),w-4,h-3);
   if(!vis.length){g.textAlign="center";g.textBaseline="middle";g.fillStyle=SCOPE.dim;g.fillText("waiting for data",w/2,h/2);}
   // touch / hover readout
   if(ch.hx!=null&&vis.length){
@@ -990,8 +1051,16 @@ function drawDial(){
     g.beginPath();g.moveTo(0,-2);g.lineTo(6,10);g.lineTo(-6,10);g.closePath();g.fill();g.restore();
   }
 }
-document.querySelectorAll(".chart .head").forEach(r=>{r.title="Tap to change the time window";
-  r.addEventListener("click",()=>{winIdx=(winIdx+1)%WINDOWS.length;drawCharts();});});
+function winButtons(){document.querySelectorAll("#win button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.w===String(win))));}
+$("win").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;win=b.dataset.w==="all"?"all":+b.dataset.w;
+  try{localStorage.setItem("sfm-win",String(win));}catch(err){}winButtons();drawCharts();});
+winButtons();
+/* numbered notes: tapping a marker opens the note */
+function openNote(n){const d=$("notes"),li=$("note"+n);if(!li)return;d.open=true;
+  document.querySelectorAll(".notes li.hit").forEach(x=>x.classList.remove("hit"));li.classList.add("hit");
+  li.scrollIntoView({behavior:reduced?"auto":"smooth",block:"center"});}
+document.addEventListener("click",e=>{const r=e.target.closest(".ref");if(r){e.preventDefault();e.stopPropagation();openNote(r.dataset.n);}});
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList&&e.target.classList.contains("ref")){e.preventDefault();openNote(e.target.dataset.n);}});
 CHARTS.forEach(ch=>{
   const at=e=>{const r=ch.el.getBoundingClientRect();ch.hx=e.clientX-r.left;drawChart(ch);};
   ch.el.addEventListener("pointerdown",at);ch.el.addEventListener("pointermove",at);
@@ -999,6 +1068,91 @@ CHARTS.forEach(ch=>{
   ch.el.addEventListener("pointerleave",off);ch.el.addEventListener("pointercancel",off);
   ch.el.addEventListener("pointerup",e=>{if(e.pointerType!=="mouse")setTimeout(off,1500);});
 });
+
+/* ---------- this aircraft: photo, details, recent flights ---------- */
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const p2=n=>String(n).padStart(2,"0");
+function fmtDT(ms){const d=new Date(ms),h=d.getHours();
+  return MON[d.getMonth()]+"-"+p2(d.getDate())+"-"+String(d.getFullYear()).slice(2)+" "+p2(h%12||12)+":"+p2(d.getMinutes())+" "+(h<12?"am":"pm");}
+const esc=t=>String(t==null?"":t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const apt=c=>!c?"?":/^K[A-Z]{3}$/.test(c)?c.slice(1):c;
+function nearApt(lat,lon){let best="",bd=12;for(const k in AIRPORTS){const d=distNm([lat,lon],AIRPORTS[k]);if(d<bd){bd=d;best=k;}}return best;}
+let ac={hex:"",info:null,photo:null,meta:null,flights:null,legs:[]},acBusy=false;
+const isAdsbdb=j=>!!(j&&j.response&&j.response.aircraft);
+const isPhotos=j=>!!(j&&Array.isArray(j.photos));
+const isMeta=j=>!!(j&&typeof j==="object"&&!Array.isArray(j)&&("icao24" in j||"registration" in j));
+const isFlights=j=>Array.isArray(j);
+/* Split a day's track into separate flights: a new one starts after time on the ground or a 20 min gap. */
+function legsFrom(rows){
+  const legs=[];let cur=null;
+  for(const r of rows){
+    const air=!r[7]&&r[1]!=null&&r[2]!=null;
+    if(cur&&(!air||r[0]-cur.last[0]>20*60000)){legs.push(cur);cur=null;}
+    if(air){if(!cur)cur={first:r,last:r,n:0};cur.last=r;cur.n++;}
+  }
+  if(cur)legs.push(cur);
+  return legs.filter(l=>l.n>=10&&l.last[0]-l.first[0]>10*60000).map(l=>({t0:l.first[0],t1:l.last[0],
+    from:(l.first[3]!=null&&l.first[3]<10000&&nearApt(l.first[1],l.first[2]))||"?",
+    to:(l.last[3]!=null&&l.last[3]<10000&&nearApt(l.last[1],l.last[2]))||"?",live:Date.now()-l.last[0]<10*60000}));
+}
+async function weekFlights(hex){
+  const nowS=Math.floor(Date.now()/1000),out=[];let any=false;
+  for(let i=0;i<4;i++){const end=nowS-i*172800,begin=end-172800;      // the service allows 2 days per request
+    try{const j=await getJSON("https://opensky-network.org/api/flights/aircraft?icao24="+hex+"&begin="+begin+"&end="+end,isFlights);any=true;out.push(...j);}catch(e){}}
+  if(any&&ac.hex===hex)ac.flights=out.filter(f=>f&&f.firstSeen).map(f=>({t0:f.firstSeen*1000,t1:f.lastSeen*1000,from:apt(f.estDepartureAirport),to:apt(f.estArrivalAirport)}));
+}
+async function aircraftInfo(hex){
+  if(!hex||acBusy)return;hex=String(hex).toLowerCase().replace(/[^0-9a-f]/g,"");if(!hex)return;
+  if(ac.hex!==hex){
+    ac={hex,info:null,photo:null,meta:null,flights:null,legs:[]};
+    try{const c=JSON.parse(localStorage.getItem("sfm-ac:"+hex)||"null");if(c&&Date.now()-c.t<6*3600000){ac.info=c.info;ac.photo=c.photo;ac.meta=c.meta;ac.flights=c.flights;}}catch(e){}
+  }
+  acBusy=true;renderAircraft();
+  const jobs=[];
+  if(!ac.info)jobs.push(getJSON("https://api.adsbdb.com/v0/aircraft/"+hex,isAdsbdb).then(j=>{if(ac.hex===hex)ac.info=j.response.aircraft;}));
+  if(!ac.photo)jobs.push(getJSON("https://api.planespotters.net/pub/photos/hex/"+hex,isPhotos).then(j=>{const p=j.photos[0],t=p&&(p.thumbnail_large||p.thumbnail);
+    if(t&&t.src&&ac.hex===hex)ac.photo={src:t.src,link:p.link,by:p.photographer,site:"planespotters.net"};}));
+  if(!ac.meta)jobs.push(getJSON("https://opensky-network.org/api/metadata/aircraft/icao/"+hex,isMeta).then(j=>{if(ac.hex===hex)ac.meta=j;}));
+  if(!ac.flights)jobs.push(weekFlights(hex));
+  await Promise.all(jobs.map(j=>j.catch(()=>{}).then(renderAircraft)));
+  if(ac.hex===hex)try{localStorage.setItem("sfm-ac:"+hex,JSON.stringify({t:Date.now(),info:ac.info,photo:ac.photo,meta:ac.meta,flights:ac.flights}));}catch(e){}
+  acBusy=false;renderAircraft();
+}
+const httpsOk=u=>typeof u==="string"&&u.startsWith("https://");
+function renderAircraft(){
+  const i=ac.info||{},m=ac.meta||{},f=fix||{};
+  set("acReg",esc(i.registration||m.registration||f.reg||"—"));
+  const type=i.type?(i.manufacturer&&!i.type.startsWith(i.manufacturer)?i.manufacturer+" ":"")+i.type:[m.manufacturerName,m.model].filter(Boolean).join(" ")||f.type||"";
+  set("acType",esc(type)||(ac.hex?(acBusy?"Looking up details…":"Details unavailable"):"Details appear once your flight is found"));
+  set("acOwner",esc(i.registered_owner||m.operator||m.owner||""));
+  // photo: planespotters first, then the database's own thumbnail
+  let ph=ac.photo;if(!ph&&httpsOk(i.url_photo_thumbnail||i.url_photo))ph={src:i.url_photo_thumbnail||i.url_photo,link:i.url_photo,by:"",site:"airport-data.com"};
+  const img=$("acImg");
+  if(ph&&httpsOk(ph.src)){if(img.getAttribute("src")!==ph.src)img.src=ph.src;img.hidden=false;$("acNoImg").hidden=true;
+    img.alt="Photo of "+(i.registration||"this aircraft");
+    if(httpsOk(ph.link))$("acPhotoL").href=ph.link;else $("acPhotoL").removeAttribute("href");
+    set("acCredit","Photo"+(ph.by?" © "+esc(ph.by):"")+" · "+esc(ph.site));
+  }else{img.hidden=true;$("acNoImg").hidden=false;$("acNoImg").textContent=ac.hex&&acBusy?"Looking for a photo…":"No photo";$("acPhotoL").removeAttribute("href");set("acCredit","");}
+  // built / first flight
+  const y=s=>{const mm=/(19|20)\d\d/.exec(String(s||""));return mm?+mm[0]:null;};
+  const by=y(m.built)||y(m.firstFlightDate);
+  set("acBuiltV",by?String(by):"n/a");
+  set("acBuiltS",by?(new Date().getFullYear()-by)+" years old"+(m.serialNumber?" · serial "+esc(m.serialNumber):""):"not in free data");
+  // flights: past days from OpenSky, today from the plane's own track
+  const all=[];
+  for(const l of ac.legs)all.push(l);
+  for(const g2 of (ac.flights||[]))if(!all.some(l=>Math.abs(l.t0-g2.t0)<45*60000))all.push(g2);
+  all.sort((a,b)=>b.t0-a.t0);
+  const mid=new Date();mid.setHours(0,0,0,0);
+  set("acToday",ac.legs.length?String(ac.legs.filter(l=>l.t0>=mid.getTime()).length):"—");
+  set("acWeek",ac.flights?String(all.filter(l=>l.t0>=Date.now()-7*86400000).length):"—");
+  const A=$("from").value.trim().toUpperCase(),B=$("to").value.trim().toUpperCase();
+  let rows=all.slice(0,3).map(l=>{
+    const from=l.live&&l.from==="?"?A||"?":l.from,to=l.live?(B||"?"):l.to;
+    return "<li><span>"+fmtDT(l.t0)+"</span><b>"+esc(from)+" → "+esc(to)+"</b>"+(l.live?'<span class="chip up">IN FLIGHT</span>':"")+"</li>";});
+  if(!rows.length&&fix&&hist.alt.length)rows=["<li><span>"+fmtDT(hist.alt[0][0])+"</span><b>"+esc(A||"?")+" → "+esc(B||"?")+'</b><span class="chip lv">TRACKED FROM</span></li>'];
+  set("acFlights",rows.join("")||"<li><span>No flight history yet</span></li>");
+}
 
 /* ---------- nearby traffic: up to 10 aircraft within ~60 mi and 5,000 ft of the plane ---------- */
 const TRAF_NM=52,TRAF_FT=5000,TRAF_MAX=10;
@@ -1130,13 +1284,14 @@ readForm();
 setInterval(readouts,500);
 setInterval(drawCharts,250);
 setInterval(renderSrcs,5000);renderSrcs();
+setInterval(renderAircraft,15000);renderAircraft();
 setInterval(()=>{turbulence();if(!wx||Date.now()-wx.t>600000)fetchWinds();},2000);
 try{$("relay").value=localStorage.getItem("sfm-relay")||"";}catch(e){}
 $("relayForm").addEventListener("submit",e=>{e.preventDefault();
   const v=$("relay").value.trim();
   if(v&&!/^https:\/\/[^\s]+$/.test(v)){$("relayMsg").textContent="Enter the full address starting with https://";return;}
   try{localStorage.setItem("sfm-relay",v);}catch(err){}
-  via=0;wxTried=0;$("relayMsg").textContent=v?"Saved. Reconnecting through your relay.":"Relay removed.";
+  via=0;for(const k in viaBy)delete viaBy[k];wxTried=0;$("relayMsg").textContent=v?"Saved. Reconnecting through your relay.":"Relay removed.";
   readForm();fix=null;trail=[];lastSource="";histLoad(cands[0]||"");track();fetchWinds();});
 window.addEventListener("resize",()=>{draw();drawCharts();});
 histLoad(cands[0]||"");readouts();draw();drawCharts();track();
