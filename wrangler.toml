@@ -2,3 +2,8 @@
 name = "flight-tracker-relay"
 main = "worker.js"
 compatibility_date = "2025-06-01"
+
+# Storage for shared saved flights, cached schedules and daily caps (Cloudflare Workers KV).
+[[kv_namespaces]]
+binding = "DATA"
+id = "ee0650bacdf44f3e8605ceb2c6aff794"
