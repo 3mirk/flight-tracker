@@ -40,11 +40,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srcs{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
 .srchead{display:flex;justify-content:space-between;gap:8px;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
 .srcs ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.srcs li{border:1px solid var(--line);border-left:4px solid var(--line);border-radius:6px;padding:3px 6px;min-width:0;cursor:pointer}
+.srcs li{border:1px solid var(--line);border-left:3px solid var(--line);border-radius:6px;padding:3px 5px;min-width:0;cursor:pointer;
+  display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .srcs li.sel{background:rgba(111,195,223,.08)}
-.srcs li .n{font-size:.74rem;font-weight:600;display:flex;align-items:center;gap:5px;flex-wrap:wrap;line-height:1.3}
-.srcs li .st{font:700 .72rem var(--mono);margin-left:auto}
-.srcs li .m{font-size:.64rem;line-height:1.3;color:var(--muted);font-family:var(--mono);overflow-wrap:anywhere}
+.srcs li.use{background:rgba(111,208,140,.12);border-color:var(--good)}
+.srcs li .nm{font-size:.68rem;font-weight:600}
+.srcs li .m{font-size:.56rem;color:var(--muted);font-family:var(--mono);margin-left:auto;white-space:nowrap}
 .srcs .d{flex:none;width:9px;height:9px;border-radius:50%;background:var(--line)}
 .srcs .ok{border-left-color:var(--good)}.srcs .ok .d{background:var(--good)}.srcs .ok .st{color:var(--good)}
 .srcs .fail{border-left-color:var(--bad)}.srcs .fail .d{background:var(--bad);border-radius:2px}.srcs .fail .st{color:var(--bad)}
@@ -136,10 +137,6 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <div class="srcx" id="srcExtra"></div>
   <div class="srcx" id="srcDetail"></div>
 </section>
-<div class="actions">
-  <button type="button" id="gps">Use phone GPS</button>
-  <button type="button" id="demo">Play demo</button>
-</div>
 
 <section class="kpi" id="turb" aria-live="polite">
   <div class="kpihead"><span class="k">Turbulence estimate</span><span class="meter" id="tMeter" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
@@ -183,6 +180,11 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <button type="submit">Save</button></form>
   <div class="s" id="relayMsg"></div>
 </details>
+
+<div class="actions">
+  <button type="button" id="gps">Use phone GPS</button>
+  <button type="button" id="demo">Play demo</button>
+</div>
 
 <footer>Positions come from free community ADS-B receiver networks (adsb.lol, airplanes.live, adsb.fi, OpenSky), through a public relay if your browser blocks the direct request. Time to go assumes current speed on a direct path. State outlines from US Census data. For curiosity only, not for navigation.</footer>
 
@@ -290,17 +292,18 @@ function setSrc(name,state,text,ms,route){
   const p=srcs[name]||{},keep=state==="miss";
   srcs[name]={state,text,t:Date.now(),ms:ms!=null?ms:(keep?p.ms:null),route:route!=null?route:(keep?p.route:null)};renderSrcs();}
 function resetLive(){LIVE.forEach(n=>srcs[n]={state:"idle",text:"Waiting its turn",t:Date.now()});activeSrc="";renderSrcs();}
-function ago(t){const s=Math.round((Date.now()-t)/1000);return s<5?"just now":s<90?s+" s ago":Math.round(s/60)+" min ago";}
+function ago(t){const s=Math.round((Date.now()-t)/1000);return s<5?"now":s<90?s+"s ago":Math.round(s/60)+"m ago";}
+const msTxt=m=>m>=10000?(m/1000).toFixed(1)+"k ms":m+" ms";
+const SHORT={"airplanes.live":"airplanes"};
 function word(n,st){
   return st.state==="ok"?(activeSrc===n?"In use":LIVE.includes(n)?"Ready":"Connected"):st.state==="try"?"Trying…":st.state==="miss"?"No flight":
     st.state==="fail"?(st.text.startsWith("Blocked")?"Blocked":st.text.startsWith("Timed")?"Timed out":"Failed"):"Waiting";}
 function renderSrcs(){
   const html=LIVE.map(n=>{
     const st=srcs[n]||{state:"idle",text:"Not tried yet"},done=st.state!=="idle"&&st.state!=="try";
-    const l2=[st.ms!=null&&done?st.ms+" ms":"",st.t&&done?ago(st.t):""].filter(Boolean).join(" · ");
-    const sub=l2||(st.state==="try"?st.route||"":"");
-    return '<li class="'+st.state+(selSrc===n?" sel":"")+'" data-n="'+n+'" tabindex="0" role="button"><div class="n"><span class="d"></span><span>'+n+
-      '</span><span class="st">'+word(n,st)+'</span></div><div class="m">'+(sub||"&nbsp;")+"</div></li>";}).join("");
+    const kpi=done?[st.ms!=null?msTxt(st.ms):"",st.t?ago(st.t):""].filter(Boolean).join(" "):st.state==="try"?"trying…":"waiting";
+    return '<li class="'+st.state+(activeSrc===n?" use":"")+(selSrc===n?" sel":"")+'" data-n="'+n+'" tabindex="0" role="button" aria-label="'+n+": "+word(n,st)+
+      '"><span class="d"></span><span class="nm">'+(SHORT[n]||n)+'</span><span class="m">'+kpi+"</span></li>";}).join("");
   const el=$("srcList");if(el.innerHTML!==html)el.innerHTML=html;
   const ex=[["Weather","Winds"],["History","Earlier flight"]].map(([n,label])=>{const st=srcs[n];
     return label+": <b>"+(st?word(n,st)+(st.state==="ok"||st.state==="fail"?" · "+ago(st.t):""):"not tried yet")+"</b>";}).join(" &nbsp;·&nbsp; ");
