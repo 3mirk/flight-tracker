@@ -1093,11 +1093,12 @@ function draw(){
     m.shadowColor=fill;m.shadowBlur=3;m.fillText(t,x,y);}
   m.shadowBlur=0;m.globalAlpha=1;
   // plane: drawn rotated into a small half-resolution sprite, then blown up with hard pixel edges
-  if(planeAt){const S=56,ps=S/PIXL;if(pc.width!==ps){pc.width=ps;pc.height=ps;}
-    pg.setTransform(1,0,0,1,0,0);pg.clearRect(0,0,ps,ps);pg.setTransform(1/PIXL,0,0,1/PIXL,S/2/PIXL,S/2/PIXL);pg.rotate(planeAt.trk*R);pg.scale(1.25,1.25);
-    pg.beginPath();pg.moveTo(0,-14);pg.lineTo(3,-5);pg.lineTo(14,3);pg.lineTo(14,7);pg.lineTo(3,4);pg.lineTo(2,11);pg.lineTo(6,14);pg.lineTo(6,16);
-    pg.lineTo(-6,16);pg.lineTo(-6,14);pg.lineTo(-2,11);pg.lineTo(-3,4);pg.lineTo(-14,7);pg.lineTo(-14,3);pg.lineTo(-3,-5);pg.closePath();
-    pg.lineJoin="round";pg.lineWidth=4.5;pg.strokeStyle="#000";pg.stroke();pg.fillStyle=PLANEC;pg.fill();
+  if(planeAt){const S=48,PP=1.5,ps=Math.round(S/PP);if(pc.width!==ps){pc.width=ps;pc.height=ps;}
+    pg.setTransform(1,0,0,1,0,0);pg.clearRect(0,0,ps,ps);pg.setTransform(1/PP,0,0,1/PP,ps/2,ps/2);pg.rotate(planeAt.trk*R);
+    // slim airliner silhouette pointing up: narrow fuselage, swept wings, small tailplane
+    const half=[[0,-16],[1.7,-13],[2,-4],[14,3.5],[14,6],[2,2.5],[1.6,10],[6,13.5],[6,15.2],[0,14]];
+    pg.beginPath();half.forEach(([x,y],i)=>i?pg.lineTo(x,y):pg.moveTo(x,y));for(let i=half.length-2;i>0;i--)pg.lineTo(-half[i][0],half[i][1]);pg.closePath();
+    pg.lineJoin="round";pg.lineWidth=3.2;pg.strokeStyle="#000";pg.stroke();pg.fillStyle=PLANEC;pg.fill();
     m.setTransform(1,0,0,1,0,0);m.imageSmoothingEnabled=false;m.globalAlpha=planeAt.old?.55:1;
     m.drawImage(pc,Math.round((planeAt.x-S/2)*dpr),Math.round((planeAt.y-S/2)*dpr),S*dpr,S*dpr);
     m.globalAlpha=1;m.setTransform(dpr,0,0,dpr,0,0);}
