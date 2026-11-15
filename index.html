@@ -172,7 +172,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 canvas{display:block;width:100%;aspect-ratio:4/3;max-height:460px}
 #view{position:absolute;right:8px;top:8px;padding:5px 9px}
 #view,#traf,.zoom button{background:rgba(7,4,0,.75);border:1px solid rgba(255,90,31,.55);color:#ff6a2a;font:700 .66rem var(--mono);text-transform:uppercase;letter-spacing:.06em;border-radius:4px;text-shadow:0 0 6px rgba(255,90,31,.5)}
-.banner{position:absolute;left:8px;top:8px;background:var(--route);color:#06202b;font:700 .7rem var(--sans);padding:4px 8px;border-radius:6px;letter-spacing:.06em}
+.banner{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);background:rgba(7,8,10,.8);color:#ff8a2a;border:1px solid rgba(255,138,42,.7);font:700 .64rem var(--mono);padding:3px 8px;border-radius:4px;letter-spacing:.08em;pointer-events:none}
 .banner[hidden]{display:none}
 .prog{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font:700 .95rem var(--mono)}
 .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
@@ -243,7 +243,6 @@ canvas.spark{display:block;width:100%;height:112px;border-radius:6px;border:1px 
 .acflights li{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:4px}
 .acflights span:first-child{font-family:var(--mono);color:var(--muted);font-variant-numeric:tabular-nums}
 .acflights b{font-family:var(--mono)}
-.banner{left:32px}
 .extra{font-size:.8rem;color:var(--muted);line-height:1.5}
 .extra b{color:var(--ink);font-family:var(--mono)}
 footer{font-size:.72rem;color:var(--muted);line-height:1.45}
@@ -793,12 +792,13 @@ function startDemo(){
   ++run;stopExtras();mode="demo";fix=null;trail=[];histLoad("");$("banner").hidden=false;
   const o=org||AIRPORTS.CLT,d=dst||AIRPORTS.DFW,total=distNm(o,d);let f=0.3;
   status("demo","<b>Demo.</b> Simulated flight at 60× speed, not real data.");
+  camAnimate();view="track";zoom=1;pan=[0,0];autoTrack=false;viewChanged();
   const step=()=>{
     const cl=0.12,ds=0.85;
     const alt=f<cl?34000*f/cl:f>ds?34000*(1-f)/(1-ds):34000;
     const gs=f<cl?250+190*f/cl:f>ds?440-200*(f-ds)/(1-ds):440;
     const p=along(o,d,f);
-    apply({lat:p[0],lon:p[1],altFt:alt,gsKt:gs,track:bearing(p,d),vsFpm:f<cl?1900:f>ds?-1700:0,callsign:"DEMO",type:"A321",t:Date.now()},"demo");
+    apply({lat:p[0],lon:p[1],altFt:alt,gsKt:gs,track:bearing(p,d),vsFpm:f<cl?1900:f>ds?-1700:0,callsign:"DEMO",type:"A321",t:Date.now(),drMul:60},"demo");
     f+=gs/3600*60/total;if(f>=1){f=0;trail=[];fix=null;hist=EMPTY();}
   };
   step();demoTimer=setInterval(step,1000);
@@ -809,7 +809,7 @@ const fmt=n=>Math.round(n).toLocaleString("en-US");
 function now(){ // dead-reckon between reports so the plane keeps moving smoothly
   if(!fix)return null;
   const dt=Math.min(60,Math.max(0,(Date.now()-fix.t)/1000));
-  if(fix.gsKt>40&&fix.track!=null)return move([fix.lat,fix.lon],fix.track,fix.gsKt*dt/3600);
+  if(fix.gsKt>40&&fix.track!=null)return move([fix.lat,fix.lon],fix.track,fix.gsKt*dt/3600*(fix.drMul||1));
   return [fix.lat,fix.lon];
 }
 function set(id,html){const e=$(id);if(e.innerHTML!==html)e.innerHTML=html;}
@@ -891,12 +891,14 @@ function gridWind(G,lat,lon){
 }
 const WCOL=["185,220,245","185,220,245","170,250,150","255,236,90","255,236,90","255,120,220","255,70,200"];   // pale blue calm, green mild, yellow then pink for shear   // cyan calm, green mild, pink/magenta shear: kept apart from the amber map
 /* Etak-style CRT: one phosphor colour for map linework, winds keep their colours as chunky pixels */
-const PHC="#ff5a1f",PHA=a=>"rgba(255,90,31,"+a+")",PX=4,CRT_BG="#080200";   // map lines: reddish-orange phosphor
+const PHC="#ff5a1f",PHA=a=>"rgba(255,90,31,"+a+")",PX=4,CRT_BG="#07080a";   // map lines: reddish-orange phosphor
 const LBL=a=>"rgba(255,232,205,"+a+")",LBLC="#ffe8cd";                         // labels: warm off-white
-const TRAILC="#ffd84a",AHEADC="#6fd6ff",PLANEC="#fff6d8";
+const TRAILC="#ff8a2a",AHEADC="#ffb066",PLANEC="#ff8a2a",GREY=a=>"rgba(175,180,186,"+a+")";
 const VFONT=(px)=>px+'px "DSEG14",'+getComputedStyle(document.documentElement).getPropertyValue("--mono");
-function glowStroke(g,width,alpha){g.lineWidth=width*3;g.strokeStyle=PHA(alpha*.18);g.stroke();g.lineWidth=width;g.strokeStyle=PHA(alpha);g.stroke();}
+function glowStroke(g,width,alpha,col){col=col||PHA;g.lineWidth=width*3;g.strokeStyle=col(alpha*.18);g.stroke();g.lineWidth=width;g.strokeStyle=col(alpha);g.stroke();}
+let planeAt=null;
 function draw(){
+  planeAt=null;
   const dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;
   if(!w||!h)return;
   if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
@@ -937,11 +939,11 @@ function draw(){
   g.fillStyle=CRT_BG;g.fillRect(0,0,w,h);
   // coastline and state lines: thin phosphor vectors, no fills
   g.lineJoin="round";g.lineCap="round";
-  path(LAND);g.fillStyle="#120a00";g.fill();glowStroke(g,2,.85);
-  path(BORDERS);glowStroke(g,2,.38);
+  path(LAND);g.fillStyle="#101215";g.fill();glowStroke(g,2,.7,GREY);
+  path(BORDERS);glowStroke(g,2,.3,GREY);
   // graticule
   const stepDeg=scale>90?1:scale>25?5:10;
-  g.strokeStyle=PHA(.05);g.lineWidth=1;g.beginPath();
+  g.strokeStyle=GREY(.05);g.lineWidth=1;g.beginPath();
   for(let la=Math.ceil((clat-h/2/scale)/stepDeg)*stepDeg;la<clat+h/2/scale;la+=stepDeg){g.moveTo(0,Y(la));g.lineTo(w,Y(la));}
   for(let lo=Math.ceil((clon-w/2/scale/k)/stepDeg)*stepDeg;lo<clon+w/2/scale/k;lo+=stepDeg){g.moveTo(X(lo),0);g.lineTo(X(lo),h);}
   g.stroke();
@@ -980,7 +982,7 @@ function draw(){
       const sLo=[Math.max(clon-w/2/(k*scale),wx.lo[0]),Math.min(clon+w/2/(k*scale),wx.lo[1])];
       if(sLa[0]<sLa[1]&&sLo[0]<sLo[1]){
         const spawn=()=>({lat:sLa[0]+Math.random()*(sLa[1]-sLa[0]),lon:sLo[0]+Math.random()*(sLo[1]-sLo[0]),age:0,life:1.8+Math.random()*2.2,tr:[],sh:0});
-        const N=Math.round(Math.min(110,Math.max(30,w*h/2200)));
+        const N=Math.round(Math.min(110,Math.max(24,w*h/2200))/Math.min(2.5,Math.sqrt(Math.max(1,zoom))));   // fewer, longer streaks when zoomed in
         while(parts.length<N){const q=spawn();q.age=Math.random()*q.life;parts.push(q);}
         parts.length=N;g.lineWidth=1.4;
         for(const pt of parts){
@@ -988,19 +990,25 @@ function draw(){
           const wv=gridWind(G,pt.lat,pt.lon);
           if(!wv||pt.age>pt.life||pt.lat<sLa[0]||pt.lat>sLa[1]||pt.lon<sLo[0]||pt.lon>sLo[1]){Object.assign(pt,spawn());continue;}
           pt.lon+=wv[0]*0.5*dt/(k*scale);pt.lat+=wv[1]*0.5*dt/scale;pt.sh=wv[2];
-          pt.tr.push([pt.lat,pt.lon]);if(pt.tr.length>9)pt.tr.shift();
+          pt.tr.push([pt.lat,pt.lon]);if(pt.tr.length>(zoom>2?16:9))pt.tr.shift();
           const n=pt.tr.length;if(n<2)continue;
           const fade=Math.max(0,Math.min(1,pt.age/.4,(pt.life-pt.age)/.4)),mid=n>>1,col=WCOL[pt.sh];
-          g.lineWidth=1.5;g.strokeStyle="rgba("+col+","+(.28*fade).toFixed(3)+")";g.beginPath();
+          g.lineWidth=1.8;g.strokeStyle="rgba("+col+","+(.32*fade).toFixed(3)+")";g.beginPath();
           for(let i=0;i<=mid;i++){const q=pt.tr[i];i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}g.stroke();
-          g.strokeStyle="rgba("+col+","+(.9*fade).toFixed(3)+")";g.beginPath();
+          g.strokeStyle="rgba("+col+","+fade.toFixed(3)+")";g.beginPath();
           for(let i=mid;i<n;i++){const q=pt.tr[i];i>mid?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}g.stroke();
         }
       }
     }
-    g.fillStyle="rgba(110,225,255,.7)";g.font="700 8px "+C("--mono");g.textAlign="center";g.textBaseline="middle";
-    for(const q of wx.pts){const x=X(q.lon),y=Y(q.lat);if(x<10||x>w-10||y<10||y>h-22)continue;
-      const ww=windAt(q.lat,q.lon,alt);if(ww)g.fillText(Math.round(ww.spd*1.15078),x,y);}
+    // big-picture arrows at the forecast grid points, with speed in mph: keeps the overall pattern readable at any zoom
+    g.font="700 8px "+C("--mono");g.textAlign="center";g.textBaseline="top";
+    for(const q of wx.pts){const x=X(q.lon),y=Y(q.lat);if(x<14||x>w-14||y<14||y>h-26)continue;
+      const ww=windAt(q.lat,q.lon,alt);if(!ww)continue;
+      const col=WCOL[shearLvl(ww.shear)],a=ww.to*R,len=Math.min(26,10+ww.spd*.12),dx=Math.sin(a)*len/2,dy=-Math.cos(a)*len/2;
+      g.strokeStyle="rgba("+col+",.85)";g.lineWidth=2;g.beginPath();g.moveTo(x-dx,y-dy);g.lineTo(x+dx,y+dy);
+      const ha=Math.atan2(dy,dx);g.moveTo(x+dx,y+dy);g.lineTo(x+dx-5*Math.cos(ha-.55),y+dy-5*Math.sin(ha-.55));
+      g.moveTo(x+dx,y+dy);g.lineTo(x+dx-5*Math.cos(ha+.55),y+dy-5*Math.sin(ha+.55));g.stroke();
+      g.fillStyle="rgba("+col+",.9)";g.fillText(Math.round(ww.spd*1.15078),x,y+Math.abs(dy)+3);}
     g.font="700 9px "+C("--mono");g.textAlign="left";g.textBaseline="bottom";g.fillStyle=LBL(.85);
     g.fillText("WINDS "+Math.round(alt/1000)+"K FT (MPH) · YELLOW/PINK = SHEAR",10,h-8);
   }catch(e){parts=[];}};
@@ -1010,11 +1018,11 @@ function draw(){
     g.stroke();g.setLineDash([]);}
   if(p&&dst){g.setLineDash([8,6]);g.beginPath();
     for(let i=0;i<=40;i++){const q=along(p,dst,i/40);i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}
-    g.lineWidth=6;g.strokeStyle="rgba(111,214,255,.15)";g.stroke();g.lineWidth=2;g.strokeStyle=AHEADC;g.stroke();g.setLineDash([]);}
+    g.lineWidth=6;g.strokeStyle="rgba(255,176,102,.15)";g.stroke();g.lineWidth=2;g.strokeStyle=AHEADC;g.stroke();g.setLineDash([]);}
   // flown trail: the brightest line on the screen
   if(trail.length){g.lineJoin="round";g.beginPath();
     trail.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));
-    if(p)g.lineTo(X(p[1]),Y(p[0]));g.lineWidth=8;g.strokeStyle="rgba(255,216,74,.2)";g.stroke();g.lineWidth=4;g.strokeStyle=TRAILC;g.stroke();}
+    if(p)g.lineTo(X(p[1]),Y(p[0]));g.lineWidth=8;g.strokeStyle="rgba(255,138,42,.22)";g.stroke();g.lineWidth=4;g.strokeStyle=TRAILC;g.stroke();}
   // runways: appear as the map zooms in on an airport
   if(scale>120&&!(scale>=SURF_SCALE&&surf)){
     const ftDeg=1/364000,rwyTaken=[];
@@ -1055,10 +1063,7 @@ function draw(){
   // aircraft
   if(p){const x=X(p[1]),y=Y(p[0]),old=Date.now()-fix.t>90000;
     if(old&&mode!=="past"){g.fillStyle=LBLC;g.font="700 9px "+C("--mono");g.textAlign="center";g.textBaseline="middle";g.fillText("LAST KNOWN",x,y-22);}
-    g.save();g.translate(x,y);g.rotate((fix.track||0)*R);g.globalAlpha=old?.55:1;
-    g.beginPath();g.moveTo(0,-13);g.lineTo(9,10);g.lineTo(0,4);g.lineTo(-9,10);g.closePath();
-    g.fillStyle=CRT_BG;g.fill();g.lineJoin="miter";g.lineWidth=8;g.strokeStyle="rgba(255,246,216,.25)";g.stroke();g.lineWidth=3;g.strokeStyle=PLANEC;g.stroke();
-    g.restore();}
+    planeAt={x,y,trk:fix.track||0,old};}
   else if(mode!=="planned"){g.fillStyle=LBL(.8);g.font="700 11px "+C("--mono");g.textAlign="center";g.fillText("WAITING FOR POSITION",w/2,h-16);}
   // scale readout, Etak-style: a bar and its length in miles, top centre
   {const mi=60/scale*69.05,nice=[1,2,5,10,20,50,100,200,500,1000].find(v=>v>=mi*.6)||1000,px=nice/69.05*scale;
@@ -1073,15 +1078,19 @@ function draw(){
   m.drawImage(lc,-2*dpr,-2*dpr,lw*PIXL*dpr+4*dpr,lh*PIXL*dpr+4*dpr);
   m.globalAlpha=1;m.globalCompositeOperation="source-over";
   m.setTransform(dpr,0,0,dpr,0,0);
+  // CRT texture on the map layer: scanlines and a vignette with darker corners
+  m.fillStyle="rgba(0,0,0,.22)";for(let y=0;y<h;y+=2)m.fillRect(0,y,w,1);
+  const vg=m.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.72);
+  vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(.75,"rgba(0,0,0,.3)");vg.addColorStop(1,"rgba(0,0,0,.75)");m.fillStyle=vg;m.fillRect(0,0,w,h);
+  // winds on top of the texture, then labels, then the plane
   m.lineCap="round";m.lineJoin="round";windPass(m);
   for(const [t,x,y,font,fill,align,base,alpha] of TQ){m.font=font;m.fillStyle=fill;m.textAlign=align;m.textBaseline=base;m.globalAlpha=alpha;
     m.shadowColor=fill;m.shadowBlur=3;m.fillText(t,x,y);}
   m.shadowBlur=0;m.globalAlpha=1;
-  // CRT: scanlines, a faint rolling band, and a vignette with darker corners
-  m.fillStyle="rgba(0,0,0,.28)";for(let y=0;y<h;y+=2)m.fillRect(0,y,w,1);
-  const vg=m.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.72);
-  vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(.75,"rgba(0,0,0,.35)");vg.addColorStop(1,"rgba(0,0,0,.8)");m.fillStyle=vg;m.fillRect(0,0,w,h);
-  m.fillStyle="rgba(255,90,31,.035)";m.fillRect(0,0,w,h);
+  if(planeAt){m.save();m.translate(planeAt.x,planeAt.y);m.rotate(planeAt.trk*R);m.globalAlpha=planeAt.old?.55:1;
+    m.shadowColor="rgba(255,138,42,.8)";m.shadowBlur=8;m.fillStyle=PLANEC;m.strokeStyle="#07080a";m.lineWidth=1.5;m.lineJoin="round";m.beginPath();
+    m.moveTo(0,-13);m.lineTo(3,-4);m.lineTo(13,3);m.lineTo(13,6);m.lineTo(3,3);m.lineTo(2,10);m.lineTo(6,13);m.lineTo(-6,13);
+    m.lineTo(-2,10);m.lineTo(-3,3);m.lineTo(-13,6);m.lineTo(-13,3);m.lineTo(-3,-4);m.closePath();m.fill();m.shadowBlur=0;m.stroke();m.restore();}
 }
 /* ---------- map gestures: pinch or double-tap to zoom in, two-finger tap to zoom out, drag to move ---------- */
 function geoAt(mx,my){const S=proj.bS*zoom;return [proj.bLat+pan[0]-(my-proj.h/2)/S,proj.bLon+pan[1]+(mx-proj.w/2)/(proj.k*S)];}
