@@ -64,10 +64,21 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 #map{touch-action:manipulation;cursor:grab}
 .zoom{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:4px}
 .zoom button{width:36px;height:36px;padding:0;font-size:1.2rem;line-height:1;background:rgba(11,21,34,.85)}
+@font-face{font-family:"DSEG7";src:url("fonts/DSEG7Classic-Bold.woff2") format("woff2");font-display:swap}
 .charts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.chart{padding:8px 10px;display:flex;flex-direction:column}
-.chart .v{font-size:1.25rem}
+.tile.chart{padding:8px 10px;display:flex;flex-direction:column;background:#030805;border-color:#1d3a2a}
 .chart canvas{margin-top:auto}
+.chart .k{color:#00b830;font-family:var(--mono);font-weight:700}
+.chart .k .ref{color:#00ff41}
+.chart .s{color:#00b830;font-family:var(--mono);font-size:.68rem}
+.chart .v{display:flex;align-items:baseline;gap:4px;margin-top:4px;color:#00ff41;font-weight:400}
+.chart .v small{color:#00b830;font:700 .66rem var(--mono);margin-left:0}
+.lcd{position:relative;display:inline-block;font:1.35rem/1 "DSEG7",var(--mono);letter-spacing:.02em;text-shadow:0 0 6px rgba(0,255,65,.55)}
+.lcd .gh{position:absolute;inset:0;color:rgba(0,255,65,.09);text-shadow:none}
+.lcd .on{position:relative}
+.sign{font:700 .8rem var(--mono);color:#00ff41;align-self:center}
+.chart .chip{background:transparent;border:1px solid currentColor;font-family:var(--mono);font-size:.6rem;padding:0 4px}
+.chart .chip.up,.chart .chip.lv{color:#00ff41}.chart .chip.dn{color:#ffb000}
 .kpigrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .kpigrid:empty{display:none}
 .kpigrid .c{border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
@@ -614,26 +625,33 @@ function now(){ // dead-reckon between reports so the plane keeps moving smoothl
   return [fix.lat,fix.lon];
 }
 function set(id,html){const e=$(id);if(e.innerHTML!==html)e.innerHTML=html;}
+/* Seven-segment readout: unlit "8"s sit behind the digits like a real LCD. "!" is the font's blank digit. */
+function lcd(val,width,unit,sign){
+  const v=String(val).replace(/[^0-9.\-]/g,""),pad=Math.max(0,width-v.replace(".","").length);
+  const on="!".repeat(pad)+v,gh=on.replace(/[0-9!\-]/g,"8");
+  return (sign?'<span class="sign">'+sign+"</span>":"")+'<span class="lcd"><span class="gh" aria-hidden="true">'+gh+'</span><span class="on">'+on+"</span></span>"+(unit?"<small>"+unit+"</small>":"");
+}
+const LCD_BLANK={alt:lcd("-----",5,"ft"),spd:lcd("---",3,"mph"),vs:lcd("----",4,"ft/min"),hdg:lcd("---",3,"°")};
 function readouts(){
   const p=now();
-  if(!fix){["alt","spd","hdg","vs","dist","eta"].forEach(i=>set(i,"—"));["altS","spdS","hdgS","vsS","distS","etaS"].forEach(i=>set(i,""));
+  if(!fix){["alt","spd","hdg","vs"].forEach(i=>set(i,LCD_BLANK[i]));["dist","eta"].forEach(i=>set(i,"—"));["altS","spdS","hdgS","vsS","distS","etaS"].forEach(i=>set(i,""));
     $("pBar").style.width="0";set("extra","");return;}
   const f=fix,age=Math.round((Date.now()-f.t)/1000);
   if(mode!=="demo"&&lastSource){
     const stale=age>45;
     status(stale?"search":"live",`<b>${f.callsign||"Your position"}</b> ${stale?"last seen":"live"} · ${lastSource} · ${age<60?age+"s":Math.round(age/60)+"m"} ago`);
   }
-  set("alt",f.altFt!=null?fmt(f.altFt)+"<small>ft</small>":"—");
+  set("alt",f.altFt!=null?lcd(Math.max(0,Math.round(f.altFt)),5,"ft"):LCD_BLANK.alt);
   set("altS",f.altFt!=null?"FL"+String(Math.round(f.altFt/100)).padStart(3,"0")+" · "+fmt(f.altFt*0.3048)+" m":"");
-  set("spd",f.gsKt!=null?fmt(f.gsKt*1.15078)+"<small>mph</small>":"—");
+  set("spd",f.gsKt!=null?lcd(Math.round(f.gsKt*1.15078),3,"mph"):LCD_BLANK.spd);
   set("spdS",f.gsKt!=null?fmt(f.gsKt)+" kt · "+fmt(f.gsKt*1.852)+" km/h":"");
   const hd=f.track!=null?((Math.round(f.track)%360)+360)%360:null;
-  set("hdg",hd!=null?String(hd).padStart(3,"0")+"°":"—");
+  set("hdg",hd!=null?lcd(String(hd).padStart(3,"0"),3,"°"):LCD_BLANK.hdg);
   set("hdgS",hd!=null?"Tracking "+COMPASS[Math.round(hd/45)%8]:"");
   if(f.vsFpm!=null){const v=Math.round(f.vsFpm/50)*50;
-    set("vs",(v>0?"+":"")+fmt(v)+"<small>ft/min</small>");
+    set("vs",lcd(Math.abs(v),4,"ft/min",v>0?"▲":v<0?"▼":""));
     set("vsS",v>250?'<span class="chip up">CLIMBING</span>':v<-250?'<span class="chip dn">DESCENDING</span>':'<span class="chip lv">LEVEL</span>');
-  }else{set("vs","—");set("vsS","");}
+  }else{set("vs",LCD_BLANK.vs);set("vsS","");}
   if(dst&&p){
     const d=distNm(p,dst),tot=org?distNm(org,dst):null;
     set("dist",fmt(d*1.15078)+"<small>mi</small>");
