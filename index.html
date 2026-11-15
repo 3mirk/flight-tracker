@@ -278,7 +278,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 
 <details class="notes" id="notes"><summary>Notes</summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
-  <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
+  <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
   <li id="note4">Time to go assumes your current speed on a direct path. Clock times use your phone's time zone.</li>
   <li id="note5">Aircraft details and photos come from volunteer databases (adsbdb, planespotters.net, OpenSky) and can be missing or out of date. Past flights come from OpenSky and can lag by a day. No free source has an aircraft's lifetime flight count or the factory that built it.</li>
@@ -958,7 +958,10 @@ cv.addEventListener("touchstart",e=>{
   lastTouchT=Date.now();
   if(e.touches.length>=2||isCustom())e.preventDefault();
   const pt=[...e.touches].map(local),tN=performance.now();
-  if(pt.length===1)tch={mode:1,x:pt[0][0],y:pt[0][1],x0:pt[0][0],y0:pt[0][1],t:tN,moved:false};
+  if(pt.length===1&&lastTap&&tN-lastTap.t<380&&Math.hypot(pt[0][0]-lastTap.x,pt[0][1]-lastTap.y)<40){
+    e.preventDefault();lastTap=null;
+    tch={mode:3,x0:pt[0][0],y0:pt[0][1],ax:pt[0][0],ay:pt[0][1],z0:zoom,t:tN,moved:false};
+  }else if(pt.length===1)tch={mode:1,x:pt[0][0],y:pt[0][1],x0:pt[0][0],y0:pt[0][1],t:tN,moved:false};
   else if(pt.length===2)tch={mode:2,d0:Math.max(20,Math.hypot(pt[0][0]-pt[1][0],pt[0][1]-pt[1][1])),z0:zoom,t:tN,moved:false,
     mx:(pt[0][0]+pt[1][0])/2,my:(pt[0][1]+pt[1][1])/2};
 },{passive:false});
@@ -969,6 +972,10 @@ cv.addEventListener("touchmove",e=>{
     const d=Math.hypot(pt[0][0]-pt[1][0],pt[0][1]-pt[1][1]),mx=(pt[0][0]+pt[1][0])/2,my=(pt[0][1]+pt[1][1])/2;
     if(Math.abs(d-tch.d0)>10||Math.hypot(mx-tch.mx,my-tch.my)>10)tch.moved=true;
     if(tch.moved){const S=proj.bS*zoom;pan[0]+=(my-tch.my)/S;pan[1]-=(mx-tch.mx)/(proj.k*S);tch.mx=mx;tch.my=my;zoomAt(mx,my,tch.z0*d/tch.d0);}
+  }else if(tch.mode===3&&pt.length===1){
+    e.preventDefault();
+    const dy=pt[0][1]-tch.y0;if(Math.abs(dy)>8)tch.moved=true;
+    if(tch.moved)zoomAt(tch.ax,tch.ay,tch.z0*Math.pow(2,-dy/110));   // 110 px of drag = 2x zoom
   }else if(tch.mode===1&&pt.length===1){
     if(Math.hypot(pt[0][0]-tch.x0,pt[0][1]-tch.y0)>10)tch.moved=true;
     if(isCustom()){e.preventDefault();panBy(pt[0][0]-tch.x,pt[0][1]-tch.y);}
@@ -979,9 +986,9 @@ cv.addEventListener("touchend",e=>{
   lastTouchT=Date.now();
   if(!tch||e.touches.length)return;const tN=performance.now();
   if(tch.mode===2){if(!tch.moved&&tN-tch.t<450){e.preventDefault();zoomAt(tch.mx,tch.my,zoom/2);}lastTap=null;}
+  else if(tch.mode===3){e.preventDefault();if(!tch.moved)zoomAt(tch.x0,tch.y0,zoom*2);lastTap=null;}
   else if(!tch.moved&&tN-tch.t<300){
     if(pickTraffic(tch.x0,tch.y0)){e.preventDefault();lastTap=null;}
-    else if(lastTap&&tN-lastTap.t<380&&Math.hypot(tch.x0-lastTap.x,tch.y0-lastTap.y)<40){e.preventDefault();zoomAt(tch.x0,tch.y0,zoom*2);lastTap=null;}
     else lastTap={t:tN,x:tch.x0,y:tch.y0};
   }
   tch=null;
