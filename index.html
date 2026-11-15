@@ -70,9 +70,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srctop{display:flex;align-items:center;gap:6px}
 .srctitle{display:none;flex:1;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .srcs[open] .srctitle{display:block}
-.srcs .chev{flex:none;width:30px;height:30px;border-radius:50%;border:1px solid var(--route);color:var(--route);display:flex;align-items:center;justify-content:center;background:rgba(111,195,223,.1);transition:transform .2s}
-.srcs .chev svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
-.srcs[open] .chev{transform:rotate(180deg)}
+.srcbot{display:flex;align-items:flex-end;gap:8px}
+.srcbot .srcsum{flex:1;min-width:0}
+.srcs .chev{flex:none;width:20px;height:18px;border-radius:5px;border:1px solid var(--line);color:var(--route);display:flex;align-items:center;justify-content:center}
+.srcs .chev svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.srcs .c-open{display:none;transform:rotate(180deg)}
+.srcs[open] .c-open{display:flex}.srcs[open] .srcbot{display:none}
 .srcs summary:focus-visible .chev{outline:2px solid var(--route);outline-offset:2px}
 .srcs[open] .srcicons,.srcs[open] .srcsum{display:none}
 .srcbody{margin-top:2px}
@@ -230,8 +233,8 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 </div>
 <details class="srcs" id="srcBox" aria-label="Data source status">
   <summary>
-    <div class="srctop"><span class="srctitle">Data sources<sup class="ref" data-n="7" role="button" tabindex="0" aria-label="Note 7">7</sup></span><div class="srcicons" id="srcIcons"></div><span class="chev" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></div>
-    <div class="srcsum" id="srcSum">Starting…</div>
+    <div class="srctop"><span class="srctitle">Data sources<sup class="ref" data-n="7" role="button" tabindex="0" aria-label="Note 7">7</sup></span><div class="srcicons" id="srcIcons"></div><span class="chev c-open" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></div>
+    <div class="srcbot"><div class="srcsum" id="srcSum">Starting…</div><span class="chev c-closed" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></div>
   </summary>
   <div class="srcbody">
     <ul id="srcList"></ul>
