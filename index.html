@@ -64,12 +64,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srcs{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
 .srchead{display:flex;justify-content:space-between;gap:8px;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
 .srcs ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px}
-.srcs li{border:1px solid var(--line);border-radius:6px;padding:3px 5px;min-width:0;cursor:pointer;
+.srcs li{border:1px solid var(--line);border-radius:6px;padding:3px 5px;min-width:0;cursor:pointer;flex-wrap:nowrap!important;
   display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .srcs li.sel{background:rgba(111,195,223,.08)}
 .srcs li.use{background:rgba(111,208,140,.16);border-color:var(--good)}
-.srcs li .nm{font-size:.68rem;font-weight:600}
-.srcs li .m{font-size:.56rem;color:var(--muted);font-family:var(--mono);margin-left:auto;white-space:nowrap}
+.srcs li .nm{font-size:.68rem;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.srcs li .m{flex:none;font-size:.56rem;color:var(--muted);font-family:var(--mono);margin-left:auto;white-space:nowrap}
 .srcs .d{flex:none;width:9px;height:9px;border-radius:50%;background:var(--line)}
 .srcs li.ok{background:rgba(111,208,140,.07);border-color:rgba(111,208,140,.4)}.srcs .ok .d{background:var(--good)}.srcs .ok .st{color:var(--good)}
 .srcs li.fail{background:rgba(239,107,107,.07);border-color:rgba(239,107,107,.4)}.srcs .fail .d{background:var(--bad);border-radius:2px}.srcs .fail .st{color:var(--bad)}
@@ -84,7 +84,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srctop{display:flex;align-items:center;gap:6px}
 .srctitle{display:none;flex:1;font-size:.68rem;line-height:20px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .srcs[open] .srctitle{display:block}
-.srcbot{display:flex;align-items:flex-end;gap:8px}
+.srcbot{display:flex;align-items:center;gap:8px;margin-top:7px}
 .srcbot .srcsum{flex:1;min-width:0}
 .srcs .chev{flex:none;width:20px;height:18px;border-radius:5px;border:1px solid var(--line);color:var(--route);display:flex;align-items:center;justify-content:center}
 .srcs .chev svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
@@ -109,7 +109,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 @keyframes blink{to{visibility:hidden}}
 @keyframes breathe{50%{opacity:.45}}
 @media(prefers-reduced-motion:reduce){.si .led{animation:none!important}}
-.srcsum{font-size:.7rem;color:var(--muted);margin-top:3px;line-height:1.35}
+.srcsum{font-size:.7rem;color:var(--muted);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .srcsum b{color:var(--ink);font-weight:600}
 .srcx{font-size:.68rem;color:var(--muted);margin-top:4px;line-height:1.4;overflow-wrap:anywhere}
 .srcx:empty{display:none}
@@ -144,10 +144,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .kpi .kpigrid .cv{font-size:.86rem;line-height:1.15;white-space:nowrap}
 .kpi .kpigrid .cl{font-size:.58rem;line-height:1.25}
 .kpi .kpigrid .c{background:rgba(11,21,34,.35)}
-.kpi .kpigrid .c.L0{background:rgba(111,208,140,.08);border-color:rgba(111,208,140,.4)}.kpi .kpigrid .c.L0 .cv{color:var(--good)}
-.kpi .kpigrid .c.L1{background:rgba(201,211,106,.08);border-color:rgba(201,211,106,.45)}.kpi .kpigrid .c.L1 .cv{color:#c9d36a}
-.kpi .kpigrid .c.L2{background:rgba(240,160,75,.09);border-color:rgba(240,160,75,.5)}.kpi .kpigrid .c.L2 .cv{color:var(--warn)}
-.kpi .kpigrid .c.L3{background:rgba(239,107,107,.1);border-color:rgba(239,107,107,.55)}.kpi .kpigrid .c.L3 .cv{color:var(--bad)}
+.kpi .kpigrid .c.L0{background:rgba(111,208,140,.09);border-color:rgba(111,208,140,.45)}.kpi .kpigrid .c.L0 .cv{color:rgb(111,208,140)}
+.kpi .kpigrid .c.L1{background:rgba(168,214,110,.09);border-color:rgba(168,214,110,.45)}.kpi .kpigrid .c.L1 .cv{color:rgb(168,214,110)}
+.kpi .kpigrid .c.L2{background:rgba(215,205,95,.09);border-color:rgba(215,205,95,.45)}.kpi .kpigrid .c.L2 .cv{color:rgb(215,205,95)}
+.kpi .kpigrid .c.L3{background:rgba(240,160,75,.09);border-color:rgba(240,160,75,.45)}.kpi .kpigrid .c.L3 .cv{color:rgb(240,160,75)}
+.kpi .kpigrid .c.L4{background:rgba(239,107,107,.09);border-color:rgba(239,107,107,.45)}.kpi .kpigrid .c.L4 .cv{color:rgb(239,107,107)}
 .kpigrid .k{font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .kpigrid .cv{font:700 1.05rem var(--mono);font-variant-numeric:tabular-nums}
 .kpigrid .cv small{font-size:.66rem;color:var(--muted);font-weight:600;margin-left:3px}
@@ -187,16 +188,15 @@ canvas.spark{display:block;width:100%;height:112px;border-radius:6px;border:1px 
 .chip.dn{background:rgba(240,160,75,.18);color:var(--warn)}
 .chip.lv{background:rgba(142,163,183,.18);color:var(--muted)}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 10px;display:flex;flex-direction:column;gap:4px}
-.kpi.t0{background:rgba(111,208,140,.06);border-color:rgba(111,208,140,.4)}.kpi.t1{background:rgba(201,211,106,.06);border-color:rgba(201,211,106,.45)}
-.kpi.t2{background:rgba(240,160,75,.07);border-color:rgba(240,160,75,.5)}.kpi.t3{background:rgba(239,107,107,.08);border-color:rgba(239,107,107,.55)}
+
 .kpihead{display:flex;justify-content:space-between;align-items:center}
 .kpihead .k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.meter{display:flex;gap:3px}.meter i{width:18px;height:6px;border-radius:2px;background:var(--line)}
-.kpi.t0 .meter i.on{background:var(--good)}.kpi.t1 .meter i.on{background:#c9d36a}.kpi.t2 .meter i.on{background:var(--warn)}.kpi.t3 .meter i.on{background:var(--bad)}
+.meter{display:flex;gap:3px}.meter i{width:15px;height:6px;border-radius:2px;background:var(--line)}
+.kpi.t0 .meter i.on{background:rgb(111,208,140)}.kpi.t1 .meter i.on{background:rgb(168,214,110)}.kpi.t2 .meter i.on{background:rgb(215,205,95)}.kpi.t3 .meter i.on{background:rgb(240,160,75)}.kpi.t4 .meter i.on{background:rgb(239,107,107)}
 .kpititle{display:flex;align-items:baseline;gap:8px;white-space:nowrap;min-width:0}
 .kpilabel{font-size:1.02rem;font-weight:700;line-height:1.25;overflow:hidden;text-overflow:ellipsis}
 .kpifor{font:700 .9rem var(--mono);color:var(--muted);flex:none}
-.kpi.t0 .kpilabel{color:var(--good)}.kpi.t1 .kpilabel{color:#c9d36a}.kpi.t2 .kpilabel{color:var(--warn)}.kpi.t3 .kpilabel{color:var(--bad)}
+
 .kpinote{font-size:.72rem;line-height:1.35;color:var(--muted);height:2.7em;display:flex;align-items:center;
   border:1px solid var(--line);border-radius:6px;padding:3px 8px;background:rgba(11,21,34,.35);overflow:hidden}
 .kpinote span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
@@ -266,7 +266,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 </details>
 
 <section class="kpi" id="turb" aria-live="polite">
-  <div class="kpihead"><span class="k">Turbulence<sup class="ref" data-n="1" role="button" tabindex="0" aria-label="Note 1">1</sup></span><span class="meter" id="tMeter" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+  <div class="kpihead"><span class="k">Turbulence<sup class="ref" data-n="1" role="button" tabindex="0" aria-label="Note 1">1</sup></span><span class="meter" id="tMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></div>
   <div class="kpititle"><span class="kpilabel" id="tLabel">Waiting for your position</span><span class="kpifor" id="tFor"></span></div>
   <div class="kpinote" id="tNote"></div>
   <div class="kpigrid" id="tDrivers"></div>
@@ -493,7 +493,7 @@ function renderIcons(){
   const bad=ex.filter(([n])=>S(n)==="fail").map(x=>x[1]),okN=ex.filter(([n])=>S(n)==="ok").length;
   parts.push(bad.length?bad.join(", ")+" unavailable":okN===ex.length?"all extras working":okN?okN+" of "+ex.length+" extras working":"extras waiting");
   const t=parts.join(" · ")+'.<sup class="ref" data-n="7" role="button" tabindex="0" aria-label="Note 7">7</sup>';
-  if($("srcSum").innerHTML!==t)$("srcSum").innerHTML=t;
+  if($("srcSum").innerHTML!==t){$("srcSum").innerHTML=t;$("srcSum").title=$("srcSum").textContent;}
 }
 function renderSrcs(){
   renderIcons();
@@ -851,7 +851,7 @@ function gridWind(G,lat,lon){
   const at=arr=>arr[j*n+i]*(1-a)*(1-b)+arr[j*n+i+1]*a*(1-b)+arr[(j+1)*n+i]*(1-a)*b+arr[(j+1)*n+i+1]*a*b;
   return [at(G.u),at(G.v),G.sh[Math.round(fy)*n+Math.round(fx)]];
 }
-const WCOL=["170,200,225","201,211,106","240,160,75","240,160,75"];
+const WCOL=["170,200,225","170,200,225","201,211,106","240,160,75","240,160,75"];
 function draw(){
   const dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;
   if(!w||!h)return;
@@ -1147,15 +1147,16 @@ function windAt(lat,lon,altFt){
 }
 const TURB=[
   {label:"Smooth air",cls:"t0",note:"Conditions along your path look calm."},
-  {label:"Light bumps",cls:"t1",note:"Occasional light bumps. Normal and harmless; drinks might jiggle."},
-  {label:"Light–moderate chop",cls:"t2",note:"Some steady bumpiness possible. Uncomfortable, not dangerous; keep your seatbelt on."},
-  {label:"Moderate turbulence",cls:"t3",note:"Firmer bumps possible. Crews often change altitude to find smoother air. Stay buckled in."}
+  {label:"Slight bumps",cls:"t1",note:"An occasional small bump or a light, steady jiggle is normal here. It's the air, not the plane."},
+  {label:"Light bumps",cls:"t2",note:"Light bumps are expected in this air. Routine for the crew and the aircraft; drinks might jiggle."},
+  {label:"Light–moderate chop",cls:"t3",note:"Steady bumpiness is expected. Uncomfortable but not dangerous; the plane is built for far more. Keep your seatbelt on."},
+  {label:"Moderate turbulence",cls:"t4",note:"Firmer bumps are expected. Crews often change altitude to find smoother air. Stay buckled in."}
 ];
-function shearLvl(s){return s<3?0:s<5?1:s<7?2:3;}
-function capeLvl(c){return c<300?0:c<1000?1:c<2000?2:3;}
+function shearLvl(s){return s<2?0:s<3.5?1:s<5?2:s<7?3:4;}
+function capeLvl(c){return c<100?0:c<300?1:c<1000?2:c<2000?3:4;}
 /* Bumps the plane itself is showing: spread of its climb rate over the last 2 minutes while level. */
 function jitter(){
-  const cut=Date.now()-120000,v=hist.vs.filter(q=>q[0]>cut).map(q=>q[1]);
+  const cut=Date.now()-180000,v=hist.vs.filter(q=>q[0]>cut).map(q=>q[1]);
   if(v.length<6)return null;
   const m=v.reduce((a,b)=>a+b,0)/v.length;if(Math.abs(m)>400)return null;   // climbing or descending on purpose
   return Math.sqrt(v.reduce((a,b)=>a+(b-m)**2,0)/v.length);
@@ -1172,7 +1173,7 @@ function turbulence(){
       if(wa){const l=Math.max(shearLvl(wa.shear),capeLvl(wa.cape));if(l>worst){worst=l;at=nm;}}}
     if(worst>=0)ahead={lvl:worst,nm:at};
   }
-  const jt=jitter(),jl=jt==null?0:jt<120?0:jt<250?1:jt<450?2:3;
+  const jt=jitter(),jl=jt==null?0:jt<55?0:jt<100?1:jt<180?2:jt<350?3:4;
   const now0=w?Math.max(shearLvl(w.shear),capeLvl(w.cape)):0;
   const lvl=Math.max(now0,jl);
   if(!w&&jt==null){box.className="kpi";set("tLabel","Loading weather…");set("tFor","");set("tNote","<span>Wind data comes from a free weather model and refreshes every 10 minutes.</span>");set("tDrivers","");setMeter(-1);return;}
@@ -1190,20 +1191,21 @@ function turbulence(){
   }
   set("tFor",forTxt);
   let note=T.note;
+  if(jl>0&&jl>=now0)note="The plane's own readings show "+["","slight","light","steady","firm"][jl]+" bumps: normal turbulence, not a problem with the aircraft.";
   if(next!=null)note+=" Then "+TURB[next].label.toLowerCase()+".";
   else if(fix.altFt!=null&&fix.altFt<10000&&fix.altFt>500)note+=" Bumps are normal at low altitude.";
   set("tNote","<span>"+note+"</span>");
   const cell=(k,v,l,lv)=>'<div class="c'+(lv!=null?" L"+lv:"")+'"><div class="k">'+k+'</div><div class="cv">'+v+'</div><div class="cl">'+(l||"&nbsp;")+"</div></div>";
   let windV="—",windL="",shV="—",shL="",cpV="—",cpL="";
   if(w){
-    shV=w.shear.toFixed(1);shL="kt/1k ft · "+["low","mild","notable","high"][shearLvl(w.shear)];
-    cpV=fmt(w.cape);cpL="J/kg · "+["none","low","some","high"][capeLvl(w.cape)];
+    shV=w.shear.toFixed(1);shL="kt/1k ft · "+["low","slight","mild","notable","high"][shearLvl(w.shear)];
+    cpV=fmt(w.cape);cpL="J/kg · "+["none","slight","low","some","high"][capeLvl(w.cape)];
     const from=(w.to+180)%360;windV=fmt(w.spd*1.15078);
     windL="mph from "+COMPASS[Math.round(from/45)%8];
     if(fix.track!=null){const c=w.spd*Math.cos((w.to-fix.track)*R);windL+=" · "+fmt(Math.abs(c)*1.15078)+(c>=0?" tail":" head");}
   }
   set("tDrivers",cell("Shear",shV,shL,w?shearLvl(w.shear):null)+cell("Storms",cpV,cpL,w?capeLvl(w.cape):null)+cell("Wind",windV,windL)+
-    cell("Steadiness",jt!=null?"±"+fmt(jt):"—",jt!=null?"ft/min · "+["steady","slight wobble","bumpy","very bumpy"][jl]:"needs level flight",jt!=null?jl:null));
+    cell("Steadiness",jt!=null?"±"+fmt(jt):"—",jt!=null?"ft/min · "+["steady","slight wobble","bumpy","choppy","very bumpy"][jl]:"needs level flight",jt!=null?jl:null));
   setMeter(lvl);
 }
 function setMeter(l){document.querySelectorAll("#tMeter i").forEach((e,i)=>e.className=i<=l?"on":"");}
