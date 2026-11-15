@@ -4,6 +4,7 @@
 
 const ALLOWED_HOSTS = [
   "api.adsb.lol",
+  "globe.adsb.lol",
   "api.airplanes.live",
   "opendata.adsb.fi",
   "opensky-network.org",

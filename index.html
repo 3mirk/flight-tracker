@@ -116,7 +116,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
     <canvas class="spark" id="vsChart" aria-label="Vertical speed over time, in feet per minute; above the center line is climbing"></canvas></div>
   <div class="tile wide"><div class="row"><div><div class="k">Heading</div><div class="v" id="hdg">—</div></div><div class="s" id="hdgS"></div></div>
     <canvas class="dial" id="hdgChart" aria-label="Heading history: center is the start of tracking, outer ring is now"></canvas>
-    <div class="s dialcap">Trace spirals outward over time: center is when tracking began, the edge is now. Tap a chart title to change its window (5, 15 or 60 min).</div></div>
+    <div class="s dialcap">Trace spirals outward over time: center is when tracking began, the edge is now. Tap a chart title to change its window (5, 15, 60 or 180 min).</div></div>
   <div class="tile"><div class="k">Distance to go</div><div class="v" id="dist">—</div><div class="s" id="distS"></div></div>
   <div class="tile"><div class="k">Time to go</div><div class="v" id="eta">—</div><div class="s" id="etaS"></div></div>
 </div>
@@ -261,7 +261,7 @@ function fromReadsb(j,cs){
   const alt=a.alt_baro==="ground"?0:(a.alt_baro!=null?a.alt_baro:a.alt_geom);
   return {lat:a.lat,lon:a.lon,altFt:alt,gsKt:a.gs,track:a.track!=null?a.track:a.true_heading,
     vsFpm:a.baro_rate!=null?a.baro_rate:a.geom_rate,mach:a.mach,oatC:a.oat,windDir:a.wd,windKt:a.ws,
-    reg:a.r,type:a.t,callsign:cs,t:Date.now()-(a.seen_pos||0)*1000};
+    reg:a.r,type:a.t,hex:a.hex,callsign:cs,t:Date.now()-(a.seen_pos||0)*1000};
 }
 const SOURCES=[
   {name:"adsb.lol",url:c=>"https://api.adsb.lol/v2/callsign/"+c,gap:500,poll:8000},
@@ -276,7 +276,7 @@ async function openSky(){
   if(!s)return null;
   const m=s[7]!=null?s[7]:s[13];
   return {lat:s[6],lon:s[5],altFt:s[8]?0:(m!=null?m*3.28084:null),gsKt:s[9]!=null?s[9]*1.94384:null,track:s[10],
-    vsFpm:s[11]!=null?s[11]*196.85:null,callsign:s[1].trim(),t:(s[3]||j.time)*1000};
+    vsFpm:s[11]!=null?s[11]*196.85:null,callsign:s[1].trim(),hex:s[0],t:(s[3]||j.time)*1000};
 }
 /* Try each service and each possible callsign until the aircraft turns up. */
 async function locate(id){
@@ -322,7 +322,7 @@ async function track(){
         status("bad",head+" Retrying in 20 s.<br><small>Details ("+whereAmI()+"):<br>"+(details()||"no response")+"</small>");
         await sleep(20000);continue;
       }
-      src=f;miss=0;apply(f.first,f.name);
+      src=f;miss=0;apply(f.first,f.name);backfill(f.first.hex,id);
     }
     await sleep(src.poll);if(id!==run)return;
     try{const p=await src.get();if(p){apply(p,src.name);miss=0;}else miss++;}catch(e){miss++;}
@@ -338,7 +338,8 @@ function histLoad(key){
   if(!key)return;
   try{const h=JSON.parse(localStorage.getItem("sfm-h:"+key)||"null");
     if(h&&typeof h==="object"){const cut=Date.now()-HIST_MS;
-      for(const k of Object.keys(hist))if(Array.isArray(h[k]))hist[k]=h[k].filter(q=>q[0]>cut);}}catch(e){}
+      for(const k of Object.keys(hist))if(Array.isArray(h[k]))hist[k]=h[k].filter(q=>q[0]>cut);
+      if(hist.alt.length&&Array.isArray(h.trail))trail=h.trail;}}catch(e){}
 }
 let histSaved=0;
 function histAdd(p){
@@ -346,15 +347,56 @@ function histAdd(p){
     if(last&&p.t-last[0]<5000){last[1]=v;return;}   // at most one point per 5 s
     arr.push([p.t,v]);const cut=p.t-HIST_MS;while(arr.length&&arr[0][0]<cut)arr.shift();};
   put(hist.alt,p.altFt);put(hist.spd,p.gsKt!=null?p.gsKt*1.15078:null);put(hist.vs,p.vsFpm);put(hist.hdg,p.track);
-  if(histKey&&mode!=="demo"&&Date.now()-histSaved>15000){histSaved=Date.now();
-    try{localStorage.setItem("sfm-h:"+histKey,JSON.stringify(hist));}catch(e){}}
+  if(Date.now()-histSaved>5000)histSave();
+}
+function histSave(){
+  if(!histKey||mode==="demo")return;histSaved=Date.now();
+  try{localStorage.setItem("sfm-h:"+histKey,JSON.stringify(Object.assign({trail},hist)));}catch(e){}
+}
+window.addEventListener("pagehide",histSave);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)histSave();});
+
+/* Fetch the part of the flight flown before this page was opened and merge it into the charts and map. */
+const isTrace=j=>j&&Array.isArray(j.trace)&&typeof j.timestamp==="number";
+const isTrack=j=>j&&Array.isArray(j.path);
+let filled="";
+async function backfill(hex,id){
+  if(!hex||filled===hex)return;filled=hex;
+  let rows=null;   // [time ms, lat, lon, alt ft, speed kt, track, climb ft/min, on ground]
+  try{
+    const j=await getJSON("https://globe.adsb.lol/data/traces/"+hex.slice(-2)+"/trace_full_"+hex+".json",isTrace,"History");
+    rows=j.trace.map(r=>[(j.timestamp+r[0])*1000,r[1],r[2],r[3]==="ground"?0:r[3],r[4],r[5],r[7],r[3]==="ground"]);
+  }catch(e){
+    try{
+      const j=await getJSON("https://opensky-network.org/api/tracks/all?icao24="+hex+"&time=0",isTrack,"History");
+      rows=j.path.map((r,i,a)=>{
+        const alt=r[3]!=null?r[3]*3.28084:null;let gs=null,vs=null;
+        if(i){const q=a[i-1],dt=r[0]-q[0];
+          if(dt>=15&&dt<=900){gs=distNm([q[1],q[2]],[r[1],r[2]])/dt*3600;if(alt!=null&&q[3]!=null)vs=(alt-q[3]*3.28084)/dt*60;}}
+        return [r[0]*1000,r[1],r[2],alt,gs,r[4],vs,!!r[5]];});
+    }catch(e2){filled="";return;}
+  }
+  if(id!==run||!rows||!rows.length)return;
+  let s0=rows.length-1;     // keep only the current leg: back to the last time on the ground or a 20 min gap
+  while(s0>0&&!rows[s0-1][7]&&rows[s0][0]-rows[s0-1][0]<20*60000)s0--;
+  const cut=Date.now()-HIST_MS;
+  rows=rows.slice(s0).filter(r=>r[0]>cut&&r[1]!=null&&r[2]!=null);
+  if(!rows.length)return;
+  const mg=(arr,idx,f)=>{
+    const add=rows.filter(r=>r[idx]!=null&&!isNaN(r[idx])).map(r=>[r[0],f?f(r[idx]):r[idx]]);
+    const out=[];for(const q of add.concat(arr).sort((a,b)=>a[0]-b[0]))if(!out.length||q[0]-out[out.length-1][0]>=5000)out.push(q);
+    return out;};
+  hist.alt=mg(hist.alt,3);hist.spd=mg(hist.spd,4,v=>v*1.15078);hist.vs=mg(hist.vs,6);hist.hdg=mg(hist.hdg,5);
+  const tr=[];for(const r of rows){const l=tr[tr.length-1];if(!l||Math.abs(l[0]-r[1])+Math.abs(l[1]-r[2])>0.02)tr.push([r[1],r[2]]);}
+  if(fix)tr.push([fix.lat,fix.lon]);
+  trail=tr.slice(-900);histSave();
 }
 function apply(p,name){
   if(fix&&p.t<fix.t)return;
   if(!fix||p.t!==fix.t)histAdd(p);
   fix=p;lastSource=name;
   const last=trail[trail.length-1];
-  if(!last||Math.abs(last[0]-p.lat)+Math.abs(last[1]-p.lon)>0.02){trail.push([p.lat,p.lon]);if(trail.length>600)trail.shift();}
+  if(!last||Math.abs(last[0]-p.lat)+Math.abs(last[1]-p.lon)>0.02){trail.push([p.lat,p.lon]);if(trail.length>900)trail.shift();}
 }
 
 /* ---------- phone GPS and demo ---------- */
@@ -616,7 +658,7 @@ function setMeter(l){document.querySelectorAll("#tMeter i").forEach((e,i)=>e.cla
 
 /* ---------- live scrolling charts, Task Manager style: fixed window, newest at right ---------- */
 const SCOPE={bg:"#000000",grid:"#00703a",trace:"#00ff41",dim:"#00b830",text:"#00ff41"};
-const WINDOWS=[5,15,60];   // minutes shown across the chart
+const WINDOWS=[5,15,60,180];   // minutes shown across the chart
 let winIdx=0;
 const CHARTS=[
   {el:$("altChart"),data:()=>hist.alt,unit:"ft",lo:0,hi:40000,step:5000},
