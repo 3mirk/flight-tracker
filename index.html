@@ -115,11 +115,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srcx:empty{display:none}
 .srcx b{color:var(--ink);font-weight:600}
 .hint{font-size:.72rem;color:var(--muted);line-height:1.4;margin-top:-6px}
-#traf{position:absolute;right:8px;top:42px;padding:6px 10px;font-size:.75rem;background:rgba(11,21,34,.85)}
-#traf[aria-pressed="true"]{border-color:var(--route);color:var(--route)}
+#traf{position:absolute;right:8px;top:38px;padding:5px 9px}
+#traf[aria-pressed="true"]{border-color:#2ef2c9;background:rgba(46,242,201,.14)}
 #map{touch-action:manipulation;cursor:grab}
 .zoom{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:4px}
-.zoom button{width:36px;height:36px;padding:0;font-size:1.2rem;line-height:1;background:rgba(11,21,34,.85)}
+.zoom button{width:34px;height:34px;padding:0;font-size:1.1rem;line-height:1}
 @font-face{font-family:"DSEG7";src:url("fonts/DSEG7Classic-Bold.woff2") format("woff2");font-display:swap}
 .charts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .tile.chart{padding:8px 10px;display:flex;flex-direction:column;background:#030805;border-color:#1d3a2a}
@@ -167,9 +167,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .frow>button{display:flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 8px;font-size:.7rem;border-radius:6px;line-height:1;white-space:nowrap}
 .frow>button span{display:block;line-height:1}
 .frow>button svg{display:block;flex:none;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
-.mapwrap{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0d1b2b}
+.mapwrap{position:relative;border:7px solid #14181a;border-radius:18px;overflow:hidden;background:#020806;box-shadow:0 0 0 1px #2a3135,inset 0 0 18px rgba(0,0,0,.9)}
 canvas{display:block;width:100%;aspect-ratio:4/3;max-height:460px}
-#view{position:absolute;right:8px;top:8px;padding:6px 10px;font-size:.75rem;background:rgba(11,21,34,.85)}
+#view{position:absolute;right:8px;top:8px;padding:5px 9px}
+#view,#traf,.zoom button{background:rgba(2,8,6,.75);border:1px solid rgba(46,242,201,.55);color:#2ef2c9;font:700 .66rem var(--mono);text-transform:uppercase;letter-spacing:.06em;border-radius:4px;text-shadow:0 0 6px rgba(46,242,201,.5)}
 .banner{position:absolute;left:8px;top:8px;background:var(--route);color:#06202b;font:700 .7rem var(--sans);padding:4px 8px;border-radius:6px;letter-spacing:.06em}
 .banner[hidden]{display:none}
 .prog{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font:700 .95rem var(--mono)}
@@ -218,7 +219,7 @@ canvas.spark{display:block;width:100%;height:112px;border-radius:6px;border:1px 
 .relay{font-size:.85rem;color:var(--muted)}.relay summary{cursor:pointer;padding:4px 0}
 .relay form{margin-top:8px}.relay label{flex:1 1 220px}
 .ref{font-size:.62rem;line-height:0;color:var(--route);margin-left:2px;cursor:pointer;padding:0 3px;text-transform:none}
-.mapref{position:absolute;left:6px;top:4px;background:rgba(11,21,34,.85);border:1px solid var(--line);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
+.mapref{position:absolute;left:6px;top:4px;background:rgba(2,8,6,.8);border:1px solid rgba(46,242,201,.55);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
 .mapref .ref{margin:0;font-size:.7rem;vertical-align:baseline;line-height:1}
 .notes,.acard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .notes summary{cursor:pointer;font-size:.8rem;color:var(--muted)}
@@ -880,6 +881,10 @@ function gridWind(G,lat,lon){
   return [at(G.u),at(G.v),G.sh[Math.round(fy)*n+Math.round(fx)]];
 }
 const WCOL=["170,200,225","170,200,225","201,211,106","240,160,75","240,160,75","255,106,26","255,60,60"];
+/* Etak-style CRT: one phosphor colour for map linework, winds keep their colours as chunky pixels */
+const PHC="#2ef2c9",PHA=a=>"rgba(46,242,201,"+a+")",PX=4;
+const VFONT=(px)=>px+'px "DSEG14",'+getComputedStyle(document.documentElement).getPropertyValue("--mono");
+function glowStroke(g,width,alpha){g.lineWidth=width*3;g.strokeStyle=PHA(alpha*.18);g.stroke();g.lineWidth=width;g.strokeStyle=PHA(alpha);g.stroke();}
 function draw(){
   const dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;
   if(!w||!h)return;
@@ -917,14 +922,14 @@ function draw(){
   const vis=b=>!(X(b[3])<0||X(b[1])>w||Y(b[0])<0||Y(b[2])>h);
   const path=list=>{g.beginPath();for(const r of list){if(!vis(r.b))continue;
     for(let i=0;i<r.pts.length;i++){const q=r.pts[i];i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}}};
-  g.fillStyle="#0d1b2b";g.fillRect(0,0,w,h);
-  // land and coastline
-  path(LAND);g.fillStyle=C("--land");g.fill();g.strokeStyle="rgba(142,163,183,.6)";g.lineWidth=1;g.stroke();
-  // state lines
-  path(BORDERS);g.strokeStyle="rgba(142,163,183,.42)";g.lineWidth=1;g.stroke();
+  g.fillStyle="#020806";g.fillRect(0,0,w,h);
+  // coastline and state lines: thin phosphor vectors, no fills
+  g.lineJoin="round";g.lineCap="round";
+  path(LAND);g.fillStyle="#03100c";g.fill();glowStroke(g,1.2,.8);
+  path(BORDERS);glowStroke(g,1,.4);
   // graticule
   const stepDeg=scale>90?1:scale>25?5:10;
-  g.strokeStyle="rgba(142,163,183,.07)";g.beginPath();
+  g.strokeStyle=PHA(.05);g.lineWidth=1;g.beginPath();
   for(let la=Math.ceil((clat-h/2/scale)/stepDeg)*stepDeg;la<clat+h/2/scale;la+=stepDeg){g.moveTo(0,Y(la));g.lineTo(w,Y(la));}
   for(let lo=Math.ceil((clon-w/2/scale/k)/stepDeg)*stepDeg;lo<clon+w/2/scale/k;lo+=stepDeg){g.moveTo(X(lo),0);g.lineTo(X(lo),h);}
   g.stroke();
@@ -933,15 +938,15 @@ function draw(){
     try{drawSurface(g,X,Y,w,h,scale,C);}catch(e){}
   }
   // cities: label only where it won't collide with another label, an airport code or the plane
-  g.font="9px "+C("--sans");g.textBaseline="middle";
+  g.font="700 9px "+C("--mono");g.textBaseline="middle";
   const taken=[];const hit=b=>taken.some(t=>b[0]<t[2]&&b[2]>t[0]&&b[1]<t[3]&&b[3]>t[1]);
   for(const a of [org,dst,p]){if(a){const x=X(a[1]),y=Y(a[0]);taken.push([x-22,y-16,x+22,y+26]);}}
   if(scale<SURF_SCALE)for(const c of CITIES){const x=X(c[2]),y=Y(c[1]);if(x<4||x>w-4||y<4||y>h-4)continue;
-    const tw=g.measureText(c[0]).width,right=x>w-tw-12,bx=right?x-5-tw:x+5,box=[bx-2,y-6,bx+tw+2,y+6];
+    const nm=c[0].toUpperCase(),tw=g.measureText(nm).width,right=x>w-tw-12,bx=right?x-6-tw:x+6,box=[bx-2,y-6,bx+tw+2,y+6];
     if(hit(box)||hit([x-3,y-3,x+3,y+3]))continue;
     taken.push(box);
-    g.fillStyle="rgba(142,163,183,.7)";g.beginPath();g.arc(x,y,1.6,0,7);g.fill();
-    g.fillStyle="rgba(142,163,183,.8)";g.textAlign="left";g.fillText(c[0],bx,y);}
+    g.strokeStyle=PHA(.7);g.lineWidth=1;g.beginPath();g.moveTo(x-3,y);g.lineTo(x+3,y);g.moveTo(x,y-3);g.lineTo(x,y+3);g.stroke();
+    g.fillStyle=PHA(.75);g.textAlign="left";g.fillText(nm,bx,y);}
   // winds at the plane's altitude: streaks flow where the air is going, faster = stronger
   if(wx&&scale<SURF_SCALE)try{
     const alt=fix&&fix.altFt!=null&&mode!=="past"?fix.altFt:mode==="planned"?35000:33000;
@@ -972,31 +977,31 @@ function draw(){
           pt.lon+=wv[0]*0.5*dt/(k*scale);pt.lat+=wv[1]*0.5*dt/scale;pt.sh=wv[2];
           pt.tr.push([pt.lat,pt.lon]);if(pt.tr.length>9)pt.tr.shift();
           const n=pt.tr.length;if(n<2)continue;
-          const fade=Math.max(0,Math.min(1,pt.age/.4,(pt.life-pt.age)/.4)),mid=n>>1,col=WCOL[pt.sh];
-          g.strokeStyle="rgba("+col+","+(.22*fade).toFixed(3)+")";g.beginPath();
-          for(let i=0;i<=mid;i++){const q=pt.tr[i];i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}g.stroke();
-          g.strokeStyle="rgba("+col+","+(.75*fade).toFixed(3)+")";g.beginPath();
-          for(let i=mid;i<n;i++){const q=pt.tr[i];i>mid?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}g.stroke();
+          const fade=Math.max(0,Math.min(1,pt.age/.4,(pt.life-pt.age)/.4)),col=WCOL[pt.sh];
+          let lx=null,ly=null;
+          for(let i=0;i<n;i++){const q=pt.tr[i],x=Math.round(X(q[1])/PX)*PX,y=Math.round(Y(q[0])/PX)*PX;
+            if(x===lx&&y===ly)continue;lx=x;ly=y;
+            g.fillStyle="rgba("+col+","+((.15+.75*i/(n-1))*fade).toFixed(3)+")";g.fillRect(x,y,PX-1,PX-1);}
         }
       }
     }
-    g.fillStyle="rgba(170,200,225,.75)";g.font="9px "+C("--mono");g.textAlign="center";g.textBaseline="middle";
+    g.fillStyle=PHA(.55);g.font="700 8px "+C("--mono");g.textAlign="center";g.textBaseline="middle";
     for(const q of wx.pts){const x=X(q.lon),y=Y(q.lat);if(x<10||x>w-10||y<10||y>h-22)continue;
       const ww=windAt(q.lat,q.lon,alt);if(ww)g.fillText(Math.round(ww.spd*1.15078),x,y);}
-    g.font="10px "+C("--sans");g.textAlign="left";g.textBaseline="bottom";g.fillStyle="rgba(232,238,244,.75)";
-    g.fillText("Winds at "+Math.round(alt/1000)+"k ft (mph) · amber = shear",8,h-8);
+    g.font="700 9px "+C("--mono");g.textAlign="left";g.textBaseline="bottom";g.fillStyle=PHA(.8);
+    g.fillText("WINDS "+Math.round(alt/1000)+"K FT (MPH) · AMBER = SHEAR",10,h-8);
   }catch(e){parts=[];}
   // planned route, faint, then projected path from the plane to the destination
-  if(org&&dst){g.setLineDash([2,6]);g.strokeStyle="rgba(111,195,223,.35)";g.lineWidth=1;g.beginPath();
+  if(org&&dst){g.setLineDash([2,6]);g.strokeStyle=PHA(.35);g.lineWidth=1;g.beginPath();
     for(let i=0;i<=48;i++){const q=along(org,dst,i/48);i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}
     g.stroke();g.setLineDash([]);}
-  if(p&&dst){g.setLineDash([7,5]);g.strokeStyle=C("--route");g.lineWidth=2;g.beginPath();
+  if(p&&dst){g.setLineDash([8,6]);g.beginPath();
     for(let i=0;i<=40;i++){const q=along(p,dst,i/40);i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}
-    g.stroke();g.setLineDash([]);}
-  // flown trail
-  if(trail.length){g.strokeStyle=C("--accent");g.lineWidth=2.5;g.lineJoin="round";g.beginPath();
+    glowStroke(g,1.6,.9);g.setLineDash([]);}
+  // flown trail: the brightest line on the screen
+  if(trail.length){g.lineJoin="round";g.beginPath();
     trail.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));
-    if(p)g.lineTo(X(p[1]),Y(p[0]));g.stroke();}
+    if(p)g.lineTo(X(p[1]),Y(p[0]));glowStroke(g,2.2,1);}
   // runways: appear as the map zooms in on an airport
   if(scale>120&&!(scale>=SURF_SCALE&&surf)){
     const ftDeg=1/364000,rwyTaken=[];
@@ -1004,12 +1009,12 @@ function draw(){
       const ax=X(a[1]),ay=Y(a[0]);if(ax<-200||ax>w+200||ay<-200||ay>h+200)continue;
       for(const r of RUNWAYS[code]){
         const x1=X(r[1]),y1=Y(r[0]),x2=X(r[3]),y2=Y(r[2]);
-        g.strokeStyle="rgba(200,212,224,.85)";g.lineCap="butt";g.lineWidth=Math.max(2,r[4]*ftDeg*scale);
+        g.strokeStyle=PHA(.85);g.lineCap="butt";g.lineWidth=Math.max(2,r[4]*ftDeg*scale);
         g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();
         if(scale>900){
-          g.strokeStyle="rgba(11,21,34,.9)";g.lineWidth=1;g.setLineDash([6,6]);g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();g.setLineDash([]);
+          g.strokeStyle="#020806";g.lineWidth=1;g.setLineDash([6,6]);g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();g.setLineDash([]);
           const ang=Math.atan2(y2-y1,x2-x1),ox=Math.cos(ang)*12,oy=Math.sin(ang)*12;
-          g.font="700 10px "+C("--mono");g.fillStyle=C("--ink");g.textAlign="center";g.textBaseline="middle";
+          g.font=VFONT(9);g.fillStyle=PHC;g.textAlign="center";g.textBaseline="middle";
           for(const [t,lx,ly] of [[r[5],x1-ox,y1-oy],[r[6],x2+ox,y2+oy]]){
             const bw=g.measureText(t).width/2+2,bx=[lx-bw,ly-7,lx+bw,ly+7];
             if(rwyTaken.some(q=>bx[0]<q[2]&&bx[2]>q[0]&&bx[1]<q[3]&&bx[3]>q[1]))continue;
@@ -1021,26 +1026,37 @@ function draw(){
   // airports
   g.font="700 12px "+C("--mono");g.textBaseline="middle";
   if(!(scale>=SURF_SCALE&&surf))[[org,$("from").value],[dst,$("to").value]].forEach(([a,code])=>{if(!a)return;const x=X(a[1]),y=Y(a[0]);if(x<-8||x>w+8||y<-8||y>h+8)return;
-    if(scale>500){g.fillStyle=C("--ink");g.font="700 12px "+C("--mono");g.textAlign="center";g.textBaseline="middle";g.fillText(code.toUpperCase(),x,y-Math.min(80,0.03*scale)-10);return;}
-    g.strokeStyle=C("--ink");g.lineWidth=2;g.fillStyle="#0d1b2b";g.beginPath();g.arc(x,y,5,0,7);g.fill();g.stroke();
-    g.fillStyle=C("--ink");g.textAlign="center";g.fillText(code.toUpperCase(),Math.max(18,Math.min(w-18,x)),y+(y>h-26?-15:16));});
+    g.font=VFONT(11);g.textAlign="center";g.textBaseline="middle";
+    if(scale>500){g.fillStyle=PHC;g.fillText(code.toUpperCase(),x,y-Math.min(80,0.03*scale)-10);return;}
+    g.fillStyle="#020806";g.fillRect(x-5,y-5,10,10);g.beginPath();g.rect(x-5,y-5,10,10);glowStroke(g,1.4,1);
+    g.fillStyle=PHC;g.fillText(code.toUpperCase(),Math.max(20,Math.min(w-20,x)),y+(y>h-26?-16:17));});
   try{drawTraffic(g,X,Y,w,h,scale,p,C);}catch(e){}
   if(scale>=SURF_SCALE){
     const lines=[];const where=surfWhere(p);if(where)lines.push(where);
     if(p&&trafOn){const n=traf.filter(a=>distNm(p,[a.lat,a.lon])<2).length;lines.push(n+" aircraft within 2 mi");}
     if(!surf)lines.push(surfBusy?"Loading airport map…":"Runways only · detailed map unavailable");
     if(lines.length){g.font="700 11px "+C("--mono");const tw=Math.max(...lines.map(t=>g.measureText(t).width))+14;
-      g.fillStyle="rgba(11,21,34,.9)";g.strokeStyle=C("--line");g.lineWidth=1;g.beginPath();g.rect(8,h-14-lines.length*16,tw,lines.length*16+6);g.fill();g.stroke();
-      g.fillStyle=C("--ink");g.textAlign="left";g.textBaseline="middle";lines.forEach((t,i)=>g.fillText(t,15,h-8-(lines.length-i)*16+8));}
+      g.fillStyle="rgba(2,8,6,.9)";g.strokeStyle=PHA(.7);g.lineWidth=1;g.beginPath();g.rect(8,h-14-lines.length*16,tw,lines.length*16+6);g.fill();g.stroke();
+      g.fillStyle=PHC;g.textAlign="left";g.textBaseline="middle";lines.forEach((t,i)=>g.fillText(t,15,h-8-(lines.length-i)*16+8));}
   }
   // aircraft
   if(p){const x=X(p[1]),y=Y(p[0]),old=Date.now()-fix.t>90000;
-    if(old&&mode!=="past"){g.fillStyle=C("--ink");g.font="10px "+C("--sans");g.textAlign="center";g.textBaseline="middle";g.fillText("last known",x,y-22);}
-    g.save();g.translate(x,y);g.rotate((fix.track||0)*R);g.globalAlpha=old?.6:1;
-    g.fillStyle=C("--accent");g.strokeStyle="#0b1522";g.lineWidth=1.5;g.beginPath();
-    g.moveTo(0,-13);g.lineTo(3,-4);g.lineTo(13,3);g.lineTo(13,6);g.lineTo(3,3);g.lineTo(2,10);g.lineTo(6,13);g.lineTo(-6,13);
-    g.lineTo(-2,10);g.lineTo(-3,3);g.lineTo(-13,6);g.lineTo(-13,3);g.lineTo(-3,-4);g.closePath();g.fill();g.stroke();g.restore();}
-  else if(mode!=="planned"){g.fillStyle=C("--muted");g.font="13px "+C("--sans");g.textAlign="center";g.fillText("Waiting for a position",w/2,h-16);}
+    if(old&&mode!=="past"){g.fillStyle=PHC;g.font="700 9px "+C("--mono");g.textAlign="center";g.textBaseline="middle";g.fillText("LAST KNOWN",x,y-22);}
+    g.save();g.translate(x,y);g.rotate((fix.track||0)*R);g.globalAlpha=old?.55:1;
+    g.beginPath();g.moveTo(0,-13);g.lineTo(9,10);g.lineTo(0,4);g.lineTo(-9,10);g.closePath();
+    g.fillStyle="#020806";g.fill();g.lineJoin="miter";g.lineWidth=6;g.strokeStyle=PHA(.25);g.stroke();g.lineWidth=2;g.strokeStyle="#c9fff3";g.stroke();
+    g.restore();}
+  else if(mode!=="planned"){g.fillStyle=PHA(.8);g.font="700 11px "+C("--mono");g.textAlign="center";g.fillText("WAITING FOR POSITION",w/2,h-16);}
+  // scale readout, Etak-style: a bar and its length in miles, top centre
+  {const mi=60/scale*69.05,nice=[1,2,5,10,20,50,100,200,500,1000].find(v=>v>=mi*.6)||1000,px=nice/69.05*scale;
+   const cx=w/2,y0=14;g.strokeStyle=PHA(.85);g.lineWidth=1.5;g.beginPath();g.moveTo(cx-px/2,y0);g.lineTo(cx+px/2,y0);
+   g.moveTo(cx-px/2,y0-4);g.lineTo(cx-px/2,y0+4);g.moveTo(cx+px/2,y0-4);g.lineTo(cx+px/2,y0+4);g.stroke();
+   g.fillStyle=PHC;g.font=VFONT(9);g.textAlign="center";g.textBaseline="top";g.fillText(nice+" MI",cx,y0+7);
+   g.font="700 10px "+C("--mono");g.textAlign="left";g.textBaseline="middle";g.fillText("N",12,h/2-8);g.fillText("UP",9,h/2+5);}
+  // CRT: scanlines and a soft vignette
+  g.fillStyle="rgba(0,0,0,.16)";for(let y=0;y<h;y+=3)g.fillRect(0,y,w,1);
+  const vg=g.createRadialGradient(w/2,h/2,Math.min(w,h)*.35,w/2,h/2,Math.max(w,h)*.75);
+  vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(1,"rgba(0,0,0,.55)");g.fillStyle=vg;g.fillRect(0,0,w,h);
 }
 /* ---------- map gestures: pinch or double-tap to zoom in, two-finger tap to zoom out, drag to move ---------- */
 function geoAt(mx,my){const S=proj.bS*zoom;return [proj.bLat+pan[0]-(my-proj.h/2)/S,proj.bLon+pan[1]+(mx-proj.w/2)/(proj.k*S)];}
@@ -2021,8 +2037,8 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
   tfScreen=[];
   if(!trafOn||mode==="past"||mode==="planned")return;
   g.font="10px "+C("--sans");g.textAlign="left";g.textBaseline="bottom";
-  if(scale<TRAF_MIN_SCALE-0.5){if(!p)return;g.fillStyle="rgba(232,238,244,.75)";g.fillText("Zoom in to see nearby traffic",8,h-22);return;}
-  if(p){g.setLineDash([2,5]);g.strokeStyle="rgba(200,215,230,.35)";g.lineWidth=1;g.beginPath();g.arc(X(p[1]),Y(p[0]),TRAF_NM/60*scale,0,7);g.stroke();g.setLineDash([]);}
+  if(scale<TRAF_MIN_SCALE-0.5){if(!p)return;g.fillStyle=PHA(.8);g.font="700 9px "+C("--mono");g.fillText("ZOOM IN FOR NEARBY TRAFFIC",10,h-22);return;}
+  if(p){g.setLineDash([2,5]);g.strokeStyle=PHA(.35);g.lineWidth=1;g.beginPath();g.arc(X(p[1]),Y(p[0]),TRAF_NM/60*scale,0,7);g.stroke();g.setLineDash([]);}
   let sel=null;
   for(const a of traf){
     const dt=Math.min(30,(Date.now()-a.t)/1000);
@@ -2030,7 +2046,7 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
     const x=X(q[1]),y=Y(q[0]);if(x<-10||x>w+10||y<-10||y>h+10)continue;
     tfScreen.push({x,y,a});if(trafSel===a.hex)sel={x,y,a,q};
     g.save();g.translate(x,y);g.rotate((a.track||0)*R);
-    g.fillStyle="rgba(170,190,210,.45)";g.strokeStyle="rgba(225,233,242,.85)";g.lineWidth=1;
+    g.fillStyle="rgba(2,8,6,.9)";g.strokeStyle=PHA(.8);g.lineWidth=1;
     if(a.heli){
       g.beginPath();g.arc(0,0,3.5,0,7);g.fill();g.stroke();
       g.beginPath();g.moveTo(0,3.5);g.lineTo(0,10);g.moveTo(-7,-7);g.lineTo(7,7);g.moveTo(7,-7);g.lineTo(-7,7);g.stroke();
@@ -2047,7 +2063,7 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
     const txt=[a.cs||"No callsign",a.heli?(a.type||"")+" helicopter":a.type,(a.gnd?"on ground":fmt(a.alt)+" ft"),fmt(mi)+" mi away"].filter(Boolean).join(" · ");
     g.font="700 11px "+C("--mono");const tw=g.measureText(txt).width+12;
     const bx=Math.max(4,Math.min(w-tw-4,sel.x-tw/2)),by=sel.y>44?sel.y-38:sel.y+18;
-    g.fillStyle="rgba(11,21,34,.94)";g.strokeStyle=C("--line");g.lineWidth=1;g.beginPath();g.rect(bx,by,tw,20);g.fill();g.stroke();
+    g.fillStyle="rgba(2,8,6,.94)";g.strokeStyle=PHA(.7);g.lineWidth=1;g.beginPath();g.rect(bx,by,tw,20);g.fill();g.stroke();
     g.fillStyle=C("--ink");g.textAlign="left";g.textBaseline="middle";g.fillText(txt,bx+6,by+10);
   }else if(!traf.length){g.fillStyle="rgba(232,238,244,.75)";g.fillText(srcs.Traffic&&srcs.Traffic.state==="ok"?"No traffic within 60 mi at your altitude":"Looking for nearby traffic…",8,h-22);}
 }
