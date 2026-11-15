@@ -455,7 +455,8 @@ function histLoad(key){
   try{const h=JSON.parse(localStorage.getItem("sfm-h:"+key)||"null");
     if(h&&typeof h==="object"){const cut=Date.now()-HIST_MS;
       for(const k of Object.keys(hist))if(Array.isArray(h[k]))hist[k]=h[k].filter(q=>q[0]>cut);
-      if(hist.alt.length&&Array.isArray(h.trail))trail=h.trail;}}catch(e){}
+      if(hist.alt.length&&Array.isArray(h.trail))trail=h.trail.filter(q=>Array.isArray(q)&&q[0]!=null&&q[1]!=null);
+      if(!fix&&h.fix&&h.fix.lat!=null&&h.fix.lon!=null&&h.fix.t>cut){fix=h.fix;lastSource=h.src||"saved data";}}}catch(e){}
 }
 let histSaved=0;
 function histAdd(p){
@@ -467,7 +468,7 @@ function histAdd(p){
 }
 function histSave(){
   if(!histKey||mode==="demo")return;histSaved=Date.now();
-  try{localStorage.setItem("sfm-h:"+histKey,JSON.stringify(Object.assign({trail},hist)));}catch(e){}
+  try{localStorage.setItem("sfm-h:"+histKey,JSON.stringify(Object.assign({trail,fix,src:lastSource},hist)));}catch(e){}
 }
 window.addEventListener("pagehide",histSave);
 document.addEventListener("visibilitychange",()=>{if(document.hidden)histSave();});
@@ -662,7 +663,7 @@ function draw(){
     g.fillStyle="rgba(142,163,183,.7)";g.beginPath();g.arc(x,y,1.8,0,7);g.fill();
     g.fillStyle="rgba(142,163,183,.75)";g.textAlign=x>w-90?"right":"left";g.fillText(c[0],x+(x>w-90?-5:5),y);}
   // winds at the plane's altitude: streaks flow where the air is going, faster = stronger
-  if(wx){
+  if(wx)try{
     const alt=fix&&fix.altFt!=null?fix.altFt:33000;
     g.lineCap="round";
     if(reduced){
@@ -704,7 +705,7 @@ function draw(){
       const ww=windAt(q.lat,q.lon,alt);if(ww)g.fillText(Math.round(ww.spd*1.15078),x,y);}
     g.font="10px "+C("--sans");g.textAlign="left";g.textBaseline="bottom";g.fillStyle="rgba(232,238,244,.75)";
     g.fillText("Winds at "+Math.round(alt/1000)+"k ft (mph) · amber = shear",8,h-8);
-  }
+  }catch(e){parts=[];}
   // planned route, faint, then projected path from the plane to the destination
   if(org&&dst){g.setLineDash([2,6]);g.strokeStyle="rgba(111,195,223,.35)";g.lineWidth=1;g.beginPath();
     for(let i=0;i<=48;i++){const q=along(org,dst,i/48);i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}
@@ -722,7 +723,9 @@ function draw(){
     g.strokeStyle=C("--ink");g.lineWidth=2;g.fillStyle="#0d1b2b";g.beginPath();g.arc(x,y,5,0,7);g.fill();g.stroke();
     g.fillStyle=C("--ink");g.textAlign="center";g.fillText(code.toUpperCase(),Math.max(18,Math.min(w-18,x)),y+(y>h-26?-15:16));});
   // aircraft
-  if(p){const x=X(p[1]),y=Y(p[0]);g.save();g.translate(x,y);g.rotate((fix.track||0)*R);
+  if(p){const x=X(p[1]),y=Y(p[0]),old=Date.now()-fix.t>90000;
+    if(old){g.fillStyle=C("--ink");g.font="10px "+C("--sans");g.textAlign="center";g.textBaseline="middle";g.fillText("last known",x,y-22);}
+    g.save();g.translate(x,y);g.rotate((fix.track||0)*R);g.globalAlpha=old?.6:1;
     g.fillStyle=C("--accent");g.strokeStyle="#0b1522";g.lineWidth=1.5;g.beginPath();
     g.moveTo(0,-13);g.lineTo(3,-4);g.lineTo(13,3);g.lineTo(13,6);g.lineTo(3,3);g.lineTo(2,10);g.lineTo(6,13);g.lineTo(-6,13);
     g.lineTo(-2,10);g.lineTo(-3,3);g.lineTo(-13,6);g.lineTo(-13,3);g.lineTo(-3,-4);g.closePath();g.fill();g.stroke();g.restore();}
