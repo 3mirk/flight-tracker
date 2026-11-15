@@ -40,7 +40,7 @@ form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
 .fr-id{font:700 1.1rem var(--mono);color:var(--accent)}
 .fr-rt{font:700 1rem var(--mono)}.fr-rt .arr{color:var(--muted);margin:0 5px;font-weight:400}
 .fr-dt b{color:var(--ink)}
-.fr-dt{font:600 .7rem var(--mono);color:var(--muted);line-height:1.4;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.fr-dt{font:600 .7rem var(--mono);color:var(--muted);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 label{display:flex;flex-direction:column;gap:4px;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px;font:600 1rem var(--mono);text-transform:uppercase}
 .f-flight{flex:2 1 110px}.f-apt{flex:1 1 70px}
@@ -168,6 +168,8 @@ canvas{display:block;width:100%;aspect-ratio:4/3;max-height:460px}
 .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
 .bar i{display:block;height:100%;width:0;background:var(--accent)}
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.lcdtiles .tile.chart{padding:10px}
+.lcdtiles .v{margin-top:6px}
 @media(min-width:560px){.tiles{grid-template-columns:repeat(3,1fr)}}
 .tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
 .tile .k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
@@ -289,9 +291,9 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
     <canvas class="dial" id="hdgChart" aria-label="Heading history: center is the start of tracking, outer ring is now"></canvas></div>
 </div>
 
-<div class="tiles">
-  <div class="tile"><div class="k">Distance to go</div><div class="v" id="dist">—</div><div class="s" id="distS"></div></div>
-  <div class="tile"><div class="k">Time to go<sup class="ref" data-n="4" role="button" tabindex="0" aria-label="Note 4">4</sup></div><div class="v" id="eta">—</div><div class="s" id="etaS"></div></div>
+<div class="tiles lcdtiles">
+  <div class="tile chart"><div class="k">Distance to go</div><div class="v" id="dist">—</div><div class="s" id="distS"></div></div>
+  <div class="tile chart"><div class="k">Time to go<sup class="ref" data-n="4" role="button" tabindex="0" aria-label="Note 4">4</sup></div><div class="v" id="eta">—</div><div class="s" id="etaS"></div></div>
 </div>
 
 <section class="acard">
@@ -777,7 +779,7 @@ function lcd(val,width,unit,sign){
 const LCD_BLANK={alt:lcd("-----",5,"ft"),spd:lcd("---",3,"mph"),vs:lcd("----",4,"ft/min"),hdg:lcd("---",3,"°")};
 function readouts(){
   const p=now();
-  if(!fix){["alt","spd","hdg","vs"].forEach(i=>set(i,LCD_BLANK[i]));["dist","eta"].forEach(i=>set(i,"—"));["altS","spdS","hdgS","vsS","distS","etaS"].forEach(i=>set(i,""));
+  if(!fix){["alt","spd","hdg","vs"].forEach(i=>set(i,LCD_BLANK[i]));set("dist",lcd("----",4,"mi"));set("eta",lcd("-",1,"h")+lcd("--",2,"min"));["altS","spdS","hdgS","vsS","distS","etaS"].forEach(i=>set(i,""));
     $("pBar").style.width="0";set("extra","");return;}
   const f=fix,age=Math.round((Date.now()-f.t)/1000);
   if(mode==="past"){}
@@ -798,14 +800,14 @@ function readouts(){
   }else{set("vs",LCD_BLANK.vs);set("vsS","");}
   if(dst&&p){
     const d=distNm(p,dst),tot=org?distNm(org,dst):null;
-    set("dist",fmt(d*1.15078)+"<small>mi</small>");
+    set("dist",lcd(Math.round(d*1.15078),4,"mi"));
     set("distS",fmt(d)+" nm"+(tot?" of "+fmt(tot):""));
     if(tot)$("pBar").style.width=Math.max(0,Math.min(100,(1-d/tot)*100)).toFixed(1)+"%";
     if(f.gsKt>80){const s=d/f.gsKt*3600,h=Math.floor(s/3600),m=Math.round(s%3600/60);
-      set("eta",(h?h+"<small>h</small> ":"")+m+"<small>min</small>");
-      set("etaS","Lands about "+new Date(Date.now()+s*1000).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+" on your phone's clock");
-    }else{set("eta","—");set("etaS","");}
-  }else{set("dist","—");set("distS","Enter From and To codes");set("eta","—");set("etaS","");}
+      set("eta",lcd(h,1,"h")+lcd(String(m).padStart(2,"0"),2,"min"));
+      set("etaS","lands ~"+new Date(Date.now()+s*1000).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}).toLowerCase());
+    }else{set("eta",lcd("-",1,"h")+lcd("--",2,"min"));set("etaS","");}
+  }else{set("dist",lcd("----",4,"mi"));set("distS","route unknown");set("eta",lcd("-",1,"h")+lcd("--",2,"min"));set("etaS","");}
   const x=[];
   if(f.type||f.reg)x.push("Aircraft <b>"+[f.type,f.reg].filter(Boolean).join(" · ")+"</b>");
   if(f.mach)x.push("Mach <b>"+f.mach.toFixed(2)+"</b>");
@@ -1340,20 +1342,36 @@ function chartsFrozen(){
 }
 function lastDataT(){let t=fix?fix.t:0;for(const k in hist){const a=hist[k];if(a.length&&a[a.length-1][0]>t)t=a[a.length-1][0];}return t||Date.now();}
 const dur=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=60?Math.floor(m/60)+"h "+p2(m%60)+"m":m+"m";};
+/* Takeoff time, only when we actually saw it: a recorded leg that starts on or near the ground,
+   or the charts' own data going from the ground into the air. Opening mid-flight gives none. */
+function takeoffT(live){
+  if(mode==="past"&&hist.alt.length)return hist.alt[0][0];
+  if(live&&live.from!=="?")return live.t0;
+  const a=hist.alt;
+  for(let i=1;i<a.length;i++)if(a[i-1][1]<=200&&a[i][1]>200&&a[i][0]-a[i-1][0]<10*60000)return a[i][0];
+  if(a.length&&a[0][1]<3000&&a.length>1&&a[1][1]>a[0][1])return a[0][0];
+  return null;
+}
 function renderFlightRow(){
   const ph=phase(),[label,cls]=PH[ph];
   const chip=$("frPhase");if(chip.textContent!==label)chip.textContent=label;chip.className="fr-ph "+cls;
   const live=ac.legs.find(l=>l.live)||ac.legs.find(l=>Date.now()-l.t1<6*3600000);
-  const air=hist.alt.find(q=>q[1]>1500),t0=live?live.t0:air?air[0]:null;
-  const parts=[];
-  if(t0)parts.push("Dep "+fmtDT(t0).slice(10));else parts.push(fmtDT(Date.now()).slice(0,9));
-  const la=landedAt();
-  if(["landed","taxiIn","arrived"].includes(ph)&&la){if(t0)parts.push(dur(la-t0)+" flight");parts.push("Landed "+fmtDT(la).slice(10));}
-  else if(t0&&!["gate","none"].includes(ph))parts.push(dur(Date.now()-t0)+" in air");
-  if(fix&&dst&&fix.gsKt>80&&!fix.ground&&!["landed","taxiIn","arrived"].includes(ph)){
-    const s=distNm([fix.lat,fix.lon],dst)/fix.gsKt*3600*1000;parts.push("ETA "+new Date(Date.now()+s).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}).toLowerCase());}
+  const t0=takeoffT(live);
+  // one short line: route, then departure → arrival/ETA, then duration
+  const tm=ms=>{const d=new Date(ms),h=d.getHours();return (h%12||12)+":"+p2(d.getMinutes())+(h<12?"a":"p");};
+  const day=ms=>{const d=new Date(ms);return new Date().toDateString()===d.toDateString()?"":MON[d.getMonth()]+" "+d.getDate()+" ";};
+  const done=["landed","taxiIn","arrived"].includes(ph),la=landedAt();
+  let eta=null;
+  if(fix&&dst&&fix.gsKt>80&&!fix.ground&&!done)eta=Date.now()+distNm([fix.lat,fix.lon],dst)/fix.gsKt*3600*1000;
+  let txt="";
+  if(done&&la)txt=(t0?day(t0)+tm(t0)+"→":"landed ")+tm(la)+(t0?" · "+dur(la-t0).replace(" ",""):"");
+  else if(t0&&eta)txt=day(t0)+tm(t0)+"→"+tm(eta)+" · "+dur(Date.now()-t0).replace(" ","");
+  else if(eta)txt="ETA "+tm(eta);
+  else if(t0)txt=day(t0)+"dep "+tm(t0);
+  else txt=MON[new Date().getMonth()]+" "+new Date().getDate();
   const A=$("from").value||"???",B=$("to").value||"???";
-  set("frDate","<b>"+esc(A)+" » "+esc(B)+"</b> · "+parts.join(" · "));
+  set("frDate","<b>"+esc(A)+"»"+esc(B)+"</b> "+txt);
+  $("frDate").title=(t0?"Departed "+fmtDT(t0):"Departure time not seen")+(eta?" · ETA "+fmtDT(eta):"")+(done&&la?" · Landed "+fmtDT(la):"");
 }
 
 /* ---------- this aircraft: photo, details, recent flights ---------- */
