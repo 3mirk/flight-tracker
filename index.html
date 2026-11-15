@@ -127,8 +127,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .kpigrid .cv{font:700 1.05rem var(--mono);font-variant-numeric:tabular-nums}
 .kpigrid .cv small{font-size:.66rem;color:var(--muted);font-weight:600;margin-left:3px}
 .kpigrid .cl{font-size:.7rem;color:var(--muted);overflow-wrap:anywhere}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
-.actions button{padding:8px 12px;font-size:.8rem}
+.fr3{display:flex;align-items:center;gap:8px}
+.fr3 .status{flex:1;min-width:0}
+.fr-btns{display:flex;gap:4px;flex:none}
+.fr-btns button{padding:2px 8px;font-size:.66rem;border-radius:5px;line-height:1.4}
 .mapwrap{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0d1b2b}
 canvas{display:block;width:100%;aspect-ratio:4/3;max-height:460px}
 #view{position:absolute;right:8px;top:8px;padding:6px 10px;font-size:.75rem;background:rgba(11,21,34,.85)}
@@ -208,7 +210,10 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 <div class="flightrow">
   <div class="fr1"><span class="fr-id">AA3101</span><span class="fr-rt">CLT<span class="arr">→</span>DFW</span><span class="fr-ph ph-idle" id="frPhase">Not seen yet</span></div>
   <div class="fr-dt" id="frDate">Nov-14-26</div>
-  <div class="status" id="statusLine" role="button" tabindex="0" title="Tap for data sources"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
+  <div class="fr3">
+    <div class="status" id="statusLine" role="button" tabindex="0" title="Tap for data sources"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
+    <div class="fr-btns"><button type="button" id="gps" title="Use your phone's own GPS for position, speed and altitude">GPS</button><button type="button" id="demo" title="Play a simulated flight">Demo</button></div>
+  </div>
 </div>
 <details class="srcs" id="srcBox" aria-label="Data source status">
   <summary>
@@ -292,10 +297,6 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <div class="s" id="relayMsg"></div>
 </details>
 
-<div class="actions">
-  <button type="button" id="gps">Use phone GPS</button>
-  <button type="button" id="demo">Play demo</button>
-</div>
 
 
 
