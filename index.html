@@ -29,6 +29,20 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .dot{flex:none;width:10px;height:10px;border-radius:50%;margin-top:4px;background:var(--muted)}
 .dot.live{background:var(--good)}.dot.search{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.demo{background:var(--route)}
 .status b{color:var(--ink)}
+.srcs{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.srchead{display:flex;justify-content:space-between;gap:8px;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.srcs ul{list-style:none;margin:0;padding:0}
+.srcs li{display:grid;grid-template-columns:12px minmax(0,auto) 1fr;gap:8px;align-items:baseline;padding:4px 0;border-top:1px solid var(--line);font-size:.8rem}
+.srcs li .n{font-weight:600;white-space:nowrap}
+.srcs li .t{color:var(--muted);text-align:right;overflow-wrap:anywhere;font-size:.75rem}
+.srcs .d{width:10px;height:10px;border-radius:50%;background:var(--line);align-self:center}
+.srcs .ok .d{background:var(--good)}.srcs .fail .d{background:var(--bad);border-radius:2px}
+.srcs .miss .d{background:transparent;border:2px solid var(--muted)}
+.srcs .try .d{background:var(--warn);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+@media(prefers-reduced-motion:reduce){.srcs .try .d{animation:none}}
+.srcs .use{font-size:.62rem;font-weight:700;color:#06202b;background:var(--good);border-radius:4px;padding:0 5px;margin-left:6px;letter-spacing:.05em}
+.srcs .grp{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;display:block;grid-column:1/-1;padding-top:6px}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .actions button{padding:8px 12px;font-size:.8rem}
 .mapwrap{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0d1b2b}
@@ -86,6 +100,10 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 </form>
 
 <div class="status"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
+<section class="srcs" aria-label="Data source status">
+  <div class="srchead"><span class="k">Data sources</span><span id="relayState"></span></div>
+  <ul id="srcList"></ul>
+</section>
 <div class="actions">
   <button type="button" id="gps">Use phone GPS</button>
   <button type="button" id="demo">Play demo</button>
@@ -228,16 +246,42 @@ async function viaRoute(n,url,ok){
   try{const j=await getOnce(target,v.ms);if(!ok(j))throw new Error("wrong reply");return {n,j};}
   catch(e){throw new Error(v.name+" "+why(e));}
 }
+/* ---------- data source status panel ---------- */
+const SRC_ROWS=[["Live position"],["adsb.lol","adsb.lol"],["airplanes.live","airplanes.live"],["adsb.fi","adsb.fi"],["OpenSky","OpenSky"],
+  ["Extras"],["Weather","Winds and turbulence"],["History","Earlier part of flight"]];
+const srcs={};let activeSrc="";
+function setSrc(name,state,text){srcs[name]={state,text,t:Date.now()};renderSrcs();}
+function resetLive(){["adsb.lol","airplanes.live","adsb.fi","OpenSky"].forEach(n=>srcs[n]={state:"idle",text:"Waiting its turn",t:Date.now()});activeSrc="";renderSrcs();}
+function ago(t){const s=Math.round((Date.now()-t)/1000);return s<5?"just now":s<90?s+" s ago":Math.round(s/60)+" min ago";}
+function renderSrcs(){
+  const html=SRC_ROWS.map(r=>{
+    if(r.length===1)return '<li class="grp">'+r[0]+"</li>";
+    const st=srcs[r[0]]||{state:"idle",text:"Not tried yet"};
+    const when=st.t&&st.state!=="idle"&&st.state!=="try"?" · "+ago(st.t):"";
+    return '<li class="'+st.state+'"><span class="d"></span><span class="n">'+r[1]+(activeSrc===r[0]?'<span class="use">IN USE</span>':"")+
+      '</span><span class="t">'+st.text+when+"</span></li>";}).join("");
+  const el=$("srcList");if(el.innerHTML!==html)el.innerHTML=html;
+  const rs=relayBase()?"Your relay: set":"Your relay: not set";
+  if($("relayState").textContent!==rs)$("relayState").textContent=rs;
+}
+function failText(tried){
+  const t=tried.filter(x=>!x.endsWith("not set"));
+  const all=k=>t.length&&t.every(x=>x.endsWith(k));
+  return (all("blocked")?"Blocked on every route":all("timed out")?"Timed out on every route":"No route worked")+" ("+t.join(", ")+")";
+}
 async function getJSON(url,ok,svc){
+  if(svc)setSrc(svc,"try","Trying "+(VIA[via].wrap(url)?VIA[via].name:"direct")+"…");
   const tried=[];
-  try{const r=await viaRoute(via,url,ok);if(svc)log[svc]="ok via "+VIA[via].name;return r.j;}
+  const okText=n=>"Connected "+(VIA[n].name==="direct"?"directly":"via "+VIA[n].name);
+  try{const r=await viaRoute(via,url,ok);if(svc){log[svc]="ok via "+VIA[via].name;setSrc(svc,"ok",okText(via));}return r.j;}
   catch(e){tried.push(e.message);}
+  if(svc)setSrc(svc,"try","Trying "+(VIA.length-1)+" backup routes…");
   const rest=VIA.map((_,i)=>i).filter(i=>i!==via);
   try{
     const r=await Promise.any(rest.map(n=>viaRoute(n,url,ok).catch(e=>{tried.push(e.message);throw e;})));
-    via=r.n;if(svc)log[svc]="ok via "+VIA[r.n].name;return r.j;
+    via=r.n;if(svc){log[svc]="ok via "+VIA[r.n].name;setSrc(svc,"ok",okText(r.n));}return r.j;
   }catch(e){}
-  if(svc)log[svc]=tried.filter(x=>!x.endsWith("not set")).join(", ");
+  if(svc){log[svc]=tried.filter(x=>!x.endsWith("not set")).join(", ");setSrc(svc,"fail",failText(tried));}
   throw new Error("unreachable");
 }
 /* If every service is blocked, check whether the internet works at all before blaming them. */
@@ -282,6 +326,7 @@ async function openSky(){
 async function locate(id){
   let liveReached=0;   // live feeds that answered with real data
   for(const k in log)delete log[k];
+  resetLive();
   for(const src of SOURCES){
     for(const cs of cands){
       if(id!==run)return null;
@@ -290,15 +335,18 @@ async function locate(id){
       if(!j)break;                       // service unreachable: next service
       liveReached++;
       const p=fromReadsb(j,cs);
+      if(p)activeSrc=src.name,renderSrcs();
       if(p)return {name:src.name+(VIA[via].name!=="direct"?" (via "+VIA[via].name+")":""),poll:src.poll,first:p,
         get:async()=>fromReadsb(await getJSON(src.url(cs),isReadsb,src.name),cs)};
       log[src.name]="answered, no "+cands.slice(0,cands.indexOf(cs)+1).join("/");
+      setSrc(src.name,"miss","Reachable, but no "+cs+(cands.indexOf(cs)<cands.length-1?". Trying next callsign…":" or other callsigns"));
       await sleep(src.gap);
     }
   }
   if(id!==run)return null;
   status("search","Looking on OpenSky.");
-  try{const p=await openSky();if(p)return {name:"OpenSky",poll:30000,first:p,get:openSky};log.OpenSky="answered, flight not in its data";}catch(e){}
+  try{const p=await openSky();if(p){activeSrc="OpenSky";renderSrcs();return {name:"OpenSky",poll:30000,first:p,get:openSky};}
+    log.OpenSky="answered, flight not in its data";setSrc("OpenSky","miss","Reachable, but your flight isn't in its data");}catch(e){}
   return {none:true,liveReached};
 }
 function details(){
@@ -319,14 +367,14 @@ async function track(){
             :!net
               ?"<b>You seem to be offline.</b> The plane's Wi-Fi may have dropped or its login expired. Open aainflight.com in a new tab to reconnect."
               :"Your browser couldn't get live data from the flight services.";
-        status("bad",head+" Retrying in 20 s.<br><small>Details ("+whereAmI()+"):<br>"+(details()||"no response")+"</small>");
+        status("bad",head+" Retrying in 20 s. See Data sources below for each service.");
         await sleep(20000);continue;
       }
       src=f;miss=0;apply(f.first,f.name);backfill(f.first.hex,id);
     }
     await sleep(src.poll);if(id!==run)return;
     try{const p=await src.get();if(p){apply(p,src.name);miss=0;}else miss++;}catch(e){miss++;}
-    if(miss>=5){src=null;}
+    if(miss>=5){src=null;activeSrc="";renderSrcs();}
   }
 }
 /* ---------- history for the charts ---------- */
@@ -786,6 +834,7 @@ try{const s=JSON.parse(localStorage.getItem("sfm")||"null");if(s){$("flight").va
 readForm();
 setInterval(()=>{readouts();draw();},500);
 setInterval(drawCharts,250);
+setInterval(renderSrcs,5000);renderSrcs();
 setInterval(()=>{turbulence();if(!wx||Date.now()-wx.t>600000)fetchWinds();},2000);
 try{$("relay").value=localStorage.getItem("sfm-relay")||"";}catch(e){}
 $("relayForm").addEventListener("submit",e=>{e.preventDefault();
