@@ -189,18 +189,30 @@ async function getOnce(url,ms){
     try{return JSON.parse(txt);}catch(e){throw new Error("not JSON");}
   }finally{clearTimeout(t);}
 }
+/* Fast path: the route that worked last time, alone. If that fails, race every other route at once
+   and take the first good answer, so a full attempt never takes longer than one timeout. */
+async function viaRoute(n,url,ok){
+  const v=VIA[n];
+  try{const j=await getOnce(v.wrap(url),v.ms);if(!ok(j))throw new Error("wrong reply");return {n,j};}
+  catch(e){throw new Error(v.name+" "+why(e));}
+}
 async function getJSON(url,ok,svc){
   const tried=[];
-  for(let i=0;i<VIA.length;i++){
-    const n=(via+i)%VIA.length,v=VIA[n];
-    try{
-      const j=await getOnce(v.wrap(url),v.ms);
-      if(!ok(j))throw new Error("wrong reply");
-      via=n;if(svc)log[svc]="ok via "+v.name;return j;
-    }catch(e){tried.push(v.name+" "+why(e));}
-  }
+  try{const r=await viaRoute(via,url,ok);if(svc)log[svc]="ok via "+VIA[via].name;return r.j;}
+  catch(e){tried.push(e.message);}
+  const rest=VIA.map((_,i)=>i).filter(i=>i!==via);
+  try{
+    const r=await Promise.any(rest.map(n=>viaRoute(n,url,ok).catch(e=>{tried.push(e.message);throw e;})));
+    via=r.n;if(svc)log[svc]="ok via "+VIA[r.n].name;return r.j;
+  }catch(e){}
   if(svc)log[svc]=tried.join(", ");
   throw new Error("unreachable");
+}
+/* If every service is blocked, check whether the internet works at all before blaming them. */
+async function online(){
+  if(navigator.onLine===false)return false;
+  try{await fetch("https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js",{mode:"no-cors",cache:"no-store",
+    signal:AbortSignal.timeout?AbortSignal.timeout(8000):undefined});return true;}catch(e){return false;}
 }
 const isReadsb=j=>j&&Array.isArray(j.ac||j.aircraft);
 const isOpenSky=j=>j&&typeof j.time==="number"&&"states" in j;
@@ -267,11 +279,14 @@ async function track(){
     if(!src){
       const f=await locate(id);if(id!==run)return;
       if(!f||f.none){
+        const net=f&&f.liveReached?true:await online();if(id!==run)return;
         const head=f&&f.liveReached
           ?`No aircraft is broadcasting as ${cands.join(", ")} right now. Check the flight number.`
           :whereAmI().includes("preview")
             ?"This preview blocks network requests. Open the page in Safari or Chrome itself."
-            :"Your browser couldn't get live data from the flight services.";
+            :!net
+              ?"<b>You seem to be offline.</b> The plane's Wi-Fi may have dropped or its login expired. Open aainflight.com in a new tab to reconnect."
+              :"Your browser couldn't get live data from the flight services.";
         status("bad",head+" Retrying in 20 s.<br><small>Details ("+whereAmI()+"):<br>"+(details()||"no response")+"</small>");
         await sleep(20000);continue;
       }
