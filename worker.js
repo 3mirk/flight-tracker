@@ -16,14 +16,26 @@ const ALLOWED_HOSTS = [
   "overpass.private.coffee",
 ];
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Max-Age": "86400",
-};
+// Only the tracker page may use this relay from a browser.
+const ALLOWED_ORIGINS = ["https://3mirk.github.io"];
+
+function corsFor(request) {
+  const origin = request.headers.get("Origin") || "";
+  const ok = ALLOWED_ORIGINS.includes(origin);
+  return {
+    ok,
+    headers: {
+      "Access-Control-Allow-Origin": ok ? origin : ALLOWED_ORIGINS[0],
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Max-Age": "86400",
+      "Vary": "Origin",
+    },
+  };
+}
 
 export default {
   async fetch(request) {
+    const { ok, headers: CORS } = corsFor(request);
     if (request.method === "OPTIONS") return new Response(null, { headers: CORS });
     if (request.method !== "GET") return new Response("GET only", { status: 405, headers: CORS });
 
@@ -31,6 +43,10 @@ export default {
     let url;
     try { url = new URL(target); } catch {
       return new Response("Relay is running. Add ?url=<https address>.", { status: 400, headers: CORS });
+    }
+    // A browser on another site sends its own Origin; refuse it. (Opening the address directly sends none.)
+    if (!ok && request.headers.get("Origin")) {
+      return new Response("Origin not allowed", { status: 403, headers: CORS });
     }
     if (url.protocol !== "https:" || !ALLOWED_HOSTS.includes(url.hostname)) {
       return new Response("Host not allowed: " + url.hostname, { status: 403, headers: CORS });
