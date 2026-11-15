@@ -866,6 +866,7 @@ const cv=$("map"),gMain=cv.getContext("2d");
 const PIXL=2,lc=document.createElement("canvas"),lg=lc.getContext("2d");
 let TQ=[];
 lg.fillText=function(t,x,y){TQ.push([String(t),x,y,this.font,this.fillStyle,this.textAlign,this.textBaseline,this.globalAlpha]);};
+const wc=document.createElement("canvas"),wpx=wc.getContext("2d");wpx.fillText=lg.fillText;
 let zoom=1,pan=[0,0],proj=null;
 /* Smooth "fly to" when the framed area changes (new flight, view switch). */
 let cam=null,camFrom=null,camT0=0;const CAM_MS=1100;
@@ -889,7 +890,7 @@ function gridWind(G,lat,lon){
   const at=arr=>arr[j*n+i]*(1-a)*(1-b)+arr[j*n+i+1]*a*(1-b)+arr[(j+1)*n+i]*(1-a)*b+arr[(j+1)*n+i+1]*a*b;
   return [at(G.u),at(G.v),G.sh[Math.round(fy)*n+Math.round(fx)]];
 }
-const WCOL=["185,220,245","185,220,245","170,250,150","255,236,90","255,236,90","255,120,220","255,70,200"];   // pale blue calm, green mild, yellow then pink for shear   // cyan calm, green mild, pink/magenta shear: kept apart from the amber map
+const WCOL=["110,225,255","110,225,255","120,255,170","255,110,230","255,110,230","255,70,190","255,40,140"];   // cyan calm, green mild, pink/magenta shear   // pale blue calm, green mild, yellow then pink for shear   // cyan calm, green mild, pink/magenta shear: kept apart from the amber map
 /* Etak-style CRT: one phosphor colour for map linework, winds keep their colours as chunky pixels */
 const PHC="#ff5a1f",PHA=a=>"rgba(255,90,31,"+a+")",PX=4,CRT_BG="#07080a";   // map lines: reddish-orange phosphor
 const LBL=a=>"rgba(255,232,205,"+a+")",LBLC="#ffe8cd";                         // labels: warm off-white
@@ -940,7 +941,7 @@ function draw(){
   // coastline and state lines: thin phosphor vectors, no fills
   g.lineJoin="round";g.lineCap="round";
   path(LAND);g.fillStyle="#101215";g.fill();glowStroke(g,2,.85);
-  path(BORDERS);glowStroke(g,2,.3,GREY);
+  path(BORDERS);g.lineWidth=1.2;g.strokeStyle=GREY(.13);g.stroke();
   // graticule
   const stepDeg=scale>90?1:scale>25?5:10;
   g.strokeStyle=GREY(.05);g.lineWidth=1;g.beginPath();
@@ -952,15 +953,15 @@ function draw(){
     try{drawSurface(g,X,Y,w,h,scale,C);}catch(e){}
   }
   // cities: label only where it won't collide with another label, an airport code or the plane
-  g.font="700 9px "+C("--mono");g.textBaseline="middle";
+  g.font="8px "+C("--mono");g.textBaseline="middle";
   const taken=[];const hit=b=>taken.some(t=>b[0]<t[2]&&b[2]>t[0]&&b[1]<t[3]&&b[3]>t[1]);
   for(const a of [org,dst,p]){if(a){const x=X(a[1]),y=Y(a[0]);taken.push([x-22,y-16,x+22,y+26]);}}
   if(scale<SURF_SCALE)for(const c of CITIES){const x=X(c[2]),y=Y(c[1]);if(x<4||x>w-4||y<4||y>h-4)continue;
     const nm=c[0].toUpperCase(),tw=g.measureText(nm).width,right=x>w-tw-12,bx=right?x-6-tw:x+6,box=[bx-2,y-6,bx+tw+2,y+6];
     if(hit(box)||hit([x-3,y-3,x+3,y+3]))continue;
     taken.push(box);
-    g.strokeStyle=LBL(.75);g.lineWidth=2;g.beginPath();g.moveTo(x-4,y);g.lineTo(x+4,y);g.moveTo(x,y-4);g.lineTo(x,y+4);g.stroke();
-    g.fillStyle=LBL(.8);g.textAlign="left";g.fillText(nm,bx,y);}
+    g.strokeStyle=LBL(.35);g.lineWidth=1.5;g.beginPath();g.moveTo(x-3,y);g.lineTo(x+3,y);g.moveTo(x,y-3);g.lineTo(x,y+3);g.stroke();
+    g.fillStyle=LBL(.45);g.textAlign="left";g.fillText(nm,bx,y);}
 
   // winds at the plane's altitude: streaks flow where the air is going, faster = stronger
   const windPass=g=>{if(wx&&scale<SURF_SCALE)try{
@@ -990,10 +991,10 @@ function draw(){
           const wv=gridWind(G,pt.lat,pt.lon);
           if(!wv||pt.age>pt.life||pt.lat<sLa[0]||pt.lat>sLa[1]||pt.lon<sLo[0]||pt.lon>sLo[1]){Object.assign(pt,spawn());continue;}
           pt.lon+=wv[0]*0.5*dt/(k*scale);pt.lat+=wv[1]*0.5*dt/scale;pt.sh=wv[2];
-          pt.tr.push([pt.lat,pt.lon]);if(pt.tr.length>(zoom>2?16:9))pt.tr.shift();
+          pt.tr.push([pt.lat,pt.lon]);if(pt.tr.length>(zoom>2?21:12))pt.tr.shift();
           const n=pt.tr.length;if(n<2)continue;
           const fade=Math.max(0,Math.min(1,pt.age/.4,(pt.life-pt.age)/.4)),mid=n>>1,col=WCOL[pt.sh];
-          g.lineWidth=1.8;g.strokeStyle="rgba("+col+","+(.32*fade).toFixed(3)+")";g.beginPath();
+          g.lineWidth=2;g.strokeStyle="rgba("+col+","+(.35*fade).toFixed(3)+")";g.beginPath();
           for(let i=0;i<=mid;i++){const q=pt.tr[i];i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}g.stroke();
           g.strokeStyle="rgba("+col+","+fade.toFixed(3)+")";g.beginPath();
           for(let i=mid;i<n;i++){const q=pt.tr[i];i>mid?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}g.stroke();
@@ -1004,15 +1005,15 @@ function draw(){
     for(const q of wx.pts){const x=X(q.lon),y=Y(q.lat);if(x<10||x>w-10||y<10||y>h-22)continue;
       const ww=windAt(q.lat,q.lon,alt);if(ww)g.fillText(Math.round(ww.spd*1.15078),x,y);}
     g.font="700 9px "+C("--mono");g.textAlign="left";g.textBaseline="bottom";g.fillStyle=LBL(.85);
-    g.fillText("WINDS "+Math.round(alt/1000)+"K FT (MPH) · YELLOW/PINK = SHEAR",10,h-8);
+    g.fillText("WINDS "+Math.round(alt/1000)+"K FT (MPH) · PINK = SHEAR",10,h-8);
   }catch(e){parts=[];}};
   // planned route, faint, then projected path from the plane to the destination
   if(org&&dst){g.setLineDash([2,8]);g.strokeStyle="rgba(150,200,230,.45)";g.lineWidth=2;g.beginPath();
     for(let i=0;i<=48;i++){const q=along(org,dst,i/48);i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}
     g.stroke();g.setLineDash([]);}
-  if(p&&dst){g.setLineDash([8,6]);g.beginPath();
+  if(p&&dst){g.setLineDash([12,7]);g.beginPath();
     for(let i=0;i<=40;i++){const q=along(p,dst,i/40);i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}
-    g.lineWidth=6;g.strokeStyle="rgba(255,176,102,.15)";g.stroke();g.lineWidth=2;g.strokeStyle=AHEADC;g.stroke();g.setLineDash([]);}
+    g.lineWidth=9;g.strokeStyle="rgba(255,176,102,.25)";g.stroke();g.lineWidth=4;g.strokeStyle=AHEADC;g.stroke();g.setLineDash([]);}
   // flown trail: the brightest line on the screen
   if(trail.length){g.lineJoin="round";g.beginPath();
     trail.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));
@@ -1077,7 +1078,12 @@ function draw(){
   const vg=m.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.72);
   vg.addColorStop(0,"rgba(0,0,0,0)");vg.addColorStop(.75,"rgba(0,0,0,.3)");vg.addColorStop(1,"rgba(0,0,0,.75)");m.fillStyle=vg;m.fillRect(0,0,w,h);
   // winds on top of the texture, then labels, then the plane
-  m.lineCap="round";m.lineJoin="round";windPass(m);
+  if(wc.width!==lw||wc.height!==lh){wc.width=lw;wc.height=lh;}
+  wpx.setTransform(1,0,0,1,0,0);wpx.clearRect(0,0,lw,lh);wpx.setTransform(1/PIXL,0,0,1/PIXL,0,0);wpx.lineCap="butt";wpx.lineJoin="miter";
+  windPass(wpx);
+  m.setTransform(1,0,0,1,0,0);m.imageSmoothingEnabled=false;m.drawImage(wc,0,0,lw*PIXL*dpr,lh*PIXL*dpr);
+  m.globalCompositeOperation="lighter";m.imageSmoothingEnabled=true;m.globalAlpha=.4;m.drawImage(wc,-2*dpr,-2*dpr,lw*PIXL*dpr+4*dpr,lh*PIXL*dpr+4*dpr);
+  m.globalAlpha=1;m.globalCompositeOperation="source-over";m.setTransform(dpr,0,0,dpr,0,0);
   for(const [t,x,y,font,fill,align,base,alpha] of TQ){m.font=font;m.fillStyle=fill;m.textAlign=align;m.textBaseline=base;m.globalAlpha=alpha;
     m.shadowColor=fill;m.shadowBlur=3;m.fillText(t,x,y);}
   m.shadowBlur=0;m.globalAlpha=1;
