@@ -298,7 +298,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 
 <details class="notes" id="notes"><summary>Notes</summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
-  <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
+  <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
   <li id="note4">Time to go assumes your current speed on a direct path. Clock times use your phone's time zone.</li>
   <li id="note5">Aircraft details and photos come from volunteer databases (adsbdb, planespotters.net, OpenSky) and can be missing or out of date. Past flights come from OpenSky and can lag by a day. No free source has an aircraft's lifetime flight count or the factory that built it.</li>
@@ -1018,6 +1018,18 @@ let md=null;
 cv.addEventListener("mousedown",e=>{if(Date.now()-lastTouchT>800){const m=local(e);md={x:m[0],y:m[1]};}});
 window.addEventListener("mousemove",e=>{if(!md||!proj)return;const m=local(e);panBy(m[0]-md.x,m[1]-md.y);md={x:m[0],y:m[1]};});
 window.addEventListener("mouseup",()=>{md=null;});
+/* Ctrl + scroll wheel, and trackpad pinch (which browsers report as Ctrl + wheel), zoom the map instead of the page. */
+cv.addEventListener("wheel",e=>{
+  if(!e.ctrlKey||!proj)return;
+  e.preventDefault();
+  const dy=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?400:1);
+  const m=local(e);zoomAt(m[0],m[1],zoom*Math.exp(-Math.max(-60,Math.min(60,dy))*0.012));
+},{passive:false});
+/* Safari on Mac reports trackpad pinch as gesture events instead. */
+let gz=null;
+cv.addEventListener("gesturestart",e=>{e.preventDefault();gz={z0:zoom,m:local(e)};},{passive:false});
+cv.addEventListener("gesturechange",e=>{e.preventDefault();if(gz&&proj)zoomAt(gz.m[0],gz.m[1],gz.z0*e.scale);},{passive:false});
+cv.addEventListener("gestureend",e=>{e.preventDefault();gz=null;},{passive:false});
 cv.addEventListener("dblclick",e=>{if(Date.now()-lastTouchT>800){const m=local(e);zoomAt(m[0],m[1],zoom*2);}});
 $("zin").addEventListener("click",()=>{if(proj)zoomAt(proj.w/2,proj.h/2,zoom*1.6);});
 $("zout").addEventListener("click",()=>{if(proj)zoomAt(proj.w/2,proj.h/2,zoom/1.6);});
