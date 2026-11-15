@@ -194,7 +194,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <canvas id="map"></canvas>
   <span class="mapref"><sup class="ref" data-n="2" role="button" tabindex="0" aria-label="Note 2">2</sup></span>
   <span class="banner" id="banner" hidden>DEMO · SIMULATED</span>
-  <button type="button" id="view">View: route</button>
+  <button type="button" id="view">View: close-up</button>
   <button type="button" id="traf">Traffic: off</button>
   <div class="zoom"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button></div>
 </div>
@@ -307,7 +307,8 @@ const $=id=>document.getElementById(id);
 let run=0, mode="idle", gpsWatch=null, demoTimer=null;
 let org=null, dst=null, cands=[];
 let fix=null;          // last reported fix {lat,lon,altFt,gsKt,track,vsFpm,...,t}
-let trail=[], view="route", lastSource="";
+let trail=[], view="follow", lastSource="";
+const TRAF_MIN_SCALE=45;   // map scale (px per degree) at which traffic appears
 
 function candidates(f){
   f=f.toUpperCase().replace(/[^A-Z0-9]/g,"");
@@ -710,7 +711,7 @@ function draw(){
   // choose what to frame, then apply the viewer's own zoom and pan on top
   let pts=[];if(org)pts.push(org);if(dst)pts.push(dst);if(p)pts.push(p);
   let clat,clon,scale;
-  if(view==="follow"&&p){clat=p[0];clon=p[1];scale=h/3.2;}
+  if(view==="follow"&&p){clat=p[0];clon=p[1];scale=TRAF_MIN_SCALE;}
   else if(pts.length){
     const la=pts.map(q=>q[0]),lo=pts.map(q=>q[1]);
     const a0=Math.min(...la),a1=Math.max(...la),o0=Math.min(...lo),o1=Math.max(...lo);
@@ -802,7 +803,7 @@ function draw(){
     if(p)g.lineTo(X(p[1]),Y(p[0]));g.stroke();}
   // airports
   g.font="700 12px "+C("--mono");g.textBaseline="middle";
-  [[org,$("from").value],[dst,$("to").value]].forEach(([a,code])=>{if(!a)return;const x=X(a[1]),y=Y(a[0]);
+  [[org,$("from").value],[dst,$("to").value]].forEach(([a,code])=>{if(!a)return;const x=X(a[1]),y=Y(a[0]);if(x<-8||x>w+8||y<-8||y>h+8)return;
     g.strokeStyle=C("--ink");g.lineWidth=2;g.fillStyle="#0d1b2b";g.beginPath();g.arc(x,y,5,0,7);g.fill();g.stroke();
     g.fillStyle=C("--ink");g.textAlign="center";g.fillText(code.toUpperCase(),Math.max(18,Math.min(w-18,x)),y+(y>h-26?-15:16));});
   try{drawTraffic(g,X,Y,w,h,scale,p,C);}catch(e){}
@@ -1202,7 +1203,7 @@ const TRAF_NM=52,TRAF_FT=5000,TRAF_MAX=10;
 const TRAF_URLS=[(a,o)=>"https://api.adsb.lol/v2/point/"+a+"/"+o+"/55",(a,o)=>"https://api.airplanes.live/v2/point/"+a+"/"+o+"/55",
   (a,o)=>"https://opendata.adsb.fi/api/v2/lat/"+a+"/lon/"+o+"/dist/55"];
 var trafOn=false;let traf=[],trafBusy=false,trafSel="",trafUrl=0,tfScreen=[];
-try{trafOn=localStorage.getItem("sfm-traf")==="1";}catch(e){}
+trafOn=true;try{if(localStorage.getItem("sfm-traf2")==="0")trafOn=false;}catch(e){}
 async function fetchTraffic(){
   if(!trafOn||trafBusy||document.hidden||mode==="demo"||!fix||Date.now()-fix.t>120000)return;
   const p=now();if(!p)return;trafBusy=true;
@@ -1234,7 +1235,7 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
   tfScreen=[];
   if(!trafOn)return;
   g.font="10px "+C("--sans");g.textAlign="left";g.textBaseline="bottom";
-  if(scale<45){g.fillStyle="rgba(232,238,244,.75)";g.fillText("Zoom in to see nearby traffic",8,h-22);return;}
+  if(scale<TRAF_MIN_SCALE-0.5){g.fillStyle="rgba(232,238,244,.75)";g.fillText("Zoom in to see nearby traffic",8,h-22);return;}
   if(p){g.setLineDash([2,5]);g.strokeStyle="rgba(200,215,230,.35)";g.lineWidth=1;g.beginPath();g.arc(X(p[1]),Y(p[0]),TRAF_NM/60*scale,0,7);g.stroke();g.setLineDash([]);}
   let sel=null;
   for(const a of traf){
@@ -1266,7 +1267,7 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
 }
 function trafLabel(){$("traf").textContent="Traffic: "+(trafOn?"on":"off");$("traf").setAttribute("aria-pressed",trafOn?"true":"false");}
 $("traf").addEventListener("click",()=>{
-  trafOn=!trafOn;try{localStorage.setItem("sfm-traf",trafOn?"1":"0");}catch(e){}
+  trafOn=!trafOn;try{localStorage.setItem("sfm-traf2",trafOn?"1":"0");}catch(e){}
   if(trafOn){if(!isCustom()&&view==="route")view="follow";fetchTraffic();}else{traf=[];trafSel="";delete srcs.Traffic;}
   trafLabel();renderSrcs();viewChanged();});
 cv.addEventListener("click",e=>{if(Date.now()-lastTouchT>800){const m=local(e);pickTraffic(m[0],m[1]);}});
