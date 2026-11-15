@@ -20,12 +20,26 @@ body{max-width:760px;margin:0 auto;padding:12px 16px 24px;display:flex;flex-dire
 h1{font-size:1rem;margin:0;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
 form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
 .flightrow{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.fr1{display:flex;align-items:center;gap:10px}
+@font-face{font-family:"DSEG14";src:url("fonts/DSEG14Classic-Bold.woff2") format("woff2");font-display:swap}
+.fr1{display:flex;align-items:stretch;gap:6px;min-width:0}
+.fsearch{position:relative;flex:1 1 0;min-width:104px}
+#fq{width:100%;height:32px;box-sizing:border-box;padding:0 6px;background:#030805;border:1px solid #1d3a2a;border-radius:6px;color:#00ff41;
+  font:.86rem/1 "DSEG14",var(--mono);letter-spacing:0;text-transform:uppercase;text-shadow:0 0 6px rgba(0,255,65,.5)}
+#fq:focus-visible{outline:2px solid #00ff41;outline-offset:1px}
+#fq.bad{border-color:var(--bad);color:var(--bad)}
+#fsug{position:absolute;left:0;top:calc(100% + 4px);z-index:20;margin:0;padding:4px;list-style:none;min-width:230px;max-width:80vw;
+  background:#07120c;border:1px solid #1d3a2a;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#fsug li{display:flex;align-items:baseline;gap:8px;padding:7px 8px;border-radius:5px;cursor:pointer}
+#fsug li.hl,#fsug li:hover{background:rgba(0,255,65,.1)}
+#fsug .sc{font:.8rem "DSEG14",var(--mono);color:#00ff41;min-width:64px}
+#fsug .ss{font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#finst{flex:0 1 auto;min-width:0;max-width:96px;height:32px;padding:0 2px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--ink);font:600 .62rem var(--mono)}
 .fr-ph{font:700 .66rem/1 var(--sans);text-transform:uppercase;letter-spacing:.05em;height:28px;padding:0 6px;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:5px;white-space:nowrap}
 .ph-idle{background:rgba(142,163,183,.18);color:var(--muted)}.ph-go{background:rgba(111,208,140,.18);color:var(--good)}
 .ph-warn{background:rgba(240,160,75,.18);color:var(--warn)}.ph-done{background:rgba(111,195,223,.18);color:var(--route)}
 .fr-id{font:700 1.1rem var(--mono);color:var(--accent)}
 .fr-rt{font:700 1rem var(--mono)}.fr-rt .arr{color:var(--muted);margin:0 5px;font-weight:400}
+.fr-dt b{color:var(--ink)}
 .fr-dt{font:600 .7rem var(--mono);color:var(--muted);line-height:1.4;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 label{display:flex;flex-direction:column;gap:4px;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px;font:600 1rem var(--mono);text-transform:uppercase}
@@ -218,18 +232,21 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 <div class="top"><h1>Seatback Flight Map</h1>
   <button type="button" class="net" id="net" title="Tap to re-test download speed"><span class="bars" id="netBars" aria-hidden="true"><i></i><i></i><i></i></span><span id="netT">Checking…</span></button></div>
 
-<!-- This page follows one flight only. -->
 <input type="hidden" id="flight" value="AA3101"><input type="hidden" id="from" value="CLT"><input type="hidden" id="to" value="DFW">
 <div class="flightrow">
   <div class="frl">
-    <div class="fr1"><span class="fr-id">AA3101</span><span class="fr-rt">CLT<span class="arr">→</span>DFW</span></div>
-    <div class="fr-dt" id="frDate">Nov-14-26</div>
+    <div class="fr1">
+      <div class="fsearch"><input id="fq" value="AA3101" aria-label="Flight number" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" maxlength="8">
+        <ul id="fsug" role="listbox" hidden></ul></div>
+      <select id="finst" aria-label="Which flight with this number"><option value="live">Live · today</option></select>
+    </div>
+    <div class="fr-dt" id="frDate">—</div>
     <div class="status" id="statusLine" role="button" tabindex="0" title="Tap for data sources"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
   </div>
   <div class="fr-rack">
     <span class="fr-ph ph-idle" id="frPhase">Not seen yet</span>
     <button type="button" id="gps" title="Use your phone's own GPS for position, speed and altitude"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg><span>Enable GPS</span></button>
-    <button type="button" id="demo" title="Play a simulated CLT to DFW flight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg><span>Play Demo</span></button>
+    <button type="button" id="demo" title="Play a simulated flight on this route"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg><span>Play Demo</span></button>
   </div>
 </div>
 <details class="srcs" id="srcBox" aria-label="Data source status">
@@ -371,6 +388,7 @@ let trail=[], view="follow", lastSource="";
 const TRAF_MIN_SCALE=45;   // map scale (px per degree) at which traffic appears
 
 function candidates(f){
+  if(typeof normFlight==="function"){const n=normFlight(f);if(n)return n.cands;}
   f=f.toUpperCase().replace(/[^A-Z0-9]/g,"");
   const m=f.match(/^([A-Z0-9]{2})0*(\d{1,4}[A-Z]?)$/);
   if(m&&PREFIX[m[1]])return PREFIX[m[1]].map(p=>p+m[2]);
@@ -765,7 +783,8 @@ function readouts(){
   if(!fix){["alt","spd","hdg","vs"].forEach(i=>set(i,LCD_BLANK[i]));["dist","eta"].forEach(i=>set(i,"—"));["altS","spdS","hdgS","vsS","distS","etaS"].forEach(i=>set(i,""));
     $("pBar").style.width="0";set("extra","");return;}
   const f=fix,age=Math.round((Date.now()-f.t)/1000);
-  if(mode!=="demo"&&lastSource){
+  if(mode==="past"){}
+  else if(mode!=="demo"&&lastSource){
     const stale=age>45;
     status(stale?"search":"live",`${stale?"Last seen":"Live"} · ${lastSource} · ${age<60?age+"s":Math.round(age/60)+"m"} ago`);
   }
@@ -801,6 +820,9 @@ function readouts(){
 /* ---------- map ---------- */
 const cv=$("map"),g=cv.getContext("2d");
 let zoom=1,pan=[0,0],proj=null;
+/* Smooth "fly to" when the framed area changes (new flight, view switch). */
+let cam=null,camFrom=null,camT0=0;const CAM_MS=1100;
+function camAnimate(){if(reduced||!cam)return;camFrom={lat:cam.lat+pan[0],lon:cam.lon+pan[1],s:cam.s*zoom};camT0=performance.now();}
 const reduced=!!(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches);
 const isCustom=()=>Math.abs(zoom-1)>.01||Math.abs(pan[0])+Math.abs(pan[1])>1e-6;
 /* wind particles */
@@ -839,6 +861,14 @@ function draw(){
     scale=Math.min(h/Math.max(2,(a1-a0)*1.5),w/Math.max(2,(o1-o0)*k0*1.25));
   }else{clat=38;clon=-96;scale=Math.min(h/30,w/50);}
   const k=Math.cos(clat*R);
+  if(camFrom){
+    const f=Math.min(1,(performance.now()-camT0)/CAM_MS),e=f<.5?4*f*f*f:1-Math.pow(-2*f+2,3)/2;
+    const far=Math.hypot(camFrom.lat-clat,camFrom.lon-clon)*scale>Math.min(w,h)*.6;
+    const ls=Math.log(camFrom.s)+(Math.log(scale)-Math.log(camFrom.s))*e-(far?.45*Math.sin(Math.PI*e):0);
+    clat=camFrom.lat+(clat-camFrom.lat)*e;clon=camFrom.lon+(clon-camFrom.lon)*e;scale=Math.exp(ls);
+    if(f>=1)camFrom=null;
+  }
+  cam={lat:clat,lon:clon,s:scale};
   proj={bLat:clat,bLon:clon,bS:scale,k,w,h};
   scale*=zoom;clat+=pan[0];clon+=pan[1];
   const X=lo=>w/2+(lo-clon)*k*scale,Y=la=>h/2-(la-clat)*scale;
@@ -1053,7 +1083,7 @@ $("zin").addEventListener("click",()=>{if(proj)zoomAt(proj.w/2,proj.h/2,zoom*1.6
 $("zout").addEventListener("click",()=>{if(proj)zoomAt(proj.w/2,proj.h/2,zoom/1.6);});
 let lastDraw=0;
 function frame(ts){
-  const every=wx&&!reduced?66:400;
+  const every=camFrom?16:wx&&!reduced?66:400;
   if(ts-lastDraw>=every){lastDraw=ts;draw();}
   requestAnimationFrame(frame);
 }
@@ -1325,7 +1355,8 @@ function renderFlightRow(){
   else if(t0&&!["gate","none"].includes(ph))parts.push(dur(Date.now()-t0)+" in air");
   if(fix&&dst&&fix.gsKt>80&&!fix.ground&&!["landed","taxiIn","arrived"].includes(ph)){
     const s=distNm([fix.lat,fix.lon],dst)/fix.gsKt*3600*1000;parts.push("ETA "+new Date(Date.now()+s).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"}).toLowerCase());}
-  set("frDate",parts.join(" · "));
+  const A=$("from").value||"???",B=$("to").value||"???";
+  set("frDate","<b>"+esc(A)+" » "+esc(B)+"</b> · "+parts.join(" · "));
 }
 
 /* ---------- this aircraft: photo, details, recent flights ---------- */
@@ -1496,6 +1527,155 @@ function drawSurface(g,X,Y,w,h,scale,C){
       if(G.ref&&scale>12000){g.fillStyle="rgba(200,230,245,.9)";g.fillText(G.ref,x,y-8);}}}
 }
 
+/* ---------- choosing a flight: autocomplete, route lookup, recent flights ---------- */
+const AIRLINES=[["AA","AAL","American Airlines"],["DL","DAL","Delta Air Lines"],["UA","UAL","United Airlines"],["WN","SWA","Southwest Airlines"],
+["B6","JBU","JetBlue"],["AS","ASA","Alaska Airlines"],["NK","NKS","Spirit Airlines"],["F9","FFT","Frontier Airlines"],["G4","AAY","Allegiant Air"],
+["HA","HAL","Hawaiian Airlines"],["SY","SCX","Sun Country"],["MX","MXY","Breeze Airways"],["AC","ACA","Air Canada"],["WS","WJA","WestJet"],
+["AM","AMX","Aeroméxico"],["BA","BAW","British Airways"],["VS","VIR","Virgin Atlantic"],["LH","DLH","Lufthansa"],["AF","AFR","Air France"],
+["KL","KLM","KLM"],["EI","EIN","Aer Lingus"],["IB","IBE","Iberia"],["TK","THY","Turkish Airlines"],["EK","UAE","Emirates"],["QR","QTR","Qatar Airways"],
+["EY","ETD","Etihad"],["LX","SWR","Swiss"],["NH","ANA","ANA"],["JL","JAL","Japan Airlines"],["CX","CPA","Cathay Pacific"],["SQ","SIA","Singapore Airlines"],
+["QF","QFA","Qantas"],["AV","AVA","Avianca"],["CM","CMP","Copa Airlines"],["LA","LAN","LATAM"],["MQ","ENY","Envoy Air"],["OH","JIA","PSA Airlines"],
+["YX","RPA","Republic Airways"],["OO","SKW","SkyWest"],["9E","EDV","Endeavor Air"],["ZW","AWI","Air Wisconsin"],["QX","QXE","Horizon Air"],
+["G7","GJS","GoJet"],["C5","UCA","CommuteAir"],["FX","FDX","FedEx"],["5X","UPS","UPS"]];
+const AL_IATA={},AL_ICAO={};for(const a of AIRLINES){AL_IATA[a[0]]=a;AL_ICAO[a[1]]=a;}
+function normFlight(t){
+  t=String(t||"").toUpperCase().replace(/[^A-Z0-9]/g,"");
+  let m=t.match(/^([A-Z]{3})0*(\d{1,4}[A-Z]?)$/);
+  if(m)return {code:t,airline:AL_ICAO[m[1]],cands:[m[1]+m[2]]};
+  m=t.match(/^([A-Z0-9]{2})0*(\d{1,4}[A-Z]?)$/);
+  if(m){const al=AL_IATA[m[1]];if(!al&&!PREFIX[m[1]])return null;
+    return {code:m[1]+m[2],airline:al,cands:(PREFIX[m[1]]||[al[1]]).map(p=>p+m[2])};}
+  return null;
+}
+let routes={},recents=[];
+try{routes=JSON.parse(localStorage.getItem("sfm-routes")||"{}")||{};}catch(e){}
+try{recents=JSON.parse(localStorage.getItem("sfm-recent")||"[]")||[];}catch(e){}
+routes.AA3101=routes.AA3101||{o:{c:"CLT",lat:35.214,lon:-80.943,n:"Charlotte"},d:{c:"DFW",lat:32.897,lon:-97.038,n:"Dallas-Fort Worth"},t:Date.now()};
+const isRoute=j=>!!(j&&j.response&&j.response.flightroute&&j.response.flightroute.origin);
+async function routeFor(f){
+  const c=routes[f.code];if(c&&Date.now()-c.t<7*86400000)return c;
+  for(const cs of f.cands){
+    try{const j=await getJSON("https://api.adsbdb.com/v0/callsign/"+cs,isRoute);
+      const r=j.response.flightroute,P=a=>({c:a.iata_code||a.icao_code,icao:a.icao_code,lat:a.latitude,lon:a.longitude,n:a.municipality||a.name||""});
+      const v={o:P(r.origin),d:P(r.destination),t:Date.now()};
+      routes[f.code]=v;try{localStorage.setItem("sfm-routes",JSON.stringify(routes));}catch(e){}
+      return v;}catch(e){}
+  }
+  return null;
+}
+function rememberRecent(code,r){
+  recents=[{code,o:r?r.o.c:"",d:r?r.d.c:""}].concat(recents.filter(x=>x.code!==code)).slice(0,8);
+  try{localStorage.setItem("sfm-recent",JSON.stringify(recents));}catch(e){}
+}
+let curFlight=null,insts=[];
+async function chooseFlight(text,quiet){
+  const f=normFlight(text);
+  if(!f){$("fq").classList.add("bad");status("bad","Enter a flight number like AA3101 or UAL1234.");return;}
+  $("fq").classList.remove("bad");$("fq").value=f.code;hideSug();
+  const same=curFlight===f.code;curFlight=f.code;
+  if(location.hash.slice(1).toUpperCase()!==f.code)try{history.replaceState(null,"","#"+f.code);}catch(e){}
+  try{localStorage.setItem("sfm-cur",f.code);}catch(e){}
+  ++run;stopExtras();mode="live";$("banner").hidden=true;
+  $("flight").value=f.code;fix=null;trail=[];lastSource="";filled="";traf=[];trafSel="";
+  ac={hex:"",info:null,photo:null,meta:null,flights:null,legs:[]};renderAircraft();
+  insts=[];fillInstances();
+  // known route right away (cached), else look it up; the map flies to the new airports either way
+  let r=routes[f.code]||null;
+  const setRoute=r=>{
+    if(r){AIRPORTS[r.o.c]=[r.o.lat,r.o.lon];AIRPORTS[r.d.c]=[r.d.lat,r.d.lon];$("from").value=r.o.c;$("to").value=r.d.c;}
+    else{$("from").value="";$("to").value="";}
+    camAnimate();readForm();view="route";zoom=1;pan=[0,0];viewChanged();
+    wx=null;wxTried=0;wg=null;parts=[];fetchWinds();
+  };
+  setRoute(r);histLoad(cands[0]||"");renderFlightRow();
+  if(!same||quiet!=="init")status("search","Looking for "+f.code+"…");
+  track();
+  if(!r||Date.now()-r.t>7*86400000){
+    const id=run;r=await routeFor(f);if(id!==run)return;
+    if(r)setRoute(r);else status("search","Route for "+f.code+" not found. Still looking for the plane.");
+  }
+  rememberRecent(f.code,r);
+  loadInstances(f,r);
+}
+/* Earlier flights under this number: departures from its origin over the last two days (OpenSky). */
+async function loadInstances(f,r){
+  const id=run;
+  if(!r||!r.o.icao&&!/^[A-Z]{3}$/.test(r.o.c)){fillInstances("none");return;}
+  const icao=r.o.icao||("K"+r.o.c),end=Math.floor(Date.now()/1000),begin=end-172800;
+  fillInstances("loading");
+  try{
+    const j=await getJSON("https://opensky-network.org/api/flights/departure?airport="+icao+"&begin="+begin+"&end="+end,isFlights);
+    if(id!==run)return;
+    insts=j.filter(x=>x&&f.cands.includes((x.callsign||"").trim())).map(x=>({icao24:x.icao24,t0:x.firstSeen*1000,t1:x.lastSeen*1000,
+      from:apt(x.estDepartureAirport)||r.o.c,to:apt(x.estArrivalAirport)})).sort((a,b)=>b.t0-a.t0);
+    fillInstances();
+  }catch(e){if(id===run)fillInstances("none");}
+}
+function fillInstances(state){
+  const sel=$("finst"),keep=sel.value;
+  const A=$("from").value||"???",B=$("to").value||"???";
+  let html='<option value="live">Live · today</option>';
+  insts.forEach((x,i)=>{html+='<option value="'+i+'">'+fmtDT(x.t0).replace(/-\d\d /," ")+" · "+esc(x.from)+"»"+esc(x.to||"?")+"</option>";});
+  if(state==="loading")html+='<option disabled>Loading earlier flights…</option>';
+  else if(!insts.length)html+='<option disabled>No earlier flights found</option>';
+  if(sel.innerHTML!==html){sel.innerHTML=html;sel.value=[...sel.options].some(o=>o.value===keep)?keep:"live";}
+}
+async function showPast(x){
+  const id=++run;stopExtras();mode="past";$("banner").hidden=true;
+  fix=null;trail=[];hist=EMPTY();histKey="";lastSource="";traf=[];
+  status("search","Loading the "+fmtDT(x.t0)+" flight…");
+  let rows=null;
+  try{const j=await getJSON("https://opensky-network.org/api/tracks/all?icao24="+x.icao24+"&time="+Math.floor((x.t0+x.t1)/2000),isTrack,"History");
+    rows=j.path.map((r,i,a)=>{const alt=r[3]!=null?r[3]*3.28084:null;let gs=null,vs=null;
+      if(i){const q=a[i-1],dt=r[0]-q[0];if(dt>=15&&dt<=900){gs=distNm([q[1],q[2]],[r[1],r[2]])/dt*3600;if(alt!=null&&q[3]!=null)vs=(alt-q[3]*3.28084)/dt*60;}}
+      return [r[0]*1000,r[1],r[2],alt,gs,r[4],vs,!!r[5]];});
+  }catch(e){
+    try{const j=await getJSON("https://globe.adsb.lol/data/traces/"+x.icao24.slice(-2)+"/trace_full_"+x.icao24+".json",isTrace,"History");
+      rows=j.trace.map(r=>[(j.timestamp+r[0])*1000,r[1],r[2],r[3]==="ground"?0:r[3],r[4],r[5],r[7],r[3]==="ground"]).filter(r=>r[0]>=x.t0-600000&&r[0]<=x.t1+600000);
+    }catch(e2){}
+  }
+  if(id!==run)return;
+  if(!rows||!rows.length){status("bad","No track saved for that flight. Showing the route only.");return;}
+  for(const r of rows){if(r[3]!=null)hist.alt.push([r[0],r[3]]);if(r[4]!=null)hist.spd.push([r[0],r[4]*1.15078]);
+    if(r[6]!=null)hist.vs.push([r[0],r[6]]);if(r[5]!=null)hist.hdg.push([r[0],r[5]]);
+    const l=trail[trail.length-1];if(r[1]!=null&&(!l||Math.abs(l[0]-r[1])+Math.abs(l[1]-r[2])>0.02))trail.push([r[1],r[2]]);}
+  const L=rows[rows.length-1];
+  fix={lat:L[1],lon:L[2],altFt:L[3],gsKt:L[4],track:L[5],vsFpm:L[6],ground:true,t:L[0],callsign:curFlight};
+  lastSource="past flight";win="all";winButtons();
+  camAnimate();view="route";zoom=1;pan=[0,0];viewChanged();aircraftInfo(x.icao24);
+  status("idle","Past flight · departed "+fmtDT(x.t0));
+}
+/* autocomplete */
+let sugIdx=-1,sugItems=[];
+function hideSug(){$("fsug").hidden=true;sugIdx=-1;}
+function buildSug(){
+  const q=$("fq").value.toUpperCase().replace(/[^A-Z0-9]/g,"");const items=[];
+  for(const r of recents)if(!q||r.code.startsWith(q))items.push({code:r.code,sub:(r.o&&r.d?r.o+" » "+r.d+" · ":"")+"recent"});
+  const f=normFlight(q);
+  if(f&&!items.some(i=>i.code===f.code)){const rr=routes[f.code];items.unshift({code:f.code,sub:(f.airline?f.airline[2]:"")+(rr?" · "+rr.o.c+" » "+rr.d.c:"")});}
+  if(/^[A-Z0-9]{1,3}$/.test(q)&&!/^\d+$/.test(q))
+    for(const a of AIRLINES)if(a[0].startsWith(q)||a[1].startsWith(q)||a[2].toUpperCase().startsWith(q))items.push({fill:a[0],code:a[0],sub:a[2]+" ("+a[1]+")"});
+  sugItems=items.slice(0,7);sugIdx=-1;
+  $("fsug").innerHTML=sugItems.map((it,i)=>'<li role="option" data-i="'+i+'"><span class="sc">'+esc(it.code)+'</span><span class="ss">'+esc(it.sub)+"</span></li>").join("");
+  $("fsug").hidden=!sugItems.length||document.activeElement!==$("fq");
+}
+function pickSug(i){const it=sugItems[i];if(!it)return;
+  if(it.fill){$("fq").value=it.fill;buildSug();$("fq").focus();}else chooseFlight(it.code);}
+$("fq").addEventListener("input",buildSug);
+$("fq").addEventListener("focus",()=>{$("fq").select();buildSug();});
+$("fq").addEventListener("blur",()=>setTimeout(hideSug,150));
+$("fq").addEventListener("keydown",e=>{
+  if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();if(!sugItems.length)return;
+    sugIdx=(sugIdx+(e.key==="ArrowDown"?1:-1)+sugItems.length)%sugItems.length;
+    [...$("fsug").children].forEach((li,i)=>li.classList.toggle("hl",i===sugIdx));}
+  else if(e.key==="Enter"){e.preventDefault();if(sugIdx>=0)pickSug(sugIdx);else chooseFlight($("fq").value);$("fq").blur();}
+  else if(e.key==="Escape"){hideSug();$("fq").value=curFlight||"";$("fq").blur();}
+});
+$("fsug").addEventListener("mousedown",e=>{const li=e.target.closest("li");if(li){e.preventDefault();pickSug(+li.dataset.i);}});
+$("finst").addEventListener("change",()=>{const v=$("finst").value;
+  if(v==="live")chooseFlight(curFlight||"AA3101");else if(insts[+v])showPast(insts[+v]);});
+addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(h&&normFlight(h)&&normFlight(h).code!==curFlight)chooseFlight(h);});
+
 /* ---------- nearby traffic: up to 10 aircraft within ~60 mi and 5,000 ft of the plane ---------- */
 const TRAF_NM=52,TRAF_FT=8000,TRAF_MAX=40,TRAF_GROUND_MAX=80;
 const TRAF_URLS=[(a,o)=>"https://api.adsb.lol/v2/point/"+a+"/"+o+"/55",(a,o)=>"https://api.airplanes.live/v2/point/"+a+"/"+o+"/55",
@@ -1537,7 +1717,7 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
   tfScreen=[];
   if(!trafOn)return;
   g.font="10px "+C("--sans");g.textAlign="left";g.textBaseline="bottom";
-  if(scale<TRAF_MIN_SCALE-0.5){g.fillStyle="rgba(232,238,244,.75)";g.fillText("Zoom in to see nearby traffic",8,h-22);return;}
+  if(scale<TRAF_MIN_SCALE-0.5){if(!p)return;g.fillStyle="rgba(232,238,244,.75)";g.fillText("Zoom in to see nearby traffic",8,h-22);return;}
   if(p){g.setLineDash([2,5]);g.strokeStyle="rgba(200,215,230,.35)";g.lineWidth=1;g.beginPath();g.arc(X(p[1]),Y(p[0]),TRAF_NM/60*scale,0,7);g.stroke();g.setLineDash([]);}
   let sel=null;
   for(const a of traf){
@@ -1623,7 +1803,7 @@ function readForm(){
 
 $("gps").addEventListener("click",()=>{readForm();startGps();});
 $("demo").addEventListener("click",()=>{readForm();startDemo();});
-$("view").addEventListener("click",()=>{if(isCustom()){zoom=1;pan=[0,0];}else view=view==="route"?"follow":"route";viewChanged();});
+$("view").addEventListener("click",()=>{camAnimate();if(isCustom()){zoom=1;pan=[0,0];}else view=view==="route"?"follow":"route";viewChanged();});
 readForm();
 setInterval(readouts,500);
 setInterval(()=>{try{renderFlightRow();}catch(e){}},2000);
@@ -1639,7 +1819,10 @@ $("relayForm").addEventListener("submit",e=>{e.preventDefault();
   via=0;for(const k in viaBy)delete viaBy[k];wxTried=0;$("relayMsg").textContent=v?"Saved. Reconnecting through your relay.":"Relay removed.";
   readForm();fix=null;trail=[];lastSource="";histLoad(cands[0]||"");track();fetchWinds();});
 window.addEventListener("resize",()=>{draw();drawCharts();});
-histLoad(cands[0]||"");readouts();draw();drawCharts();track();
+readouts();draw();drawCharts();
+{let start="AA3101";try{start=localStorage.getItem("sfm-cur")||start;}catch(e){}
+ const h=location.hash.slice(1);if(h&&normFlight(h))start=h;
+ chooseFlight(start,"init");}
 </script>
 </body>
 </html>
