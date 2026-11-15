@@ -56,6 +56,20 @@ canvas.spark{display:block;width:100%;height:110px;margin-top:8px;border-radius:
 .chip.up{background:rgba(111,208,140,.18);color:var(--good)}
 .chip.dn{background:rgba(240,160,75,.18);color:var(--warn)}
 .chip.lv{background:rgba(142,163,183,.18);color:var(--muted)}
+.kpi{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--muted);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.kpi.t0{border-left-color:var(--good)}.kpi.t1{border-left-color:#c9d36a}.kpi.t2{border-left-color:var(--warn)}.kpi.t3{border-left-color:var(--bad)}
+.kpihead{display:flex;justify-content:space-between;align-items:center}
+.kpihead .k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.meter{display:flex;gap:3px}.meter i{width:22px;height:8px;border-radius:2px;background:var(--line)}
+.kpi.t0 .meter i.on{background:var(--good)}.kpi.t1 .meter i.on{background:#c9d36a}.kpi.t2 .meter i.on{background:var(--warn)}.kpi.t3 .meter i.on{background:var(--bad)}
+.kpilabel{font-size:1.35rem;font-weight:700;line-height:1.2;text-wrap:balance}
+.kpinote{font-size:.88rem;line-height:1.4}
+.kpidrv{font-size:.8rem;color:var(--muted);line-height:1.6}
+.kpidrv b{color:var(--ink);font-family:var(--mono);font-weight:700}
+.kpidrv .lv{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:2px}
+.kpifoot{font-size:.7rem;color:var(--muted);line-height:1.4;border-top:1px solid var(--line);padding-top:6px}
+.relay{font-size:.85rem;color:var(--muted)}.relay summary{cursor:pointer;padding:4px 0}
+.relay form{margin-top:8px}.relay label{flex:1 1 220px}
 .extra{font-size:.8rem;color:var(--muted);line-height:1.5}
 .extra b{color:var(--ink);font-family:var(--mono)}
 footer{font-size:.72rem;color:var(--muted);line-height:1.45}
@@ -76,6 +90,14 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <button type="button" id="gps">Use phone GPS</button>
   <button type="button" id="demo">Play demo</button>
 </div>
+
+<section class="kpi" id="turb" aria-live="polite">
+  <div class="kpihead"><span class="k">Turbulence estimate</span><span class="meter" id="tMeter" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+  <div class="kpilabel" id="tLabel">Waiting for your position</div>
+  <div class="kpinote" id="tNote"></div>
+  <div class="kpidrv" id="tDrivers"></div>
+  <div class="kpifoot">An estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable but airliners are built to handle far more than passengers feel.</div>
+</section>
 
 <div class="mapwrap">
   <canvas id="map"></canvas>
@@ -100,6 +122,12 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 </div>
 
 <div class="extra" id="extra"></div>
+
+<details class="relay"><summary>Data relay settings</summary>
+  <form id="relayForm"><label for="relay">Your Cloudflare Worker address<input id="relay" placeholder="https://flight-relay.yourname.workers.dev" autocomplete="off" spellcheck="false" style="text-transform:none"></label>
+  <button type="submit">Save</button></form>
+  <div class="s" id="relayMsg"></div>
+</details>
 
 <footer>Positions come from free community ADS-B receiver networks (adsb.lol, airplanes.live, adsb.fi, OpenSky), through a public relay if your browser blocks the direct request. Time to go assumes current speed on a direct path. For curiosity only, not for navigation.</footer>
 
@@ -166,7 +194,10 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    A relay's answer counts only if it really is the service's data (checked by `ok`).
    The route that worked last is tried first next time. */
 const E=encodeURIComponent;
+const RELAY_DEFAULT="";   // set once your Cloudflare Worker exists
+function relayBase(){let r="";try{r=localStorage.getItem("sfm-relay")||"";}catch(e){}return (r||RELAY_DEFAULT).trim().replace(/\/+$/,"");}
 const VIA=[
+  {name:"your relay",wrap:u=>relayBase()?relayBase()+"/?url="+E(u):null,ms:9000},
   {name:"direct",wrap:u=>u,ms:9000},
   {name:"cors.lol",wrap:u=>"https://api.cors.lol/?url="+E(u),ms:9000},
   {name:"codetabs",wrap:u=>"https://api.codetabs.com/v1/proxy?quest="+E(u),ms:9000},
@@ -192,8 +223,9 @@ async function getOnce(url,ms){
 /* Fast path: the route that worked last time, alone. If that fails, race every other route at once
    and take the first good answer, so a full attempt never takes longer than one timeout. */
 async function viaRoute(n,url,ok){
-  const v=VIA[n];
-  try{const j=await getOnce(v.wrap(url),v.ms);if(!ok(j))throw new Error("wrong reply");return {n,j};}
+  const v=VIA[n],target=v.wrap(url);
+  if(!target)throw new Error(v.name+" not set");
+  try{const j=await getOnce(target,v.ms);if(!ok(j))throw new Error("wrong reply");return {n,j};}
   catch(e){throw new Error(v.name+" "+why(e));}
 }
 async function getJSON(url,ok,svc){
@@ -205,7 +237,7 @@ async function getJSON(url,ok,svc){
     const r=await Promise.any(rest.map(n=>viaRoute(n,url,ok).catch(e=>{tried.push(e.message);throw e;})));
     via=r.n;if(svc)log[svc]="ok via "+VIA[r.n].name;return r.j;
   }catch(e){}
-  if(svc)log[svc]=tried.join(", ");
+  if(svc)log[svc]=tried.filter(x=>!x.endsWith("not set")).join(", ");
   throw new Error("unreachable");
 }
 /* If every service is blocked, check whether the internet works at all before blaming them. */
@@ -444,9 +476,32 @@ function draw(){
   for(const c of CITIES){const x=X(c[2]),y=Y(c[1]);if(x<4||x>w-4||y<4||y>h-4)continue;
     g.fillStyle="rgba(142,163,183,.7)";g.beginPath();g.arc(x,y,1.8,0,7);g.fill();
     g.fillStyle="rgba(142,163,183,.75)";g.textAlign=x>w-90?"right":"left";g.fillText(c[0],x+(x>w-90?-5:5),y);}
-  // planned direct route
-  if(org&&dst){g.setLineDash([5,5]);g.strokeStyle=C("--route");g.lineWidth=1.5;g.beginPath();
+  // winds at the plane's altitude: arrows point where the air is going, longer = stronger
+  if(wx){
+    const alt=fix&&fix.altFt!=null?fix.altFt:33000;
+    g.lineCap="round";
+    for(const q of wx.pts){const ww=windAt(q.lat,q.lon,alt);if(!ww)continue;
+      const x=X(q.lon),y=Y(q.lat);if(x<-20||x>w+20||y<-20||y>h+20)continue;
+      const len=Math.min(34,8+ww.spd*0.22),a=ww.to*R,dx=Math.sin(a)*len,dy=-Math.cos(a)*len;
+      const sl=shearLvl(ww.shear);
+      g.strokeStyle=sl>=2?"rgba(240,160,75,.85)":sl==1?"rgba(201,211,106,.75)":"rgba(170,200,225,.55)";
+      g.lineWidth=1.6;g.beginPath();g.moveTo(x-dx/2,y-dy/2);g.lineTo(x+dx/2,y+dy/2);
+      const hx=x+dx/2,hy=y+dy/2,ha=Math.atan2(dy,dx);
+      g.moveTo(hx,hy);g.lineTo(hx-6*Math.cos(ha-0.5),hy-6*Math.sin(ha-0.5));
+      g.moveTo(hx,hy);g.lineTo(hx-6*Math.cos(ha+0.5),hy-6*Math.sin(ha+0.5));g.stroke();
+      g.fillStyle="rgba(170,200,225,.7)";g.font="9px "+C("--mono");g.textAlign="center";g.textBaseline="top";
+      g.fillText(Math.round(ww.spd*1.15078),x,y+8);
+    }
+    const lvl=String(Math.round(alt/1000))+"k ft";
+    g.font="10px "+C("--sans");g.textAlign="left";g.textBaseline="bottom";g.fillStyle="rgba(232,238,244,.75)";
+    g.fillText("Winds at "+lvl+" (mph) · amber = shear",8,h-8);
+  }
+  // planned route, faint, then projected path from the plane to the destination
+  if(org&&dst){g.setLineDash([2,6]);g.strokeStyle="rgba(111,195,223,.35)";g.lineWidth=1;g.beginPath();
     for(let i=0;i<=48;i++){const q=along(org,dst,i/48);i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}
+    g.stroke();g.setLineDash([]);}
+  if(p&&dst){g.setLineDash([7,5]);g.strokeStyle=C("--route");g.lineWidth=2;g.beginPath();
+    for(let i=0;i<=40;i++){const q=along(p,dst,i/40);i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}
     g.stroke();g.setLineDash([]);}
   // flown trail
   if(trail.length){g.strokeStyle=C("--accent");g.lineWidth=2.5;g.lineJoin="round";g.beginPath();
@@ -464,6 +519,100 @@ function draw(){
     g.lineTo(-2,10);g.lineTo(-3,3);g.lineTo(-13,6);g.lineTo(-13,3);g.lineTo(-3,-4);g.closePath();g.fill();g.stroke();g.restore();}
   else{g.fillStyle=C("--muted");g.font="13px "+C("--sans");g.textAlign="center";g.fillText("Waiting for a position",w/2,h-16);}
 }
+
+
+/* ---------- winds aloft + turbulence estimate (Open-Meteo weather model) ---------- */
+const LEVELS=[[850,4780],[700,9880],[600,13800],[500,18280],[400,23570],[300,30050],[250,33980],[200,38660]]; // hPa, standard altitude ft
+let wx=null,wxBusy=false,wxTried=0;
+const isMeteo=j=>Array.isArray(j)?j.length&&j[0].hourly:!!(j&&j.hourly);
+async function fetchWinds(){
+  if(wxBusy||!org||!dst)return;
+  if(Date.now()-wxTried<60000)return;           // at most one attempt a minute
+  wxBusy=true;wxTried=Date.now();
+  try{
+    const pts=[];const p=now()||org;
+    const la=[Math.min(org[0],dst[0],p[0])-1.5,Math.max(org[0],dst[0],p[0])+1.5];
+    const lo=[Math.min(org[1],dst[1],p[1])-1.5,Math.max(org[1],dst[1],p[1])+1.5];
+    const NX=7,NY=5;
+    for(let j=0;j<NY;j++)for(let i=0;i<NX;i++)pts.push([la[0]+(la[1]-la[0])*j/(NY-1),lo[0]+(lo[1]-lo[0])*i/(NX-1)]);
+    const vars=[];LEVELS.forEach(([hp])=>vars.push("wind_speed_"+hp+"hPa","wind_direction_"+hp+"hPa"));vars.push("cape");
+    const url="https://api.open-meteo.com/v1/forecast?latitude="+pts.map(q=>q[0].toFixed(2)).join(",")+
+      "&longitude="+pts.map(q=>q[1].toFixed(2)).join(",")+"&hourly="+vars.join(",")+
+      "&wind_speed_unit=kn&timezone=GMT&forecast_days=1&past_days=0";
+    const j=await getJSON(url,isMeteo,"Weather");
+    const arr=Array.isArray(j)?j:[j];
+    const hourNow=new Date().toISOString().slice(0,13);
+    wx={t:Date.now(),pts:arr.map((r,k)=>{
+      let i=r.hourly.time.findIndex(s=>s.slice(0,13)===hourNow);if(i<0)i=0;
+      return {lat:pts[k][0],lon:pts[k][1],cape:r.hourly.cape[i]||0,
+        lv:LEVELS.map(([hp,ft])=>({ft,s:r.hourly["wind_speed_"+hp+"hPa"][i],d:r.hourly["wind_direction_"+hp+"hPa"][i]}))};
+    })};
+  }catch(e){}finally{wxBusy=false;}
+}
+function uv(s,d){return [-s*Math.sin(d*R),-s*Math.cos(d*R)];}   // where the air is going
+/* Wind and shear at a spot and altitude, from the nearest grid point. */
+function windAt(lat,lon,altFt){
+  if(!wx)return null;
+  let best=null,bd=1e9;for(const q of wx.pts){const dd=distNm([lat,lon],[q.lat,q.lon]);if(dd<bd){bd=dd;best=q;}}
+  if(!best||bd>250)return null;
+  const a=Math.max(LEVELS[0][1],Math.min(LEVELS[LEVELS.length-1][1],altFt==null?33000:altFt));
+  let k=0;while(k<best.lv.length-2&&best.lv[k+1].ft<a)k++;
+  const lo=best.lv[k],hi=best.lv[k+1];if(lo.s==null||hi.s==null)return null;
+  const f=(a-lo.ft)/(hi.ft-lo.ft),u1=uv(lo.s,lo.d),u2=uv(hi.s,hi.d);
+  const u=u1[0]+(u2[0]-u1[0])*f,v=u1[1]+(u2[1]-u1[1])*f;
+  const shear=Math.hypot(u2[0]-u1[0],u2[1]-u1[1])/((hi.ft-lo.ft)/1000);   // kt per 1,000 ft
+  return {spd:Math.hypot(u,v),to:(Math.atan2(u,v)/R+360)%360,shear,cape:best.cape};
+}
+const TURB=[
+  {label:"Smooth air likely",cls:"t0",note:"Conditions along your path look calm."},
+  {label:"Light bumps possible",cls:"t1",note:"Occasional light bumps. Normal and harmless; drinks might jiggle."},
+  {label:"Light to moderate chop possible",cls:"t2",note:"Some steady bumpiness is possible. Uncomfortable, not dangerous. Keep your seatbelt fastened."},
+  {label:"Moderate turbulence possible",cls:"t3",note:"Firmer bumps are possible. Crews plan for this and often change altitude to find smoother air. Stay buckled in."}
+];
+function shearLvl(s){return s<3?0:s<5?1:s<7?2:3;}
+function capeLvl(c){return c<300?0:c<1000?1:c<2000?2:3;}
+/* Bumps the plane itself is showing: spread of its climb rate over the last 2 minutes while level. */
+function jitter(){
+  const cut=Date.now()-120000,v=hist.vs.filter(q=>q[0]>cut).map(q=>q[1]);
+  if(v.length<6)return null;
+  const m=v.reduce((a,b)=>a+b,0)/v.length;if(Math.abs(m)>400)return null;   // climbing or descending on purpose
+  return Math.sqrt(v.reduce((a,b)=>a+(b-m)**2,0)/v.length);
+}
+function turbulence(){
+  const box=$("turb");
+  const p=now();
+  if(!fix||!p){box.className="kpi";set("tLabel","Waiting for your position");set("tNote","");set("tDrivers","");setMeter(-1);return;}
+  const w=windAt(p[0],p[1],fix.altFt);
+  let ahead=null;
+  if(w&&dst&&fix.track!=null){
+    const brg=bearing(p,dst);let worst=-1,at=null;
+    for(const nm of [40,80,120]){if(nm>distNm(p,dst))break;const q=move(p,brg,nm),wa=windAt(q[0],q[1],fix.altFt);
+      if(wa){const l=Math.max(shearLvl(wa.shear),capeLvl(wa.cape));if(l>worst){worst=l;at=nm;}}}
+    if(worst>=0)ahead={lvl:worst,nm:at};
+  }
+  const jt=jitter(),jl=jt==null?0:jt<120?0:jt<250?1:jt<450?2:3;
+  const now0=w?Math.max(shearLvl(w.shear),capeLvl(w.cape)):0;
+  const lvl=Math.max(now0,jl);
+  if(!w&&jt==null){box.className="kpi";set("tLabel","Loading weather…");set("tNote","Wind data comes from a free weather model and refreshes every 10 minutes.");set("tDrivers","");setMeter(-1);return;}
+  const T=TURB[lvl];box.className="kpi "+T.cls;set("tLabel",T.label);
+  let note=T.note;
+  if(fix.altFt!=null&&fix.altFt<10000&&fix.altFt>500)note+=" Some bumps are normal at low altitude during climb and descent.";
+  if(ahead&&ahead.lvl>lvl&&fix.gsKt>100)note+=` Next ${Math.round(ahead.nm/fix.gsKt*60)} min: ${TURB[ahead.lvl].label.toLowerCase()}.`;
+  else if(ahead&&ahead.lvl<lvl)note+=" Looks calmer further along your route.";
+  set("tNote",note);
+  const rows=[];
+  if(w){
+    rows.push(`Wind shear at your altitude <b>${w.shear.toFixed(1)} kt/1,000 ft</b> <span class="lv">${["low","mild","notable","high"][shearLvl(w.shear)]}</span>`);
+    rows.push(`Storm energy nearby <b>${fmt(w.cape)} J/kg</b> <span class="lv">${["none","low","some","high"][capeLvl(w.cape)]}</span>`);
+    const from=(w.to+180)%360;
+    let comp="";if(fix.track!=null){const c=w.spd*Math.cos((w.to-fix.track)*R);comp=c>=0?` · <b>${fmt(c*1.15078)} mph</b> tailwind`:` · <b>${fmt(-c*1.15078)} mph</b> headwind`;}
+    rows.push(`Wind <b>${fmt(w.spd*1.15078)} mph</b> from ${COMPASS[Math.round(from/45)%8]} (${String(Math.round(from)).padStart(3,"0")}°)${comp}`);
+  }
+  if(jt!=null)rows.push(`Plane's altitude steadiness <b>±${fmt(jt)} ft/min</b> <span class="lv">${["steady","slight wobble","bumpy","very bumpy"][jl]}</span>`);
+  set("tDrivers",rows.join("<br>"));
+  setMeter(lvl);
+}
+function setMeter(l){document.querySelectorAll("#tMeter i").forEach((e,i)=>e.className=i<=l?"on":"");}
 
 /* ---------- live scrolling charts, Task Manager style: fixed window, newest at right ---------- */
 const SCOPE={bg:"#000000",grid:"#00703a",trace:"#00ff41",dim:"#00b830",text:"#00ff41"};
@@ -595,6 +744,14 @@ try{const s=JSON.parse(localStorage.getItem("sfm")||"null");if(s){$("flight").va
 readForm();
 setInterval(()=>{readouts();draw();},500);
 setInterval(drawCharts,250);
+setInterval(()=>{turbulence();if(!wx||Date.now()-wx.t>600000)fetchWinds();},2000);
+try{$("relay").value=localStorage.getItem("sfm-relay")||"";}catch(e){}
+$("relayForm").addEventListener("submit",e=>{e.preventDefault();
+  const v=$("relay").value.trim();
+  if(v&&!/^https:\/\/[^\s]+$/.test(v)){$("relayMsg").textContent="Enter the full address starting with https://";return;}
+  try{localStorage.setItem("sfm-relay",v);}catch(err){}
+  via=0;wxTried=0;$("relayMsg").textContent=v?"Saved. Reconnecting through your relay.":"Relay removed.";
+  readForm();fix=null;trail=[];lastSource="";histLoad(cands[0]||"");track();fetchWinds();});
 window.addEventListener("resize",()=>{draw();drawCharts();});
 histLoad(cands[0]||"");readouts();draw();drawCharts();track();
 </script>
