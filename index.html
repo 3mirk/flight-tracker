@@ -939,7 +939,7 @@ function draw(){
   g.fillStyle=CRT_BG;g.fillRect(0,0,w,h);
   // coastline and state lines: thin phosphor vectors, no fills
   g.lineJoin="round";g.lineCap="round";
-  path(LAND);g.fillStyle="#101215";g.fill();glowStroke(g,2,.7,GREY);
+  path(LAND);g.fillStyle="#101215";g.fill();glowStroke(g,2,.85);
   path(BORDERS);glowStroke(g,2,.3,GREY);
   // graticule
   const stepDeg=scale>90?1:scale>25?5:10;
@@ -1000,15 +1000,9 @@ function draw(){
         }
       }
     }
-    // big-picture arrows at the forecast grid points, with speed in mph: keeps the overall pattern readable at any zoom
-    g.font="700 8px "+C("--mono");g.textAlign="center";g.textBaseline="top";
-    for(const q of wx.pts){const x=X(q.lon),y=Y(q.lat);if(x<14||x>w-14||y<14||y>h-26)continue;
-      const ww=windAt(q.lat,q.lon,alt);if(!ww)continue;
-      const col=WCOL[shearLvl(ww.shear)],a=ww.to*R,len=Math.min(26,10+ww.spd*.12),dx=Math.sin(a)*len/2,dy=-Math.cos(a)*len/2;
-      g.strokeStyle="rgba("+col+",.85)";g.lineWidth=2;g.beginPath();g.moveTo(x-dx,y-dy);g.lineTo(x+dx,y+dy);
-      const ha=Math.atan2(dy,dx);g.moveTo(x+dx,y+dy);g.lineTo(x+dx-5*Math.cos(ha-.55),y+dy-5*Math.sin(ha-.55));
-      g.moveTo(x+dx,y+dy);g.lineTo(x+dx-5*Math.cos(ha+.55),y+dy-5*Math.sin(ha+.55));g.stroke();
-      g.fillStyle="rgba("+col+",.9)";g.fillText(Math.round(ww.spd*1.15078),x,y+Math.abs(dy)+3);}
+    g.fillStyle="rgba(185,220,245,.75)";g.font="700 8px "+C("--mono");g.textAlign="center";g.textBaseline="middle";
+    for(const q of wx.pts){const x=X(q.lon),y=Y(q.lat);if(x<10||x>w-10||y<10||y>h-22)continue;
+      const ww=windAt(q.lat,q.lon,alt);if(ww)g.fillText(Math.round(ww.spd*1.15078),x,y);}
     g.font="700 9px "+C("--mono");g.textAlign="left";g.textBaseline="bottom";g.fillStyle=LBL(.85);
     g.fillText("WINDS "+Math.round(alt/1000)+"K FT (MPH) · YELLOW/PINK = SHEAR",10,h-8);
   }catch(e){parts=[];}};
