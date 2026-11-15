@@ -82,6 +82,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .kpigrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .kpigrid:empty{display:none}
 .kpigrid .c{border:1px solid var(--line);border-radius:8px;padding:6px 8px;min-width:0}
+.kpi .kpigrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.kpi .kpigrid .c{padding:3px 5px;border-radius:6px}
+.kpi .kpigrid .k{font-size:.56rem;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .kpigrid .cv{font-size:.86rem;line-height:1.15;white-space:nowrap}
+.kpi .kpigrid .cl{font-size:.58rem;line-height:1.25}
 .kpigrid .k{font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .kpigrid .cv{font:700 1.05rem var(--mono);font-variant-numeric:tabular-nums}
 .kpigrid .cv small{font-size:.66rem;color:var(--muted);font-weight:600;margin-left:3px}
@@ -113,14 +118,15 @@ canvas.spark{display:block;width:100%;height:112px;border-radius:6px;border:1px 
 .chip.up{background:rgba(111,208,140,.18);color:var(--good)}
 .chip.dn{background:rgba(240,160,75,.18);color:var(--warn)}
 .chip.lv{background:rgba(142,163,183,.18);color:var(--muted)}
-.kpi{background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--muted);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--muted);border-radius:10px;padding:7px 10px;display:flex;flex-direction:column;gap:4px}
 .kpi.t0{border-left-color:var(--good)}.kpi.t1{border-left-color:#c9d36a}.kpi.t2{border-left-color:var(--warn)}.kpi.t3{border-left-color:var(--bad)}
 .kpihead{display:flex;justify-content:space-between;align-items:center}
 .kpihead .k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.meter{display:flex;gap:3px}.meter i{width:22px;height:8px;border-radius:2px;background:var(--line)}
+.meter{display:flex;gap:3px}.meter i{width:18px;height:6px;border-radius:2px;background:var(--line)}
 .kpi.t0 .meter i.on{background:var(--good)}.kpi.t1 .meter i.on{background:#c9d36a}.kpi.t2 .meter i.on{background:var(--warn)}.kpi.t3 .meter i.on{background:var(--bad)}
-.kpilabel{font-size:1.35rem;font-weight:700;line-height:1.2;text-wrap:balance}
-.kpinote{font-size:.88rem;line-height:1.4}
+.kpilabel{font-size:1.02rem;font-weight:700;line-height:1.2;text-wrap:balance}
+.kpinote{font-size:.74rem;line-height:1.35;color:var(--muted)}
+.kpinote:empty{display:none}
 .kpidrv{font-size:.8rem;color:var(--muted);line-height:1.6}
 .kpidrv b{color:var(--ink);font-family:var(--mono);font-weight:700}
 .kpidrv .lv{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:2px}
@@ -177,7 +183,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 </section>
 
 <section class="kpi" id="turb" aria-live="polite">
-  <div class="kpihead"><span class="k">Turbulence estimate<sup class="ref" data-n="1" role="button" tabindex="0" aria-label="Note 1">1</sup></span><span class="meter" id="tMeter" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+  <div class="kpihead"><span class="k">Turbulence<sup class="ref" data-n="1" role="button" tabindex="0" aria-label="Note 1">1</sup></span><span class="meter" id="tMeter" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
   <div class="kpilabel" id="tLabel">Waiting for your position</div>
   <div class="kpinote" id="tNote"></div>
   <div class="kpigrid" id="tDrivers"></div>
@@ -810,6 +816,18 @@ function draw(){
 }
 /* ---------- map gestures: pinch or double-tap to zoom in, two-finger tap to zoom out, drag to move ---------- */
 function geoAt(mx,my){const S=proj.bS*zoom;return [proj.bLat+pan[0]-(my-proj.h/2)/S,proj.bLon+pan[1]+(mx-proj.w/2)/(proj.k*S)];}
+function fitMap(){
+  const vh=(window.visualViewport&&visualViewport.height)||innerHeight,wrap=document.querySelector(".mapwrap"),ch=document.querySelector(".charts");
+  if(!wrap||!ch)return;
+  const top=wrap.getBoundingClientRect().top+scrollY,gap=ch.getBoundingClientRect().top-wrap.getBoundingClientRect().bottom;
+  const want=Math.round(vh-top-gap-48);     // 48 px of the chart tiles show below the fold
+  const hgt=Math.max(230,Math.min(520,want));
+  if(Math.abs(cv.clientHeight-hgt)>2){cv.style.height=hgt+"px";cv.style.maxHeight="none";cv.style.aspectRatio="auto";draw();}
+}
+addEventListener("resize",fitMap);if(window.visualViewport)visualViewport.addEventListener("resize",fitMap);
+addEventListener("orientationchange",()=>setTimeout(fitMap,300));
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitMap);
+setTimeout(fitMap,0);setTimeout(fitMap,800);
 function viewChanged(){
   $("view").textContent=isCustom()?"Reset view":"View: "+(view==="route"?"route":"close-up");draw();}
 function zoomAt(mx,my,z){
@@ -948,14 +966,14 @@ function turbulence(){
   const cell=(k,v,l)=>'<div class="c"><div class="k">'+k+'</div><div class="cv">'+v+'</div><div class="cl">'+(l||"&nbsp;")+"</div></div>";
   let windV="—",windL="",shV="—",shL="",cpV="—",cpL="";
   if(w){
-    shV=w.shear.toFixed(1)+"<small>kt/1k ft</small>";shL=["low","mild","notable","high"][shearLvl(w.shear)];
-    cpV=fmt(w.cape)+"<small>J/kg</small>";cpL=["none","low","some","high"][capeLvl(w.cape)];
-    const from=(w.to+180)%360;windV=fmt(w.spd*1.15078)+"<small>mph</small>";
-    windL="from "+COMPASS[Math.round(from/45)%8];
+    shV=w.shear.toFixed(1);shL="kt/1k ft · "+["low","mild","notable","high"][shearLvl(w.shear)];
+    cpV=fmt(w.cape);cpL="J/kg · "+["none","low","some","high"][capeLvl(w.cape)];
+    const from=(w.to+180)%360;windV=fmt(w.spd*1.15078);
+    windL="mph from "+COMPASS[Math.round(from/45)%8];
     if(fix.track!=null){const c=w.spd*Math.cos((w.to-fix.track)*R);windL+=" · "+fmt(Math.abs(c)*1.15078)+(c>=0?" tail":" head");}
   }
-  set("tDrivers",cell("Wind shear",shV,shL)+cell("Storm energy",cpV,cpL)+cell("Wind aloft",windV,windL)+
-    cell("Plane steadiness",jt!=null?"±"+fmt(jt)+"<small>ft/min</small>":"—",jt!=null?["steady","slight wobble","bumpy","very bumpy"][jl]:"needs level flight"));
+  set("tDrivers",cell("Shear",shV,shL)+cell("Storms",cpV,cpL)+cell("Wind",windV,windL)+
+    cell("Steadiness",jt!=null?"±"+fmt(jt):"—",jt!=null?"ft/min · "+["steady","slight wobble","bumpy","very bumpy"][jl]:"needs level flight"));
   setMeter(lvl);
 }
 function setMeter(l){document.querySelectorAll("#tMeter i").forEach((e,i)=>e.className=i<=l?"on":"");}
