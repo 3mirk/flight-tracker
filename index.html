@@ -243,7 +243,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 
 <details class="notes" id="notes"><summary>Notes</summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
-  <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 10 aircraft within 60 miles and 5,000 ft of you; tap one for details.</li>
+  <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
   <li id="note4">Time to go assumes your current speed on a direct path. Clock times use your phone's time zone.</li>
   <li id="note5">Aircraft details and photos come from volunteer databases (adsbdb, planespotters.net, OpenSky) and can be missing or out of date. Past flights come from OpenSky and can lag by a day. No free source has an aircraft's lifetime flight count or the factory that built it.</li>
@@ -741,18 +741,22 @@ function draw(){
   for(let la=Math.ceil((clat-h/2/scale)/stepDeg)*stepDeg;la<clat+h/2/scale;la+=stepDeg){g.moveTo(0,Y(la));g.lineTo(w,Y(la));}
   for(let lo=Math.ceil((clon-w/2/scale/k)/stepDeg)*stepDeg;lo<clon+w/2/scale/k;lo+=stepDeg){g.moveTo(X(lo),0);g.lineTo(X(lo),h);}
   g.stroke();
+  if(scale>=SURF_SCALE){
+    if(!surfCovers(clat,clon))fetchSurface(clat,clon);
+    try{drawSurface(g,X,Y,w,h,scale,C);}catch(e){}
+  }
   // cities: label only where it won't collide with another label, an airport code or the plane
   g.font="9px "+C("--sans");g.textBaseline="middle";
   const taken=[];const hit=b=>taken.some(t=>b[0]<t[2]&&b[2]>t[0]&&b[1]<t[3]&&b[3]>t[1]);
   for(const a of [org,dst,p]){if(a){const x=X(a[1]),y=Y(a[0]);taken.push([x-22,y-16,x+22,y+26]);}}
-  for(const c of CITIES){const x=X(c[2]),y=Y(c[1]);if(x<4||x>w-4||y<4||y>h-4)continue;
+  if(scale<SURF_SCALE)for(const c of CITIES){const x=X(c[2]),y=Y(c[1]);if(x<4||x>w-4||y<4||y>h-4)continue;
     const tw=g.measureText(c[0]).width,right=x>w-tw-12,bx=right?x-5-tw:x+5,box=[bx-2,y-6,bx+tw+2,y+6];
     if(hit(box)||hit([x-3,y-3,x+3,y+3]))continue;
     taken.push(box);
     g.fillStyle="rgba(142,163,183,.7)";g.beginPath();g.arc(x,y,1.6,0,7);g.fill();
     g.fillStyle="rgba(142,163,183,.8)";g.textAlign="left";g.fillText(c[0],bx,y);}
   // winds at the plane's altitude: streaks flow where the air is going, faster = stronger
-  if(wx)try{
+  if(wx&&scale<SURF_SCALE)try{
     const alt=fix&&fix.altFt!=null?fix.altFt:33000;
     g.lineCap="round";
     if(reduced){
@@ -808,10 +812,18 @@ function draw(){
     if(p)g.lineTo(X(p[1]),Y(p[0]));g.stroke();}
   // airports
   g.font="700 12px "+C("--mono");g.textBaseline="middle";
-  [[org,$("from").value],[dst,$("to").value]].forEach(([a,code])=>{if(!a)return;const x=X(a[1]),y=Y(a[0]);if(x<-8||x>w+8||y<-8||y>h+8)return;
+  if(!(scale>=SURF_SCALE&&surf))[[org,$("from").value],[dst,$("to").value]].forEach(([a,code])=>{if(!a)return;const x=X(a[1]),y=Y(a[0]);if(x<-8||x>w+8||y<-8||y>h+8)return;
     g.strokeStyle=C("--ink");g.lineWidth=2;g.fillStyle="#0d1b2b";g.beginPath();g.arc(x,y,5,0,7);g.fill();g.stroke();
     g.fillStyle=C("--ink");g.textAlign="center";g.fillText(code.toUpperCase(),Math.max(18,Math.min(w-18,x)),y+(y>h-26?-15:16));});
   try{drawTraffic(g,X,Y,w,h,scale,p,C);}catch(e){}
+  if(scale>=SURF_SCALE){
+    const lines=[];const where=surfWhere(p);if(where)lines.push(where);
+    if(p&&trafOn){const n=traf.filter(a=>distNm(p,[a.lat,a.lon])<2).length;lines.push(n+" aircraft within 2 mi");}
+    if(!surf)lines.push(surfBusy?"Loading airport map…":"Airport map unavailable");
+    if(lines.length){g.font="700 11px "+C("--mono");const tw=Math.max(...lines.map(t=>g.measureText(t).width))+14;
+      g.fillStyle="rgba(11,21,34,.9)";g.strokeStyle=C("--line");g.lineWidth=1;g.beginPath();g.rect(8,h-14-lines.length*16,tw,lines.length*16+6);g.fill();g.stroke();
+      g.fillStyle=C("--ink");g.textAlign="left";g.textBaseline="middle";lines.forEach((t,i)=>g.fillText(t,15,h-8-(lines.length-i)*16+8));}
+  }
   // aircraft
   if(p){const x=X(p[1]),y=Y(p[0]),old=Date.now()-fix.t>90000;
     if(old){g.fillStyle=C("--ink");g.font="10px "+C("--sans");g.textAlign="center";g.textBaseline="middle";g.fillText("last known",x,y-22);}
@@ -838,7 +850,7 @@ setTimeout(fitMap,0);setTimeout(fitMap,800);
 function viewChanged(){
   $("view").textContent=isCustom()?"Reset view":"View: "+(view==="route"?"route":"close-up");draw();}
 function zoomAt(mx,my,z){
-  if(!proj)return;const g0=geoAt(mx,my);zoom=Math.max(.5,Math.min(60,z));const S=proj.bS*zoom;
+  if(!proj)return;const g0=geoAt(mx,my);zoom=Math.max(.5,Math.min(1500,z));const S=proj.bS*zoom;
   pan=[g0[0]+(my-proj.h/2)/S-proj.bLat,g0[1]-(mx-proj.w/2)/(proj.k*S)-proj.bLon];viewChanged();}
 function panBy(dx,dy){const S=proj.bS*zoom;pan[0]+=dy/S;pan[1]-=dx/(proj.k*S);viewChanged();}
 function local(e){const r=cv.getBoundingClientRect();return [e.clientX-r.left,e.clientY-r.top];}
@@ -1203,14 +1215,87 @@ function renderAircraft(){
   set("acFlights",rows.join("")||"<li><span>No flight history yet</span></li>");
 }
 
+/* ---------- airport surface map from OpenStreetMap (runways, taxiways, aprons, terminals, gates) ---------- */
+const SURF_SCALE=700;      // map scale (px per degree) at which the airport layer appears
+let surf=null,surfBusy=false,surfTried=0;
+const isOverpass=j=>!!(j&&Array.isArray(j.elements));
+function surfCovers(lat,lon){return surf&&lat>surf.b[0]+.01&&lat<surf.b[2]-.01&&lon>surf.b[1]+.01&&lon<surf.b[3]-.01;}
+async function fetchSurface(lat,lon){
+  if(surfBusy||Date.now()-surfTried<20000)return;surfBusy=true;surfTried=Date.now();
+  const b=[lat-.07,lon-.09,lat+.07,lon+.09].map(v=>v.toFixed(4));
+  const q='[out:json][timeout:25];(way["aeroway"~"^(runway|taxiway|taxilane|apron|terminal|hangar|parking_position)$"]('+b.join(",")+');'+
+    'node["aeroway"~"^(gate|parking_position)$"]('+b.join(",")+'););out geom qt;';
+  try{
+    const j=await getJSON("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q),isOverpass,"Airport map");
+    const S={b:b.map(Number),areas:[],lines:[],gates:[],labels:[]};
+    for(const e of j.elements){
+      const t=e.tags||{},k=t.aeroway;
+      if(e.type==="node"){if(e.lat!=null)S.gates.push({lat:e.lat,lon:e.lon,ref:t.ref||t.name||"",k});continue;}
+      const pts=(e.geometry||[]).filter(Boolean).map(q=>[q.lat,q.lon]);if(pts.length<2)continue;
+      const closed=pts.length>3&&pts[0][0]===pts[pts.length-1][0]&&pts[0][1]===pts[pts.length-1][1];
+      if(k==="apron"||k==="terminal"||k==="hangar"||(k==="parking_position"&&closed)){S.areas.push({k,pts,ref:t.ref||t.name||""});continue;}
+      if(k==="parking_position"){const m=pts[pts.length-1];S.gates.push({lat:m[0],lon:m[1],ref:t.ref||t.name||"",k});continue;}
+      const wd=parseFloat(t.width)||(k==="runway"?45:k==="taxiway"?23:15);
+      S.lines.push({k,pts,ref:t.ref||t.name||"",wd});
+    }
+    S.areas.sort((a,b)=>(a.k==="apron"?0:1)-(b.k==="apron"?0:1));
+    surf=S;
+  }catch(e){}finally{surfBusy=false;}
+}
+/* Which runway, taxiway or gate the plane is on, from the nearest feature (metres). */
+function surfWhere(p){
+  if(!surf||!p)return "";
+  const mPerLat=111320,mPerLon=111320*Math.cos(p[0]*R);
+  const dSeg=(a,b)=>{const ax=(a[1]-p[1])*mPerLon,ay=(a[0]-p[0])*mPerLat,bx=(b[1]-p[1])*mPerLon,by=(b[0]-p[0])*mPerLat;
+    const dx=bx-ax,dy=by-ay,l=dx*dx+dy*dy,t=l?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/l)):0;return Math.hypot(ax+t*dx,ay+t*dy);};
+  let best=null,bd=1e9;
+  for(const L of surf.lines){for(let i=1;i<L.pts.length;i++){const d=dSeg(L.pts[i-1],L.pts[i]);if(d<bd){bd=d;best=L;}}}
+  let gate=null,gd=1e9;
+  for(const G of surf.gates){if(!G.ref)continue;const d=Math.hypot((G.lat-p[0])*mPerLat,(G.lon-p[1])*mPerLon);if(d<gd){gd=d;gate=G;}}
+  const parts=[];
+  if(gate&&gd<45)parts.push("At "+(gate.k==="gate"?"gate ":"stand ")+gate.ref);
+  else if(best&&bd<best.wd*.5+15){const nm={runway:"runway",taxiway:"taxiway",taxilane:"taxilane"}[best.k]||best.k;parts.push("On "+nm+(best.ref?" "+best.ref:""));}
+  if(!parts.length&&gate&&gd<200)parts.push("Near "+(gate.k==="gate"?"gate ":"stand ")+gate.ref);
+  return parts.join(" · ");
+}
+function drawSurface(g,X,Y,w,h,scale,C){
+  if(!surf)return;
+  const mpx=scale/111320;      // pixels per metre
+  const onScreen=pts=>pts.some(q=>{const x=X(q[1]),y=Y(q[0]);return x>-200&&x<w+200&&y>-200&&y<h+200;});
+  for(const A of surf.areas){if(!onScreen(A.pts))continue;
+    g.beginPath();A.pts.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));g.closePath();
+    g.fillStyle=A.k==="apron"?"#2a3644":A.k==="terminal"?"#3d4c5e":A.k==="hangar"?"#33404f":"#2f3b49";g.fill();
+    if(A.k!=="apron"){g.strokeStyle="rgba(200,215,230,.35)";g.lineWidth=1;g.stroke();}
+  }
+  g.lineCap="round";g.lineJoin="round";
+  for(const k of ["taxilane","taxiway","runway"])for(const L of surf.lines){if(L.k!==k||!onScreen(L.pts))continue;
+    g.beginPath();L.pts.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));
+    g.strokeStyle=k==="runway"?"#4a5563":"#3a4552";g.lineWidth=Math.max(k==="runway"?4:2,L.wd*mpx);g.stroke();
+    if(k==="runway"){g.setLineDash([Math.max(4,30*mpx),Math.max(4,20*mpx)]);g.strokeStyle="rgba(240,244,248,.75)";g.lineWidth=Math.max(1,1*mpx);g.stroke();g.setLineDash([]);}
+    else{g.strokeStyle="rgba(240,200,60,.8)";g.lineWidth=Math.max(1,.4*mpx);g.stroke();}
+  }
+  // labels: runway ends, taxiway letters, gate numbers as zoom allows
+  g.font="700 10px "+C("--mono");g.textAlign="center";g.textBaseline="middle";
+  for(const L of surf.lines){if(!L.ref||!onScreen(L.pts))continue;
+    if(L.k==="runway"){const ends=L.ref.split("/");[[L.pts[0],ends[0]],[L.pts[L.pts.length-1],ends[1]||""]].forEach(([q,t])=>{if(!t)return;
+      const x=X(q[1]),y=Y(q[0]);g.fillStyle="rgba(11,21,34,.85)";g.fillRect(x-14,y-8,28,16);g.fillStyle="#fff";g.fillText(t,x,y);});}
+    else if(scale>2500){const q=L.pts[Math.floor(L.pts.length/2)],x=X(q[1]),y=Y(q[0]);if(x<0||x>w||y<0||y>h)continue;
+      const tw=g.measureText(L.ref).width+6;g.fillStyle="#1b1206";g.fillRect(x-tw/2,y-7,tw,14);g.fillStyle="#f0c83c";g.fillText(L.ref,x,y);}
+  }
+  if(scale>6000){g.font="9px "+C("--mono");
+    for(const G of surf.gates){const x=X(G.lon),y=Y(G.lat);if(x<0||x>w||y<0||y>h)continue;
+      g.fillStyle="rgba(111,195,223,.9)";g.beginPath();g.arc(x,y,2,0,7);g.fill();
+      if(G.ref&&scale>12000){g.fillStyle="rgba(200,230,245,.9)";g.fillText(G.ref,x,y-8);}}}
+}
+
 /* ---------- nearby traffic: up to 10 aircraft within ~60 mi and 5,000 ft of the plane ---------- */
-const TRAF_NM=52,TRAF_FT=5000,TRAF_MAX=10;
+const TRAF_NM=52,TRAF_FT=8000,TRAF_MAX=40,TRAF_GROUND_MAX=80;
 const TRAF_URLS=[(a,o)=>"https://api.adsb.lol/v2/point/"+a+"/"+o+"/55",(a,o)=>"https://api.airplanes.live/v2/point/"+a+"/"+o+"/55",
   (a,o)=>"https://opendata.adsb.fi/api/v2/lat/"+a+"/lon/"+o+"/dist/55"];
 var trafOn=false;let traf=[],trafBusy=false,trafSel="",trafUrl=0,tfScreen=[];
 trafOn=true;try{if(localStorage.getItem("sfm-traf2")==="0")trafOn=false;}catch(e){}
 async function fetchTraffic(){
-  if(!trafOn||trafBusy||document.hidden||mode==="demo"||!fix||Date.now()-fix.t>120000)return;
+  if(!trafOn||trafBusy||document.hidden||mode==="demo"||!fix||Date.now()-fix.t>6*3600000)return;
   const p=now();if(!p)return;trafBusy=true;
   try{
     let j=null;
@@ -1219,14 +1304,18 @@ async function fetchTraffic(){
     if(j&&fix){
       const me=now()||p,list=[];
       for(const a of (j.ac||j.aircraft||[])){
-        if(a.lat==null||a.lon==null||a.alt_baro==null||a.alt_baro==="ground")continue;
+        if(a.lat==null||a.lon==null||a.alt_baro==null)continue;
         if((fix.hex&&a.hex===fix.hex)||(fix.callsign&&(a.flight||"").trim()===fix.callsign))continue;
-        if(fix.altFt!=null&&Math.abs(a.alt_baro-fix.altFt)>TRAF_FT)continue;
+        const gnd=a.alt_baro==="ground",alt=gnd?0:a.alt_baro;
+        if(String(a.category||"").startsWith("C"))continue;             // airport vehicles and obstacles
+        const low=fix.altFt==null||fix.altFt<10000;
+        if(gnd&&!low)continue;
+        if(!low&&Math.abs(alt-fix.altFt)>TRAF_FT)continue;
         const d=distNm(me,[a.lat,a.lon]);if(d>TRAF_NM)continue;
-        list.push({hex:a.hex,cs:(a.flight||"").trim(),type:a.t||"",lat:a.lat,lon:a.lon,alt:a.alt_baro,gs:a.gs||0,track:a.track,
+        list.push({hex:a.hex,cs:(a.flight||"").trim(),type:a.t||"",lat:a.lat,lon:a.lon,alt,gnd,gs:a.gs||0,track:a.track!=null?a.track:a.true_heading,
           heli:a.category==="A7",d,t:Date.now()-(a.seen_pos||0)*1000});
       }
-      list.sort((x,y)=>x.d-y.d);traf=list.slice(0,TRAF_MAX);
+      list.sort((x,y)=>x.d-y.d);traf=list.slice(0,fix.altFt==null||fix.altFt<10000?TRAF_GROUND_MAX:TRAF_MAX);
     }
   }finally{trafBusy=false;}
 }
@@ -1263,7 +1352,7 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
   if(sel){
     const a=sel.a,mi=p?distNm(p,sel.q)*1.15078:a.d*1.15078;
     g.strokeStyle=C("--route");g.lineWidth=1.5;g.beginPath();g.arc(sel.x,sel.y,12,0,7);g.stroke();
-    const txt=[a.cs||"No callsign",a.heli?(a.type||"")+" helicopter":a.type,fmt(a.alt)+" ft",fmt(mi)+" mi away"].filter(Boolean).join(" · ");
+    const txt=[a.cs||"No callsign",a.heli?(a.type||"")+" helicopter":a.type,(a.gnd?"on ground":fmt(a.alt)+" ft"),fmt(mi)+" mi away"].filter(Boolean).join(" · ");
     g.font="700 11px "+C("--mono");const tw=g.measureText(txt).width+12;
     const bx=Math.max(4,Math.min(w-tw-4,sel.x-tw/2)),by=sel.y>44?sel.y-38:sel.y+18;
     g.fillStyle="rgba(11,21,34,.94)";g.strokeStyle=C("--line");g.lineWidth=1;g.beginPath();g.rect(bx,by,tw,20);g.fill();g.stroke();

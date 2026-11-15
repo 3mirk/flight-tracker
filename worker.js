@@ -11,6 +11,7 @@ const ALLOWED_HOSTS = [
   "api.open-meteo.com",
   "api.adsbdb.com",
   "api.planespotters.net",
+  "overpass-api.de",
 ];
 
 const CORS = {
