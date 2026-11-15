@@ -60,6 +60,27 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 @keyframes pulse{50%{opacity:.25}}
 @media(prefers-reduced-motion:reduce){.srcs .try .d{animation:none}}
 .srcs ul.x3{margin-top:4px}
+.srcs summary{list-style:none;cursor:pointer}.srcs summary::-webkit-details-marker{display:none}
+.srcs .chev{display:inline-block;margin-left:6px;transition:transform .2s}.srcs[open] .chev{transform:rotate(180deg)}
+.srcs[open] .srcicons,.srcs[open] .srcsum{display:none}
+.srcbody{margin-top:2px}
+.srcicons{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px}
+.si{display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--muted);min-width:0}
+.si .ic{position:relative;width:30px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px}
+.si svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.si .led{position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--line);border:1.5px solid var(--panel)}
+.si .lb{font:600 .52rem var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.si.ok{color:var(--ink)}.si.ok .led{background:var(--good);animation:breathe 2.4s ease-in-out infinite}
+.si.use .ic{border-color:var(--good);background:rgba(111,208,140,.12)}
+.si.try .led{background:var(--warn);animation:blink .7s steps(2,start) infinite}
+.si.fail .led{background:var(--bad);border-radius:2px}.si.fail .ic{border-color:rgba(239,107,107,.45)}
+.si.miss .led{background:var(--panel);border:2px solid var(--muted)}
+.si.off{opacity:.45}
+@keyframes blink{to{visibility:hidden}}
+@keyframes breathe{50%{opacity:.45}}
+@media(prefers-reduced-motion:reduce){.si .led{animation:none!important}}
+.srcsum{font-size:.7rem;color:var(--muted);margin-top:4px;line-height:1.35}
+.srcsum b{color:var(--ink);font-weight:600}
 .srcx{font-size:.68rem;color:var(--muted);margin-top:4px;line-height:1.4;overflow-wrap:anywhere}
 .srcx:empty{display:none}
 .srcx b{color:var(--ink);font-weight:600}
@@ -182,12 +203,18 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 <div class="flightrow"><span class="fr-id">AA3101</span><span class="fr-rt">CLT<span class="arr">→</span>DFW</span><span class="fr-dt" id="frDate">Nov-14-26</span></div>
 
 <div class="status"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
-<section class="srcs" aria-label="Data source status">
-  <div class="srchead"><span class="k">Data sources<sup class="ref" data-n="7" role="button" tabindex="0" aria-label="Note 7">7</sup></span><span id="relayState"></span></div>
-  <ul id="srcList"></ul>
-  <ul id="srcList2" class="x3"></ul>
-  <div class="srcx" id="srcDetail"></div>
-</section>
+<details class="srcs" id="srcBox" aria-label="Data source status">
+  <summary>
+    <div class="srchead"><span class="k">Data sources<sup class="ref" data-n="7" role="button" tabindex="0" aria-label="Note 7">7</sup></span><span><span id="relayState"></span><span class="chev" aria-hidden="true">▾</span></span></div>
+    <div class="srcicons" id="srcIcons"></div>
+    <div class="srcsum" id="srcSum">Starting…</div>
+  </summary>
+  <div class="srcbody">
+    <ul id="srcList"></ul>
+    <ul id="srcList2" class="x3"></ul>
+    <div class="srcx" id="srcDetail"></div>
+  </div>
+</details>
 
 <section class="kpi" id="turb" aria-live="polite">
   <div class="kpihead"><span class="k">Turbulence<sup class="ref" data-n="1" role="button" tabindex="0" aria-label="Note 1">1</sup></span><span class="meter" id="tMeter" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
@@ -385,7 +412,41 @@ function cellHtml(n,label,force){
   return '<li class="'+(force?"idle":st.state)+(activeSrc===n?" use":"")+(selSrc===n?" sel":"")+'" data-n="'+n+'" tabindex="0" role="button" aria-label="'+label+": "+(force||word(n,st))+
     '"><span class="d"></span><span class="nm">'+label+'</span><span class="m">'+kpi+"</span></li>";
 }
+const ICONS={
+  "adsb.lol":'<path d="M12 21V11"/><path d="M8.5 21h7"/><circle cx="12" cy="9" r="1.6"/><path d="M8.6 5.6a5 5 0 0 0 0 6.8M15.4 5.6a5 5 0 0 1 0 6.8M6 3.2a8.4 8.4 0 0 0 0 11.6M18 3.2a8.4 8.4 0 0 1 0 11.6"/>',
+  "airplanes.live":'<path d="M12 3c.9 0 1.4 1 1.4 2v5l7 4v2l-7-2v4l2 1.6V21L12 20l-3.4 1v-1.4l2-1.6v-4l-7 2v-2l7-4V5c0-1 .5-2 1.4-2z"/>',
+  "adsb.fi":'<path d="M4 15a8 8 0 0 0 8-8"/><path d="M5 6l13 13"/><path d="M4 7a12 12 0 0 0 13 13"/><path d="M11 21l2-4M15 15l5 1"/>',
+  "OpenSky":'<path d="M7 18h10a4 4 0 0 0 .6-8A6 6 0 0 0 6.2 9.6 4.2 4.2 0 0 0 7 18z"/>',
+  "Weather":'<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h8"/>',
+  "Traffic":'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/><circle cx="16.5" cy="15" r="1" fill="currentColor"/><circle cx="8" cy="8.5" r="1" fill="currentColor"/>',
+  "History":'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 3v4h4"/><path d="M12 7.5V12l3 2"/>',
+  "Airport map":'<path d="M9 3l-2 18M15 3l2 18"/><path d="M12 5v2M12 10v2M12 15v2"/>'};
+const ICON_LB={"adsb.lol":"lol","airplanes.live":"live","adsb.fi":"fi","OpenSky":"OSky","Weather":"Wind","Traffic":"Traf","History":"Hist","Airport map":"Apt"};
+function renderIcons(){
+  const all=LIVE.concat(EXTRAS.map(x=>x[0]));
+  const html=all.map(n=>{
+    const off=n==="Traffic"&&typeof trafOn!=="undefined"&&!trafOn,st=srcs[n]||{state:"idle"};
+    const label=(EXTRAS.find(x=>x[0]===n)||[n,SHORT[n]||n])[1];
+    return '<span class="si '+(off?"off":st.state)+(activeSrc===n?" use":"")+'" title="'+label+": "+(off?"off":word(n,st))+'"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+
+      ICONS[n]+'</svg><span class="led"></span></span><span class="lb">'+ICON_LB[n]+"</span></span>";}).join("");
+  const el=$("srcIcons");if(el.innerHTML!==html)el.innerHTML=html;
+  // one-line summary
+  const S=n=>(srcs[n]||{}).state||"idle",up=LIVE.filter(n=>S(n)==="ok"||S(n)==="miss").length;
+  let a;
+  if(activeSrc)a="Live via <b>"+(SHORT[activeSrc]||activeSrc)+"</b>";
+  else if(LIVE.some(n=>S(n)==="try"))a="Looking for your flight…";
+  else if(LIVE.every(n=>S(n)==="fail"))a="<b>No position source reachable</b>";
+  else if(up)a="Sources reachable, flight not found";
+  else a="Waiting to connect";
+  const parts=[a];if(up&&!activeSrc)parts.push(up+" of 4 position sources up");else if(activeSrc&&up<4)parts.push(up+" of 4 up");
+  const ex=EXTRAS.filter(([n])=>!(n==="Traffic"&&typeof trafOn!=="undefined"&&!trafOn));
+  const bad=ex.filter(([n])=>S(n)==="fail").map(x=>x[1]),okN=ex.filter(([n])=>S(n)==="ok").length;
+  parts.push(bad.length?bad.join(", ")+" unavailable":okN===ex.length?"all extras working":okN?okN+" of "+ex.length+" extras working":"extras waiting");
+  const t=parts.join(" · ")+".";
+  if($("srcSum").innerHTML!==t)$("srcSum").innerHTML=t;
+}
 function renderSrcs(){
+  renderIcons();
   const html=LIVE.map(n=>cellHtml(n,SHORT[n]||n)).join("");
   const el=$("srcList");if(el.innerHTML!==html)el.innerHTML=html;
   const ex=EXTRAS.map(([n,label])=>cellHtml(n,label,n==="Traffic"&&typeof trafOn!=="undefined"&&!trafOn?"off":null)).join("");
