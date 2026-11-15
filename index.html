@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seatback Flight Map</title>
+<style>
+/* Layout idea: one column, night-cabin palette. Map on top, progress strip, then instrument tiles. */
+:root{
+  color-scheme:dark;
+  --bg:#0b1522; --panel:#13202f; --line:#24374b; --land:#18293a;
+  --ink:#e8eef4; --muted:#8ea3b7; --accent:#ffb347; --route:#6fc3df;
+  --good:#6fd08c; --warn:#f0a04b; --bad:#ef6b6b;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px}
+body{max-width:760px;margin:0 auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:12px}
+h1{font-size:1rem;margin:0;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
+form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
+label{display:flex;flex-direction:column;gap:4px;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px;font:600 1rem var(--mono);text-transform:uppercase}
+.f-flight{flex:2 1 110px}.f-apt{flex:1 1 70px}
+button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px 14px;font:600 .9rem var(--sans);cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#1b1206}
+button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-offset:2px}
+.status{display:flex;gap:8px;align-items:flex-start;font-size:.85rem;color:var(--muted);line-height:1.35}
+.dot{flex:none;width:10px;height:10px;border-radius:50%;margin-top:4px;background:var(--muted)}
+.dot.live{background:var(--good)}.dot.search{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.demo{background:var(--route)}
+.status b{color:var(--ink)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions button{padding:8px 12px;font-size:.8rem}
+.mapwrap{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0d1b2b}
+canvas{display:block;width:100%;aspect-ratio:4/3;max-height:460px}
+#view{position:absolute;right:8px;top:8px;padding:6px 10px;font-size:.75rem;background:rgba(11,21,34,.85)}
+.banner{position:absolute;left:8px;top:8px;background:var(--route);color:#06202b;font:700 .7rem var(--sans);padding:4px 8px;border-radius:6px;letter-spacing:.06em}
+.banner[hidden]{display:none}
+.prog{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font:700 .95rem var(--mono)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent)}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:560px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:0}
+.tile .k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.tile .v{font:700 1.5rem var(--mono);font-variant-numeric:tabular-nums;margin-top:2px;overflow-wrap:anywhere}
+.tile .v small{font-size:.75rem;color:var(--muted);font-weight:600;margin-left:4px}
+.tile .s{font-size:.75rem;color:var(--muted);margin-top:2px;min-height:1em}
+.chip{display:inline-block;padding:1px 6px;border-radius:4px;font-weight:700;font-size:.68rem}
+.chip.up{background:rgba(111,208,140,.18);color:var(--good)}
+.chip.dn{background:rgba(240,160,75,.18);color:var(--warn)}
+.chip.lv{background:rgba(142,163,183,.18);color:var(--muted)}
+.extra{font-size:.8rem;color:var(--muted);line-height:1.5}
+.extra b{color:var(--ink);font-family:var(--mono)}
+footer{font-size:.72rem;color:var(--muted);line-height:1.45}
+</style>
+</head>
+<body>
+<h1>Seatback Flight Map</h1>
+
+<form id="form">
+  <label class="f-flight" for="flight">Flight<input id="flight" value="AA3101" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+  <label class="f-apt" for="from">From<input id="from" value="CLT" maxlength="3" autocomplete="off" spellcheck="false"></label>
+  <label class="f-apt" for="to">To<input id="to" value="DFW" maxlength="3" autocomplete="off" spellcheck="false"></label>
+  <button class="primary" id="go" type="submit">Track</button>
+</form>
+
+<div class="status"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
+<div class="actions">
+  <button type="button" id="gps">Use phone GPS</button>
+  <button type="button" id="demo">Play demo</button>
+</div>
+
+<div class="mapwrap">
+  <canvas id="map"></canvas>
+  <span class="banner" id="banner" hidden>DEMO · SIMULATED</span>
+  <button type="button" id="view">View: route</button>
+</div>
+
+<div class="prog"><span id="pFrom">CLT</span><div class="bar"><i id="pBar"></i></div><span id="pTo">DFW</span></div>
+
+<div class="tiles">
+  <div class="tile"><div class="k">Altitude</div><div class="v" id="alt">—</div><div class="s" id="altS"></div></div>
+  <div class="tile"><div class="k">Ground speed</div><div class="v" id="spd">—</div><div class="s" id="spdS"></div></div>
+  <div class="tile"><div class="k">Heading</div><div class="v" id="hdg">—</div><div class="s" id="hdgS"></div></div>
+  <div class="tile"><div class="k">Vertical speed</div><div class="v" id="vs">—</div><div class="s" id="vsS"></div></div>
+  <div class="tile"><div class="k">Distance to go</div><div class="v" id="dist">—</div><div class="s" id="distS"></div></div>
+  <div class="tile"><div class="k">Time to go</div><div class="v" id="eta">—</div><div class="s" id="etaS"></div></div>
+</div>
+
+<div class="extra" id="extra"></div>
+
+<footer>Positions come from free community ADS-B receiver networks (adsb.lol, airplanes.live, adsb.fi, OpenSky), through a public relay if your browser blocks the direct request. Time to go assumes current speed on a direct path. For curiosity only, not for navigation.</footer>
+
+<script>
+"use strict";
+/* ---------- reference data ---------- */
+const AIRPORTS={CLT:[35.214,-80.943],DFW:[32.897,-97.038],ATL:[33.637,-84.428],ORD:[41.978,-87.905],LAX:[33.942,-118.408],
+JFK:[40.640,-73.779],LGA:[40.777,-73.873],EWR:[40.692,-74.169],MIA:[25.793,-80.291],PHX:[33.434,-112.012],PHL:[39.872,-75.241],
+DCA:[38.852,-77.038],BOS:[42.364,-71.005],SFO:[37.619,-122.375],SEA:[47.449,-122.309],DEN:[39.862,-104.673],LAS:[36.080,-115.152],
+MCO:[28.429,-81.309],IAH:[29.984,-95.341],AUS:[30.194,-97.670],BNA:[36.125,-86.678],RDU:[35.878,-78.787],MSP:[44.882,-93.222],
+DTW:[42.212,-83.353],SLC:[40.788,-111.978],SAN:[32.734,-117.190],TPA:[27.975,-82.533],IAD:[38.944,-77.456],BWI:[39.175,-76.668],
+STL:[38.749,-90.370],MSY:[29.993,-90.258],SAT:[29.534,-98.470],PDX:[45.589,-122.597],FLL:[26.073,-80.153],MDW:[41.786,-87.752],
+DAL:[32.847,-96.852],HOU:[29.645,-95.279],MCI:[39.298,-94.714],CLE:[41.411,-81.850],PIT:[40.491,-80.233],IND:[39.717,-86.294],
+CVG:[39.049,-84.668],MEM:[35.042,-89.977],OKC:[35.393,-97.601],SMF:[38.695,-121.591],SJC:[37.363,-121.929],JAX:[30.494,-81.688]};
+const CITIES=[["Atlanta",33.75,-84.39],["Birmingham",33.52,-86.80],["Memphis",35.15,-90.05],["Nashville",36.16,-86.78],
+["Little Rock",34.75,-92.29],["Jackson",32.30,-90.18],["Shreveport",32.52,-93.75],["Chattanooga",35.05,-85.31],
+["Greenville",34.85,-82.40],["Huntsville",34.73,-86.59],["Texarkana",33.43,-94.05],["Tulsa",36.15,-95.99],
+["Oklahoma City",35.47,-97.52],["Houston",29.76,-95.37],["New Orleans",29.95,-90.07],["St. Louis",38.63,-90.20],
+["Chicago",41.88,-87.63],["New York",40.71,-74.01],["Washington",38.90,-77.04],["Miami",25.76,-80.19],["Denver",39.74,-104.99],
+["Los Angeles",34.05,-118.24],["Phoenix",33.45,-112.07],["Seattle",47.61,-122.33],["San Francisco",37.77,-122.42],
+["Minneapolis",44.98,-93.27],["Kansas City",39.10,-94.58],["Salt Lake City",40.76,-111.89],["Boston",42.36,-71.06],
+["Detroit",42.33,-83.05],["Orlando",28.54,-81.38],["San Antonio",29.42,-98.49],["Albuquerque",35.08,-106.65],["El Paso",31.76,-106.49]];
+/* Coarse outline of the lower 48, enough for orientation. */
+const US=[[48.4,-124.7],[49,-123],[49,-95.2],[48,-89.5],[46.8,-84.8],[45,-82.5],[43,-82.4],[41.7,-83.2],[42.3,-79.8],[43.3,-79],
+[43.6,-76.5],[45,-74.8],[45,-71.5],[47.3,-69],[47.3,-68],[44.8,-67],[43.6,-70.2],[42,-70.6],[41.5,-70],[41.2,-72],[40.6,-74],
+[39,-74.8],[38,-75.3],[37,-76],[35.2,-75.5],[34.6,-77],[33.8,-78],[32,-80.9],[30.4,-81.4],[27,-80],[25.2,-80.4],[25.9,-81.7],
+[27.8,-82.8],[29.1,-83],[30,-84.2],[29.7,-85.3],[30.4,-87],[30.2,-89],[29.1,-89.2],[29.3,-91.5],[29.7,-93.8],[28.6,-96],
+[26,-97.2],[26.4,-99.1],[29.5,-101.4],[29,-103.1],[31.8,-106.5],[31.3,-108.2],[31.3,-111],[32.5,-114.8],[32.5,-117.1],
+[34,-118.5],[34.5,-120.6],[36.6,-121.9],[37.8,-122.5],[40.4,-124.4],[43,-124.4],[46.2,-124]];
+/* Marketing code -> radio callsign prefixes (mainline first, then regional partners). */
+const PREFIX={AA:["AAL","ENY","JIA","PDT","RPA","SKW"],DL:["DAL","EDV","SKW","RPA"],UA:["UAL","SKW","RPA","ASH","GJS"],
+WN:["SWA"],B6:["JBU"],AS:["ASA","QXE","SKW"],NK:["NKS"],F9:["FFT"],G4:["AAY"],HA:["HAL"],AC:["ACA","JZA"],WS:["WJA"]};
+
+/* ---------- geo helpers ---------- */
+const R=Math.PI/180, NM=3440.065;
+function distNm(a,b){const dl=(b[0]-a[0])*R,dn=(b[1]-a[1])*R;
+  const h=Math.sin(dl/2)**2+Math.cos(a[0]*R)*Math.cos(b[0]*R)*Math.sin(dn/2)**2;return 2*NM*Math.asin(Math.min(1,Math.sqrt(h)));}
+function bearing(a,b){const y=Math.sin((b[1]-a[1])*R)*Math.cos(b[0]*R);
+  const x=Math.cos(a[0]*R)*Math.sin(b[0]*R)-Math.sin(a[0]*R)*Math.cos(b[0]*R)*Math.cos((b[1]-a[1])*R);
+  return (Math.atan2(y,x)/R+360)%360;}
+function move(p,brg,nm){const d=nm/NM,la=p[0]*R,lo=p[1]*R,b=brg*R;
+  const la2=Math.asin(Math.sin(la)*Math.cos(d)+Math.cos(la)*Math.sin(d)*Math.cos(b));
+  const lo2=lo+Math.atan2(Math.sin(b)*Math.sin(d)*Math.cos(la),Math.cos(d)-Math.sin(la)*Math.sin(la2));
+  return [la2/R,lo2/R];}
+function along(a,b,f){const d=distNm(a,b);return d<1?a:move(a,bearing(a,b),d*f);}
+const COMPASS=["N","NE","E","SE","S","SW","W","NW"];
+
+/* ---------- state ---------- */
+const $=id=>document.getElementById(id);
+let run=0, mode="idle", gpsWatch=null, demoTimer=null;
+let org=null, dst=null, cands=[];
+let fix=null;          // last reported fix {lat,lon,altFt,gsKt,track,vsFpm,...,t}
+let trail=[], view="route", lastSource="";
+
+function candidates(f){
+  f=f.toUpperCase().replace(/[^A-Z0-9]/g,"");
+  const m=f.match(/^([A-Z0-9]{2})0*(\d{1,4}[A-Z]?)$/);
+  if(m&&PREFIX[m[1]])return PREFIX[m[1]].map(p=>p+m[2]);
+  return f?[f]:[];
+}
+function status(kind,html){$("dot").className="dot "+kind;$("msg").innerHTML=html;}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+/* Direct first; if the browser blocks cross-site reads, go through a public relay. The route that works is remembered. */
+const VIA=[u=>u,u=>"https://corsproxy.io/?url="+encodeURIComponent(u),u=>"https://api.allorigins.win/raw?url="+encodeURIComponent(u)];
+const VIA_NAME=["direct","corsproxy.io","allorigins"];
+let via=0,lastErr="";
+async function getOnce(url){
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);
+  try{const r=await fetch(url,{signal:c.signal,cache:"no-store"});if(!r.ok)throw new Error("HTTP "+r.status);return await r.json();}
+  finally{clearTimeout(t);}
+}
+async function getJSON(url){
+  let err;
+  for(let i=0;i<VIA.length;i++){
+    const n=(via+i)%VIA.length;
+    try{const j=await getOnce(VIA[n](url));via=n;return j;}
+    catch(e){err=e;lastErr=new URL(url).hostname+" ("+VIA_NAME[n]+"): "+(e.name==="AbortError"?"timed out":e.message);}
+  }
+  throw err;
+}
+function whereAmI(){
+  let framed=false;try{framed=window.self!==window.top;}catch(e){framed=true;}
+  return location.protocol+(framed?" in an app preview":"");
+}
+
+/* ---------- data sources ---------- */
+function fromReadsb(j,cs){
+  const list=j.ac||j.aircraft||[];
+  const a=list.find(x=>(x.flight||"").trim()===cs&&x.lat!=null&&x.lon!=null);
+  if(!a)return null;
+  const alt=a.alt_baro==="ground"?0:(a.alt_baro!=null?a.alt_baro:a.alt_geom);
+  return {lat:a.lat,lon:a.lon,altFt:alt,gsKt:a.gs,track:a.track!=null?a.track:a.true_heading,
+    vsFpm:a.baro_rate!=null?a.baro_rate:a.geom_rate,mach:a.mach,oatC:a.oat,windDir:a.wd,windKt:a.ws,
+    reg:a.r,type:a.t,callsign:cs,t:Date.now()-(a.seen_pos||0)*1000};
+}
+const SOURCES=[
+  {name:"adsb.lol",url:c=>"https://api.adsb.lol/v2/callsign/"+c,gap:500,poll:8000},
+  {name:"airplanes.live",url:c=>"https://api.airplanes.live/v2/callsign/"+c,gap:1300,poll:8000},
+  {name:"adsb.fi",url:c=>"https://opendata.adsb.fi/api/v2/callsign/"+c,gap:1300,poll:8000}
+];
+async function openSky(){
+  if(!org||!dst)return null;
+  const la=[Math.min(org[0],dst[0])-3,Math.max(org[0],dst[0])+3],lo=[Math.min(org[1],dst[1])-3,Math.max(org[1],dst[1])+3];
+  const j=await getJSON(`https://opensky-network.org/api/states/all?lamin=${la[0]}&lomin=${lo[0]}&lamax=${la[1]}&lomax=${lo[1]}`);
+  const s=(j.states||[]).find(x=>cands.includes((x[1]||"").trim())&&x[5]!=null&&x[6]!=null);
+  if(!s)return null;
+  const m=s[7]!=null?s[7]:s[13];
+  return {lat:s[6],lon:s[5],altFt:s[8]?0:(m!=null?m*3.28084:null),gsKt:s[9]!=null?s[9]*1.94384:null,track:s[10],
+    vsFpm:s[11]!=null?s[11]*196.85:null,callsign:s[1].trim(),t:(s[3]||j.time)*1000};
+}
+/* Try each service and each possible callsign until the aircraft turns up. */
+async function locate(id){
+  let reached=0;
+  for(const src of SOURCES){
+    for(const cs of cands){
+      if(id!==run)return null;
+      status("search",`Looking for <b>${cs}</b> on ${src.name}.`);
+      let j;try{j=await getJSON(src.url(cs));}catch(e){j=null;}
+      if(!j)break;                       // service unreachable or rate limited: next service
+      reached++;
+      const p=fromReadsb(j,cs);
+      if(p)return {name:src.name,poll:src.poll,first:p,get:async()=>fromReadsb(await getJSON(src.url(cs)),cs)};
+      await sleep(src.gap);
+    }
+  }
+  if(id!==run)return null;
+  status("search","Looking on OpenSky.");
+  try{const p=await openSky();reached++;if(p)return {name:"OpenSky",poll:30000,first:p,get:openSky};}catch(e){}
+  return {none:true,reached};
+}
+async function track(){
+  const id=++run;mode="live";stopExtras();$("banner").hidden=true;
+  let src=null,miss=0;
+  while(id===run){
+    if(!src){
+      const f=await locate(id);if(id!==run)return;
+      if(!f||f.none){
+        status("bad",f&&f.reached
+          ?`No aircraft is broadcasting as ${cands.join(", ")} right now. Check the flight number. Retrying in 20 s.`
+          :(whereAmI().includes("preview")
+              ?"This preview blocks network requests. Open the file in Safari or Chrome itself. "
+              :"Can't reach any flight-data service. ")
+            +"Retrying in 20 s.<br><small>Details: "+whereAmI()+" · "+(lastErr||"no response")+"</small>");
+        await sleep(20000);continue;
+      }
+      src=f;miss=0;apply(f.first,f.name);
+    }
+    await sleep(src.poll);if(id!==run)return;
+    try{const p=await src.get();if(p){apply(p,src.name);miss=0;}else miss++;}catch(e){miss++;}
+    if(miss>=5){src=null;}
+  }
+}
+function apply(p,name){
+  if(fix&&p.t<fix.t)return;
+  fix=p;lastSource=name;
+  const last=trail[trail.length-1];
+  if(!last||Math.abs(last[0]-p.lat)+Math.abs(last[1]-p.lon)>0.02){trail.push([p.lat,p.lon]);if(trail.length>600)trail.shift();}
+}
+
+/* ---------- phone GPS and demo ---------- */
+function stopExtras(){
+  if(gpsWatch!=null){try{navigator.geolocation.clearWatch(gpsWatch);}catch(e){}gpsWatch=null;}
+  if(demoTimer){clearInterval(demoTimer);demoTimer=null;}
+}
+function startGps(){
+  ++run;stopExtras();fix=null;trail=[];mode="gps";$("banner").hidden=true;
+  if(!navigator.geolocation){status("bad","This browser has no location service.");return;}
+  status("search","Waiting for a GPS fix. A window seat helps.");
+  try{
+    gpsWatch=navigator.geolocation.watchPosition(g=>{
+      const c=g.coords,prev=fix;
+      let vs=null;if(prev&&c.altitude!=null&&prev.altFt!=null){const dt=(g.timestamp-prev.t)/60000;if(dt>0.02)vs=(c.altitude*3.28084-prev.altFt)/dt;}
+      apply({lat:c.latitude,lon:c.longitude,altFt:c.altitude!=null?c.altitude*3.28084:null,
+        gsKt:c.speed!=null?c.speed*1.94384:null,track:c.heading!=null&&!isNaN(c.heading)?c.heading:(prev?prev.track:null),
+        vsFpm:vs,callsign:"",t:g.timestamp},"phone GPS");
+    },()=>status("bad","Location was refused or has no signal here. Allow location for this page, or move to a window."),
+    {enableHighAccuracy:true,maximumAge:2000,timeout:60000});
+  }catch(e){status("bad","Location is blocked in this viewer.");}
+}
+function startDemo(){
+  ++run;stopExtras();mode="demo";fix=null;trail=[];$("banner").hidden=false;
+  const o=org||AIRPORTS.CLT,d=dst||AIRPORTS.DFW,total=distNm(o,d);let f=0.3;
+  status("demo","<b>Demo.</b> Simulated flight at 60× speed, not real data.");
+  const step=()=>{
+    const cl=0.12,ds=0.85;
+    const alt=f<cl?34000*f/cl:f>ds?34000*(1-f)/(1-ds):34000;
+    const gs=f<cl?250+190*f/cl:f>ds?440-200*(f-ds)/(1-ds):440;
+    const p=along(o,d,f);
+    apply({lat:p[0],lon:p[1],altFt:alt,gsKt:gs,track:bearing(p,d),vsFpm:f<cl?1900:f>ds?-1700:0,callsign:"DEMO",type:"A321",t:Date.now()},"demo");
+    f+=gs/3600*60/total;if(f>=1){f=0;trail=[];fix=null;}
+  };
+  step();demoTimer=setInterval(step,1000);
+}
+
+/* ---------- instruments ---------- */
+const fmt=n=>Math.round(n).toLocaleString("en-US");
+function now(){ // dead-reckon between reports so the plane keeps moving smoothly
+  if(!fix)return null;
+  const dt=Math.min(60,Math.max(0,(Date.now()-fix.t)/1000));
+  if(fix.gsKt>40&&fix.track!=null)return move([fix.lat,fix.lon],fix.track,fix.gsKt*dt/3600);
+  return [fix.lat,fix.lon];
+}
+function set(id,html){const e=$(id);if(e.innerHTML!==html)e.innerHTML=html;}
+function readouts(){
+  const p=now();
+  if(!fix){["alt","spd","hdg","vs","dist","eta"].forEach(i=>set(i,"—"));["altS","spdS","hdgS","vsS","distS","etaS"].forEach(i=>set(i,""));
+    $("pBar").style.width="0";set("extra","");return;}
+  const f=fix,age=Math.round((Date.now()-f.t)/1000);
+  if(mode!=="demo"&&lastSource){
+    const stale=age>45;
+    status(stale?"search":"live",`<b>${f.callsign||"Your position"}</b> ${stale?"last seen":"live"} via ${lastSource}, updated ${age<60?age+" s":Math.round(age/60)+" min"} ago.`
+      +(stale?" Coverage can drop out between receivers.":""));
+  }
+  set("alt",f.altFt!=null?fmt(f.altFt)+"<small>ft</small>":"—");
+  set("altS",f.altFt!=null?"FL"+String(Math.round(f.altFt/100)).padStart(3,"0")+" · "+fmt(f.altFt*0.3048)+" m":"");
+  set("spd",f.gsKt!=null?fmt(f.gsKt*1.15078)+"<small>mph</small>":"—");
+  set("spdS",f.gsKt!=null?fmt(f.gsKt)+" kt · "+fmt(f.gsKt*1.852)+" km/h":"");
+  set("hdg",f.track!=null?String(Math.round(f.track)%360).padStart(3,"0")+"°":"—");
+  set("hdgS",f.track!=null?"Tracking "+COMPASS[Math.round(f.track/45)%8]:"");
+  if(f.vsFpm!=null){const v=Math.round(f.vsFpm/50)*50;
+    set("vs",(v>0?"+":"")+fmt(v)+"<small>ft/min</small>");
+    set("vsS",v>250?'<span class="chip up">CLIMBING</span>':v<-250?'<span class="chip dn">DESCENDING</span>':'<span class="chip lv">LEVEL</span>');
+  }else{set("vs","—");set("vsS","");}
+  if(dst&&p){
+    const d=distNm(p,dst),tot=org?distNm(org,dst):null;
+    set("dist",fmt(d*1.15078)+"<small>mi</small>");
+    set("distS",fmt(d)+" nm"+(tot?" of "+fmt(tot):""));
+    if(tot)$("pBar").style.width=Math.max(0,Math.min(100,(1-d/tot)*100)).toFixed(1)+"%";
+    if(f.gsKt>80){const s=d/f.gsKt*3600,h=Math.floor(s/3600),m=Math.round(s%3600/60);
+      set("eta",(h?h+"<small>h</small> ":"")+m+"<small>min</small>");
+      set("etaS","Lands about "+new Date(Date.now()+s*1000).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})+" on your phone's clock");
+    }else{set("eta","—");set("etaS","");}
+  }else{set("dist","—");set("distS","Enter From and To codes");set("eta","—");set("etaS","");}
+  const x=[];
+  if(f.type||f.reg)x.push("Aircraft <b>"+[f.type,f.reg].filter(Boolean).join(" · ")+"</b>");
+  if(f.mach)x.push("Mach <b>"+f.mach.toFixed(2)+"</b>");
+  if(f.oatC!=null)x.push("Outside <b>"+Math.round(f.oatC*9/5+32)+"°F</b> ("+Math.round(f.oatC)+"°C)");
+  if(f.windKt!=null&&f.windDir!=null)x.push("Wind <b>"+fmt(f.windKt*1.15078)+" mph</b> from "+String(Math.round(f.windDir)).padStart(3,"0")+"°");
+  set("extra",x.join(" &nbsp;·&nbsp; "));
+}
+
+/* ---------- map ---------- */
+const cv=$("map"),g=cv.getContext("2d");
+function draw(){
+  const dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;
+  if(!w||!h)return;
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
+  g.setTransform(dpr,0,0,dpr,0,0);
+  const css=getComputedStyle(document.documentElement),C=n=>css.getPropertyValue(n).trim();
+  const p=now();
+  // choose what to frame
+  let pts=[];if(org)pts.push(org);if(dst)pts.push(dst);if(p)pts.push(p);
+  let clat,clon,scale;
+  if(view==="follow"&&p){clat=p[0];clon=p[1];scale=h/3.2;}
+  else if(pts.length){
+    const la=pts.map(q=>q[0]),lo=pts.map(q=>q[1]);
+    const a0=Math.min(...la),a1=Math.max(...la),o0=Math.min(...lo),o1=Math.max(...lo);
+    clat=(a0+a1)/2;clon=(o0+o1)/2;const k=Math.cos(clat*R);
+    scale=Math.min(h/Math.max(2,(a1-a0)*1.5),w/Math.max(2,(o1-o0)*k*1.25));
+  }else{clat=38;clon=-96;scale=Math.min(h/30,w/50);}
+  const k=Math.cos(clat*R);
+  const X=lo=>w/2+(lo-clon)*k*scale,Y=la=>h/2-(la-clat)*scale;
+  g.fillStyle="#0d1b2b";g.fillRect(0,0,w,h);
+  // land
+  g.beginPath();US.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));g.closePath();
+  g.fillStyle=C("--land");g.fill();g.strokeStyle=C("--line");g.lineWidth=1;g.stroke();
+  // graticule
+  const stepDeg=scale>90?1:scale>25?5:10;
+  g.strokeStyle="rgba(142,163,183,.10)";g.beginPath();
+  for(let la=Math.ceil((clat-h/2/scale)/stepDeg)*stepDeg;la<clat+h/2/scale;la+=stepDeg){g.moveTo(0,Y(la));g.lineTo(w,Y(la));}
+  for(let lo=Math.ceil((clon-w/2/scale/k)/stepDeg)*stepDeg;lo<clon+w/2/scale/k;lo+=stepDeg){g.moveTo(X(lo),0);g.lineTo(X(lo),h);}
+  g.stroke();
+  // cities
+  g.font="11px "+C("--sans");g.textBaseline="middle";
+  for(const c of CITIES){const x=X(c[2]),y=Y(c[1]);if(x<4||x>w-4||y<4||y>h-4)continue;
+    g.fillStyle="rgba(142,163,183,.7)";g.beginPath();g.arc(x,y,1.8,0,7);g.fill();
+    g.fillStyle="rgba(142,163,183,.75)";g.textAlign=x>w-90?"right":"left";g.fillText(c[0],x+(x>w-90?-5:5),y);}
+  // planned direct route
+  if(org&&dst){g.setLineDash([5,5]);g.strokeStyle=C("--route");g.lineWidth=1.5;g.beginPath();
+    for(let i=0;i<=48;i++){const q=along(org,dst,i/48);i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}
+    g.stroke();g.setLineDash([]);}
+  // flown trail
+  if(trail.length){g.strokeStyle=C("--accent");g.lineWidth=2.5;g.lineJoin="round";g.beginPath();
+    trail.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));
+    if(p)g.lineTo(X(p[1]),Y(p[0]));g.stroke();}
+  // airports
+  g.font="700 12px "+C("--mono");
+  [[org,$("from").value],[dst,$("to").value]].forEach(([a,code])=>{if(!a)return;const x=X(a[1]),y=Y(a[0]);
+    g.strokeStyle=C("--ink");g.lineWidth=2;g.fillStyle="#0d1b2b";g.beginPath();g.arc(x,y,5,0,7);g.fill();g.stroke();
+    g.fillStyle=C("--ink");g.textAlign="center";g.fillText(code.toUpperCase(),Math.max(18,Math.min(w-18,x)),y+(y>h-26?-15:16));});
+  // aircraft
+  if(p){const x=X(p[1]),y=Y(p[0]);g.save();g.translate(x,y);g.rotate((fix.track||0)*R);
+    g.fillStyle=C("--accent");g.strokeStyle="#0b1522";g.lineWidth=1.5;g.beginPath();
+    g.moveTo(0,-13);g.lineTo(3,-4);g.lineTo(13,3);g.lineTo(13,6);g.lineTo(3,3);g.lineTo(2,10);g.lineTo(6,13);g.lineTo(-6,13);
+    g.lineTo(-2,10);g.lineTo(-3,3);g.lineTo(-13,6);g.lineTo(-13,3);g.lineTo(-3,-4);g.closePath();g.fill();g.stroke();g.restore();}
+  else{g.fillStyle=C("--muted");g.font="13px "+C("--sans");g.textAlign="center";g.fillText("Waiting for a position",w/2,h-16);}
+}
+
+/* ---------- wiring ---------- */
+function readForm(){
+  const a=$("from").value.trim().toUpperCase(),b=$("to").value.trim().toUpperCase();
+  org=AIRPORTS[a]||null;dst=AIRPORTS[b]||null;cands=candidates($("flight").value);
+  $("pFrom").textContent=a||"—";$("pTo").textContent=b||"—";
+  try{localStorage.setItem("sfm",JSON.stringify([$("flight").value,a,b]));}catch(e){}
+}
+$("form").addEventListener("submit",e=>{e.preventDefault();readForm();fix=null;trail=[];lastSource="";
+  if(!cands.length){status("bad","Enter a flight number, like AA3101.");return;}track();});
+$("gps").addEventListener("click",()=>{readForm();startGps();});
+$("demo").addEventListener("click",()=>{readForm();startDemo();});
+$("view").addEventListener("click",()=>{view=view==="route"?"follow":"route";$("view").textContent="View: "+(view==="route"?"route":"close-up");draw();});
+try{const s=JSON.parse(localStorage.getItem("sfm")||"null");if(s){$("flight").value=s[0];$("from").value=s[1];$("to").value=s[2];}}catch(e){}
+readForm();
+setInterval(()=>{readouts();draw();},500);
+window.addEventListener("resize",draw);
+readouts();draw();track();
+</script>
+</body>
+</html>
