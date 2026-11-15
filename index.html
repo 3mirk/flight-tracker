@@ -8,8 +8,8 @@
 /* Layout idea: one column, night-cabin palette. Map on top, progress strip, then instrument tiles. */
 :root{
   color-scheme:dark;
-  --bg:#0b1522; --panel:#13202f; --line:#24374b; --land:#18293a;
-  --ink:#e8eef4; --muted:#8ea3b7; --accent:#ffb347; --route:#6fc3df;
+  --bg:#050505; --panel:#0f0f0f; --line:#2b2b2b; --land:#1a1a1a;
+  --ink:#ece7e1; --muted:#9a928b; --accent:#ff7a24; --route:#ff9a4a;
   --good:#6fd08c; --warn:#f0a04b; --bad:#ef6b6b;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
@@ -36,8 +36,8 @@ form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
 #fsug .ss{font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #finst{flex:0 1 auto;min-width:0;max-width:96px;height:32px;padding:0 2px;background:var(--bg);border:1px solid var(--line);border-radius:6px;color:var(--ink);font:600 .62rem var(--mono)}
 .fr-ph{font:700 .66rem/1 var(--sans);text-transform:uppercase;letter-spacing:.05em;height:28px;padding:0 6px;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:5px;white-space:nowrap}
-.ph-idle{background:rgba(142,163,183,.18);color:var(--muted)}.ph-go{background:rgba(111,208,140,.18);color:var(--good)}
-.ph-warn{background:rgba(240,160,75,.18);color:var(--warn)}.ph-done{background:rgba(111,195,223,.18);color:var(--route)}
+.ph-idle{background:rgba(160,152,145,.18);color:var(--muted)}.ph-go{background:rgba(111,208,140,.18);color:var(--good)}
+.ph-warn{background:rgba(240,160,75,.18);color:var(--warn)}.ph-done{background:rgba(255,154,74,.18);color:var(--route)}
 .fr-id{font:700 1.1rem var(--mono);color:var(--accent)}
 .fr-rt{font:700 1rem var(--mono)}.fr-rt .arr{color:var(--muted);margin:0 5px;font-weight:400}
 .fr-dt b{color:var(--ink)}
@@ -67,7 +67,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srcs ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .srcs li{border:1px solid var(--line);border-radius:6px;padding:3px 5px;min-width:0;cursor:pointer;flex-wrap:nowrap!important;
   display:flex;align-items:center;gap:4px;flex-wrap:wrap}
-.srcs li.sel{background:rgba(111,195,223,.08)}
+.srcs li.sel{background:rgba(255,154,74,.08)}
 .srcs li.use{background:rgba(111,208,140,.16);border-color:var(--good)}
 .srcs li .nm{font-size:.68rem;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .srcs li .m{flex:none;font-size:.56rem;color:var(--muted);font-family:var(--mono);margin-left:auto;white-space:nowrap}
@@ -128,7 +128,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .charts .tile .v{white-space:nowrap;min-width:0;overflow:hidden;gap:2px;margin-top:3px}
 .charts .tile .lcd{font-size:1.3rem}
 .charts .tile .v small{font-size:.62rem}
-.charts .tile canvas.spark,.charts .tile canvas.dial{height:104px;margin-top:5px;image-rendering:pixelated}
+.charts .tile canvas.spark,.charts .tile canvas.dial{height:104px;}
+.charts .tile canvas.dial{height:150px;margin-top:2px;margin-top:5px;image-rendering:pixelated}
 .tile.chart{padding:8px 10px;display:flex;flex-direction:column;background:#0a0503;border-color:#3d1e0d}
 .chart canvas{margin-top:auto}
 .chart .k{color:#c25a1e;font-family:var(--mono);font-weight:700}
@@ -202,7 +203,7 @@ canvas.spark{display:block;width:100%;height:112px;border-radius:6px;border:1px 
 .chip{display:inline-block;padding:1px 6px;border-radius:4px;font-weight:700;font-size:.68rem}
 .chip.up{background:rgba(111,208,140,.18);color:var(--good)}
 .chip.dn{background:rgba(240,160,75,.18);color:var(--warn)}
-.chip.lv{background:rgba(142,163,183,.18);color:var(--muted)}
+.chip.lv{background:rgba(160,152,145,.18);color:var(--muted)}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:8px}
 
 .kpihead{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap}
@@ -218,7 +219,7 @@ canvas.spark{display:block;width:100%;height:112px;border-radius:6px;border:1px 
 .vbar i.on{opacity:1;box-shadow:0 0 3px var(--c)}
 
 .kpinote{font-size:.72rem;line-height:1.4;color:var(--muted);box-sizing:border-box;height:calc(2.8em + 20px);display:flex;align-items:center;
-  border:1px solid var(--line);border-radius:6px;padding:10px 10px;background:rgba(11,21,34,.35);overflow:hidden}
+  border:1px solid var(--line);border-radius:6px;padding:10px 10px;background:rgba(16,16,16,.35);overflow:hidden}
 .kpinote span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .kpidrv{font-size:.8rem;color:var(--muted);line-height:1.6}
 .kpidrv b{color:var(--ink);font-family:var(--mono);font-weight:700}
@@ -247,14 +248,15 @@ canvas.spark{display:block;width:100%;height:112px;border-radius:6px;border:1px 
 .notes summary{cursor:pointer;font-size:.8rem;color:var(--muted)}
 .notes ol{margin:8px 0 0;padding-left:20px;font-size:.78rem;color:var(--muted);line-height:1.45;display:flex;flex-direction:column;gap:6px}
 .notes li.hit{color:var(--ink)}
-.seg{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.seg .k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:auto}
-.seg button{padding:5px 10px;font-size:.75rem}
-.seg button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#1b1206}
+.seg{display:flex;align-items:center;gap:5px;flex-wrap:nowrap;min-width:0}
+.seg .k{flex:none;font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-right:2px}
+.seg button{flex:1 1 0;min-width:0;white-space:nowrap;height:30px;padding:0 4px;background:#0a0503;border:1px solid #3d1e0d;border-radius:5px;color:#8a4a2a;
+  font:20px/1 "VT323",var(--mono);text-transform:uppercase;letter-spacing:.04em}
+.seg button[aria-pressed="true"]{color:#ff7a24;border-color:rgba(255,106,42,.6);background:rgba(255,90,31,.12);text-shadow:0 0 4px rgba(255,122,36,.9),0 0 10px rgba(255,90,20,.5)}
 .acard{display:flex;flex-direction:column;gap:8px}
 .acard>.k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .acmain{display:grid;grid-template-columns:minmax(0,46%) 1fr;gap:10px;align-items:start}
-.acphoto{display:flex;align-items:center;justify-content:center;aspect-ratio:3/2;background:#0d1b2b;border:1px solid var(--line);border-radius:8px;overflow:hidden;color:var(--muted);font-size:.72rem;text-decoration:none}
+.acphoto{display:flex;align-items:center;justify-content:center;aspect-ratio:3/2;background:#0a0a0a;border:1px solid var(--line);border-radius:8px;overflow:hidden;color:var(--muted);font-size:.72rem;text-decoration:none}
 .acphoto img{width:100%;height:100%;object-fit:cover;display:block}
 .acphoto img[hidden],.acphoto span[hidden]{display:none}
 .acreg{font:700 1.4rem var(--mono)}
@@ -328,7 +330,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 
 <div class="prog"><span id="pFrom">CLT</span><div class="bar"><i id="pBar"></i></div><span id="pTo">DFW</span></div>
 
-<div class="seg" id="win" role="group" aria-label="Chart time window"><span class="k">Charts show</span>
+<div class="seg" id="win" role="group" aria-label="Chart time window"><span class="k">Charts</span>
   <button type="button" data-w="all">All</button><button type="button" data-w="60">60 min</button><button type="button" data-w="5">5 min</button><button type="button" data-w="1">1 min</button></div>
 <div class="charts">
   <div class="tile chart"><div class="head"><div class="k">Altitude</div><div class="v" id="alt">—</div><div class="s" id="altS"></div></div>
@@ -1398,11 +1400,11 @@ function winSpan(tNow){
 }
 function winLabel(span){if(win!=="all")return win+" min";const m=Math.round(span/60000);return "all "+(m>=60?Math.floor(m/60)+"h "+(m%60)+"m":m+" min");}
 const CHARTS=[
-  {el:$("altChart"),data:()=>hist.alt,unit:"ft",lo:0,hi:40000,step:5000},
-  {el:$("spdChart"),data:()=>hist.spd,unit:"mph",lo:0,hi:600,step:100},
-  {el:$("vsChart"),data:()=>hist.vs,unit:"ft/min",lo:-4000,hi:4000,step:1000,sym:true},
-  {el:$("distChart"),data:()=>toGo().d,unit:"mi",lo:0,hi:500,step:250},
-  {el:$("etaChart"),data:()=>toGo().m,unit:"min",lo:0,hi:60,step:30}
+  {el:$("altChart"),data:()=>hist.alt,unit:"ft",lo:0,hi:40000,step:5000,span:{60:8000,5:1000,1:400}},
+  {el:$("spdChart"),data:()=>hist.spd,unit:"mph",lo:0,hi:600,step:100,span:{60:150,5:40,1:20}},
+  {el:$("vsChart"),data:()=>hist.vs,unit:"ft/min",lo:-4000,hi:4000,step:1000,sym:true,span:{60:4000,5:2000,1:1000}},
+  {el:$("distChart"),data:()=>toGo().d,unit:"mi",lo:0,hi:500,step:250,span:{60:300,5:60,1:20}},
+  {el:$("etaChart"),data:()=>toGo().m,unit:"min",lo:0,hi:60,step:30,span:{60:60,5:15,1:6}}
 ];
 /* distance and time left at each recorded position (time uses the speed reported around then) */
 let toGoC={k:"",d:[],m:[]};
@@ -1417,6 +1419,8 @@ function toGo(){
       if(v>90)m.push([q[0],mi/v*60]);}}
   return toGoC={k,d,m};
 }
+function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x))),f=x/p;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p;}
+function niceUp(v,floor){v=Math.max(v,floor);const st=niceStep(v/2);return Math.ceil(v/st)*st;}
 function clock(t){return new Date(t).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});}
 /* CRT look: graphics go into a half-resolution buffer, then are blown up with hard pixel edges,
    bloomed, and scanlined. Text is queued and drawn crisp on top in the VT323 pixel font with a glow. */
@@ -1451,8 +1455,19 @@ function drawChart(ch){
   const d=ch.data();
   // scale is fixed like Task Manager, but grows if the data goes past it
   let hi=ch.hi,lo=ch.lo;
-  for(const q of d){if(q[0]<t0)continue;while(q[1]>hi)hi+=ch.step;while(q[1]<lo)lo-=ch.step;}
-  if(ch.sym){const m=Math.max(hi,-lo);hi=m;lo=-m;}
+  if(win==="all"){
+    for(const q of d){if(q[0]<t0)continue;while(q[1]>hi)hi+=ch.step;while(q[1]<lo)lo-=ch.step;}
+    if(ch.sym){const m=Math.max(hi,-lo);hi=m;lo=-m;}
+  }else{
+    // shorter windows zoom the scale onto what's in view, with a floor so noise isn't blown up
+    let mn=Infinity,mx=-Infinity;for(const q of d){if(q[0]<t0)continue;if(q[1]<mn)mn=q[1];if(q[1]>mx)mx=q[1];}
+    const minSpan=(ch.span&&ch.span[win])||(ch.hi-ch.lo)/4;
+    if(mn<=mx){
+      if(ch.sym){const m=niceUp(Math.max(Math.abs(mn),Math.abs(mx))*1.15,minSpan/2);hi=m;lo=-m;}
+      else{const span=Math.max(mx-mn,minSpan)*1.2,st=niceStep(span/4),c=(mn+mx)/2;
+        lo=Math.floor((c-span/2)/st)*st;hi=Math.ceil((c+span/2)/st)*st;if(ch.lo===0&&lo<0){hi-=lo;lo=0;}}
+    }
+  }
   const X=t=>(t-t0)/span*w,Y=v=>h-(v-lo)/(hi-lo)*h;
   g.fillStyle=SCOPE.bg;g.fillRect(0,0,w,h);
   // grid: fixed horizontal lines, vertical lines that scroll left with time
@@ -1499,7 +1514,7 @@ function drawCharts(){CHARTS.forEach(drawChart);drawDial();}
 /* Heading dial in the same scope style: spiral of past headings, center = start, edge = now. */
 function drawDial(){
   const c=prep($("hdgChart"));if(!c)return;const {g,w,h}=c;
-  const cx=w/2,cy=h/2,r=Math.min(w,h)/2-16;
+  const cx=w/2,cy=h/2,r=Math.min(w,h)/2-13;
   const P=(deg,rad)=>[cx+Math.sin(deg*R)*rad,cy-Math.cos(deg*R)*rad];
   g.fillStyle=SCOPE.bg;g.fillRect(0,0,w,h);
   g.strokeStyle=SCOPE.grid;g.lineWidth=1;
@@ -1509,7 +1524,7 @@ function drawDial(){
   for(let a=0;a<360;a+=10){const[x1,y1]=P(a,r),[x2,y2]=P(a,r-(a%30?3:7));g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();}
   g.font="700 11px "+getComputedStyle(document.documentElement).getPropertyValue("--mono");
   g.textAlign="center";g.textBaseline="middle";g.fillStyle=SCOPE.text;
-  [["N",0],["E",90],["S",180],["W",270]].forEach(([t,a])=>{const[x,y]=P(a,r+10);g.fillText(t,x,y);});
+  [["N",0],["E",90],["S",180],["W",270]].forEach(([t,a])=>{const[x,y]=P(a,r+8);g.fillText(t,x,y);});
   const d=hist.hdg;
   if(d.length<2){g.fillStyle=SCOPE.dim;g.font="10px "+getComputedStyle(document.documentElement).getPropertyValue("--mono");
     g.fillText(d.length?"collecting…":"waiting for data",cx,cy+r*.5);}
@@ -1769,13 +1784,13 @@ function drawSurface(g,X,Y,w,h,scale,C){
   const onScreen=pts=>pts.some(q=>{const x=X(q[1]),y=Y(q[0]);return x>-200&&x<w+200&&y>-200&&y<h+200;});
   for(const A of surf.areas){if(!onScreen(A.pts))continue;
     g.beginPath();A.pts.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));g.closePath();
-    g.fillStyle=A.k==="apron"?"#2a3644":A.k==="terminal"?"#3d4c5e":A.k==="hangar"?"#33404f":"#2f3b49";g.fill();
+    g.fillStyle=A.k==="apron"?"#262626":A.k==="terminal"?"#383838":A.k==="hangar"?"#303030":"#2b2b2b";g.fill();
     if(A.k!=="apron"){g.strokeStyle="rgba(200,215,230,.35)";g.lineWidth=1;g.stroke();}
   }
   g.lineCap="round";g.lineJoin="round";
   for(const k of ["taxilane","taxiway","runway"])for(const L of surf.lines){if(L.k!==k||!onScreen(L.pts))continue;
     g.beginPath();L.pts.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));
-    g.strokeStyle=k==="runway"?"#4a5563":"#3a4552";g.lineWidth=Math.max(k==="runway"?4:2,L.wd*mpx);g.stroke();
+    g.strokeStyle=k==="runway"?"#4a4a4a":"#3a3a3a";g.lineWidth=Math.max(k==="runway"?4:2,L.wd*mpx);g.stroke();
     if(k==="runway"){g.setLineDash([Math.max(4,30*mpx),Math.max(4,20*mpx)]);g.strokeStyle="rgba(240,244,248,.75)";g.lineWidth=Math.max(1,1*mpx);g.stroke();g.setLineDash([]);}
     else{g.strokeStyle="rgba(240,200,60,.8)";g.lineWidth=Math.max(1,.4*mpx);g.stroke();}
   }
@@ -1783,13 +1798,13 @@ function drawSurface(g,X,Y,w,h,scale,C){
   g.font="700 10px "+C("--mono");g.textAlign="center";g.textBaseline="middle";
   for(const L of surf.lines){if(!L.ref||!onScreen(L.pts))continue;
     if(L.k==="runway"){const ends=L.ref.split("/");[[L.pts[0],ends[0]],[L.pts[L.pts.length-1],ends[1]||""]].forEach(([q,t])=>{if(!t)return;
-      const x=X(q[1]),y=Y(q[0]);g.fillStyle="rgba(11,21,34,.85)";g.fillRect(x-14,y-8,28,16);g.fillStyle="#fff";g.fillText(t,x,y);});}
+      const x=X(q[1]),y=Y(q[0]);g.fillStyle="rgba(16,16,16,.85)";g.fillRect(x-14,y-8,28,16);g.fillStyle="#fff";g.fillText(t,x,y);});}
     else if(scale>2500){const q=L.pts[Math.floor(L.pts.length/2)],x=X(q[1]),y=Y(q[0]);if(x<0||x>w||y<0||y>h)continue;
       const tw=g.measureText(L.ref).width+6;g.fillStyle="#1b1206";g.fillRect(x-tw/2,y-7,tw,14);g.fillStyle="#f0c83c";g.fillText(L.ref,x,y);}
   }
   if(scale>6000){g.font="9px "+C("--mono");
     for(const G of surf.gates){const x=X(G.lon),y=Y(G.lat);if(x<0||x>w||y<0||y>h)continue;
-      g.fillStyle="rgba(111,195,223,.9)";g.beginPath();g.arc(x,y,2,0,7);g.fill();
+      g.fillStyle="rgba(255,154,74,.9)";g.beginPath();g.arc(x,y,2,0,7);g.fill();
       if(G.ref&&scale>12000){g.fillStyle="rgba(200,230,245,.9)";g.fillText(G.ref,x,y-8);}}}
 }
 
