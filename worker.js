@@ -12,6 +12,8 @@ const ALLOWED_HOSTS = [
   "api.adsbdb.com",
   "api.planespotters.net",
   "overpass-api.de",
+  "overpass.kumi.systems",
+  "overpass.private.coffee",
 ];
 
 const CORS = {

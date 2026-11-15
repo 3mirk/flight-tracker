@@ -59,6 +59,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srcs .idle .st{color:var(--muted)}
 @keyframes pulse{50%{opacity:.25}}
 @media(prefers-reduced-motion:reduce){.srcs .try .d{animation:none}}
+.srcs ul.x3{margin-top:4px}
 .srcx{font-size:.68rem;color:var(--muted);margin-top:4px;line-height:1.4;overflow-wrap:anywhere}
 .srcx:empty{display:none}
 .srcx b{color:var(--ink);font-weight:600}
@@ -182,9 +183,9 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 
 <div class="status"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
 <section class="srcs" aria-label="Data source status">
-  <div class="srchead"><span class="k">Data sources</span><span id="relayState"></span></div>
+  <div class="srchead"><span class="k">Data sources<sup class="ref" data-n="7" role="button" tabindex="0" aria-label="Note 7">7</sup></span><span id="relayState"></span></div>
   <ul id="srcList"></ul>
-  <div class="srcx" id="srcExtra"></div>
+  <ul id="srcList2" class="x3"></ul>
   <div class="srcx" id="srcDetail"></div>
 </section>
 
@@ -248,6 +249,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <li id="note4">Time to go assumes your current speed on a direct path. Clock times use your phone's time zone.</li>
   <li id="note5">Aircraft details and photos come from volunteer databases (adsbdb, planespotters.net, OpenSky) and can be missing or out of date. Past flights come from OpenSky and can lag by a day. No free source has an aircraft's lifetime flight count or the factory that built it.</li>
   <li id="note6">Positions come from community ADS-B receiver networks (adsb.lol, airplanes.live, adsb.fi, OpenSky), through a public relay if your browser blocks the direct request. Winds are from Open-Meteo. State outlines are US Census data. For curiosity only, not for navigation.</li>
+  <li id="note7">Data sources: the top four supply your plane's live position; the page asks all four at once and uses the best one that has your flight. <b>Winds</b> is the weather model behind the wind streaks and turbulence estimate. <b>Traffic</b> is the nearby-aircraft lookup. <b>History</b> fetches the part of this flight flown before the page was opened or while it was offline, to fill in the charts and the flown path. <b>Airport map</b> loads taxiways, aprons and gates from OpenStreetMap when you zoom in on an airport; if it can't, the map still shows the runways from built-in data. Green = working, red square = every route failed, hollow ring = reachable but your flight isn't there, amber = trying.</li>
 </ol></details>
 
 <details class="relay"><summary>Data relay settings</summary>
@@ -289,6 +291,8 @@ function unq(a){return a.map(o=>{const pts=[],b=[1e9,1e9,-1e9,-1e9];let x=0,y=0;
   for(let i=0;i<o.length;i+=2){x+=o[i];y+=o[i+1];const lo=x/100,la=y/100;pts.push([la,lo]);
     if(la<b[0])b[0]=la;if(lo<b[1])b[1]=lo;if(la>b[2])b[2]=la;if(lo>b[3])b[3]=lo;}return {pts,b};});}
 const LAND=unq(LAND_Q),BORDERS=unq(BORDER_Q);
+/* Runway ends for the airports above (OurAirports, public domain): [lat1,lon1,lat2,lon2,width ft,end1,end2] */
+const RUNWAYS={"ATL":[[33.6495,-84.439,33.6495,-84.4095,150,"08L","26R"],[33.6468,-84.4384,33.6468,-84.4055,150,"08R","26L"],[33.6347,-84.448,33.6347,-84.4089,150,"09L","27R"],[33.6318,-84.448,33.6318,-84.4184,150,"09R","27L"],[33.6203,-84.4479,33.6203,-84.4183,150,"10","28"]],"AUS":[[30.2038,-97.6579,30.1791,-97.6572,150,"18L","36R"],[30.2136,-97.6794,30.1799,-97.6785,150,"18R","36L"]],"BNA":[[36.1033,-86.688,36.1242,-86.6796,150,"02C","20C"],[36.1177,-86.6865,36.1378,-86.6786,150,"02L","20R"],[36.1127,-86.6676,36.1336,-86.6593,150,"02R","20L"],[36.1413,-86.6954,36.1205,-86.6682,150,"13","31"]],"BOS":[[42.358,-71.01434,42.37832,-71.00451,150,"04L","22R"],[42.35106,-71.0118,42.37692,-70.99929,150,"04R","22L"],[42.3558,-71.0129,42.3602,-70.9877,150,"09","27"],[42.3566,-71.0233,42.3486,-71.0082,100,"14","32"],[42.3736,-71.0091,42.3686,-71.0025,100,"15L","33R"],[42.3743,-71.0179,42.3546,-70.9916,150,"15R","33L"]],"BWI":[[39.1747,-76.6896,39.1726,-76.6527,150,"10","28"],[39.1874,-76.6635,39.1762,-76.6532,100,"15L","33R"],[39.1854,-76.682,39.1642,-76.6624,150,"15R","33L"]],"CLE":[[41.41702,-81.85423,41.41607,-81.83237,150,"10","28"],[41.39989,-81.87348,41.41576,-81.8484,150,"6L","24R"],[41.40116,-81.86445,41.41531,-81.84207,150,"6R","24L"]],"CLT":[[35.225,-80.9674,35.2009,-80.9653,150,"01L","19R"],[35.2271,-80.9531,35.2003,-80.9508,150,"01R","19L"],[35.2244,-80.9361,35.2012,-80.9341,150,"18","36"]],"CVG":[[39.0464,-84.6951,39.0463,-84.6528,150,"09","27"],[39.0647,-84.6686,39.0345,-84.6687,150,"18C","36C"],[39.0559,-84.6467,39.0284,-84.6468,150,"18L","36R"],[39.0709,-84.6837,39.0489,-84.6838,150,"18R","36L"]],"DAL":[[32.8573,-96.8568,32.842,-96.8391,150,"13L","31R"],[32.8513,-96.8635,32.834,-96.8434,150,"13R","31L"]],"DCA":[[38.8424,-77.0368,38.8612,-77.0387,150,"01","19"],[38.8423,-77.0408,38.8544,-77.0333,150,"04","22"],[38.8617,-77.0438,38.8503,-77.0327,150,"15","33"]],"DEN":[[39.8409,-104.727,39.8407,-104.684,150,"07","25"],[39.8776,-104.662,39.8772,-104.619,150,"08","26"],[39.897,-104.687,39.8641,-104.687,150,"16L","34R"],[39.8958,-104.696,39.8519,-104.697,200,"16R","34L"],[39.865,-104.641,39.832,-104.642,150,"17L","35R"],[39.8612,-104.66,39.8283,-104.661,150,"17R","35L"]],"DFW":[[32.9126,-97.0215,32.895,-97.0008,200,"13L","31R"],[32.9096,-97.0831,32.8903,-97.0633,150,"13R","31L"],[32.9157,-97.026,32.8789,-97.0262,150,"17C","35C"],[32.8983,-97.0098,32.875,-97.0099,150,"17L","35R"],[32.9157,-97.0299,32.8789,-97.0301,200,"17R","35L"],[32.9158,-97.0507,32.879,-97.0509,200,"18L","36R"],[32.9158,-97.0546,32.879,-97.0548,150,"18R","36L"]],"DTW":[[42.2078,-83.3512,42.2283,-83.3361,150,"03L","21R"],[42.1956,-83.3518,42.2197,-83.3341,150,"03R","21L"],[42.2022,-83.384,42.2262,-83.3663,150,"04L","22R"],[42.2023,-83.3713,42.2312,-83.35,200,"04R","22L"],[42.217,-83.3632,42.2175,-83.331,150,"09L","27R"],[42.199,-83.3617,42.1995,-83.3304,150,"09R","27L"]],"EWR":[[40.70282,-74.18075,40.7012,-74.1565,150,"11","29"],[40.67539,-74.17946,40.70257,-74.16217,150,"4L","22R"],[40.67759,-74.17425,40.7023,-74.15854,150,"4R","22L"]],"FLL":[[26.0769,-80.1665,26.0768,-80.1391,150,"10L","28R"],[26.06589,-80.15835,26.06574,-80.13399,150,"10R","28L"]],"HOU":[[29.6391,-95.2853,29.6542,-95.2687,150,"04","22"],[29.6526,-95.2839,29.6428,-95.2722,100,"13L","31R"],[29.6509,-95.2855,29.6364,-95.2683,150,"13R","31L"]],"IAD":[[38.9391,-77.4598,38.9706,-77.4593,150,"01C","19C"],[38.945,-77.47482,38.97078,-77.47445,150,"01L","19R"],[38.9238,-77.4364,38.9553,-77.436,150,"01R","19L"],[38.9438,-77.4904,38.9336,-77.4559,150,"12","30"]],"IAH":[[30.0072,-95.3588,30.0072,-95.3304,150,"08L","26R"],[29.9934,-95.355,29.9934,-95.3253,150,"08R","26L"],[29.9776,-95.3341,29.9776,-95.3025,150,"09","27"],[29.9879,-95.3579,29.9588,-95.34,150,"15L","33R"],[29.9878,-95.3614,29.9635,-95.3465,150,"15R","33L"]],"IND":[[39.7064,-86.3208,39.7283,-86.2929,150,"05L","23R"],[39.7002,-86.3044,39.7198,-86.2795,150,"05R","23L"],[39.7342,-86.2888,39.7196,-86.2696,150,"14","32"]],"JAX":[[30.4962,-81.7,30.5054,-81.67,150,"08","26"],[30.4922,-81.7008,30.4784,-81.6823,150,"14","32"]],"JFK":[[40.622,-73.7856,40.6488,-73.7647,200,"04L","22R"],[40.6254,-73.7703,40.6452,-73.7549,200,"04R","22L"],[40.6578,-73.7902,40.6437,-73.7593,200,"13L","31R"],[40.6484,-73.8167,40.6279,-73.7716,200,"13R","31L"]],"LAS":[[36.0753,-115.17,36.0977,-115.158,150,"01L","19R"],[36.07417,-115.1675,36.0985,-115.1535,150,"01R","19L"],[36.07633,-115.17133,36.07633,-115.121,150,"08L","26R"],[36.0736,-115.161,36.0737,-115.126,150,"08R","26L"]],"LAX":[[33.94912,-118.43119,33.95211,-118.40195,150,"6L","24R"],[33.94682,-118.43469,33.95047,-118.39906,150,"6R","24L"],[33.93556,-118.42209,33.93988,-118.37979,150,"7L","25R"],[33.93366,-118.41907,33.93737,-118.3827,200,"7R","25L"]],"LGA":[[40.7692,-73.8841,40.7854,-73.8707,150,"04","22"],[40.7823,-73.8785,40.7721,-73.8571,150,"13","31"]],"MCI":[[39.2933,-94.7293,39.3222,-94.7208,150,"01L","19R"],[39.2815,-94.709,39.3069,-94.7015,150,"01R","19L"],[39.2909,-94.7266,39.2881,-94.6932,150,"09","27"]],"MCO":[[28.4437,-81.2826,28.4189,-81.2823,150,"17L","35R"],[28.4356,-81.2959,28.4081,-81.2956,150,"17R","35L"],[28.4483,-81.3223,28.4153,-81.322,200,"18L","36R"],[28.4483,-81.327,28.4153,-81.3266,200,"18R","36L"]],"MDW":[[41.7814,-87.7612,41.7923,-87.7473,150,"04L","22R"],[41.7792,-87.7593,41.792,-87.7431,150,"04R","22L"],[41.7916,-87.7611,41.7792,-87.7437,150,"13L","31R"],[41.7881,-87.7588,41.7808,-87.7486,60,"13R","31L"]],"MEM":[[35.0586,-89.9857,35.0578,-89.9559,150,"09","27"],[35.0546,-89.9762,35.0241,-89.9755,150,"18C","36C"],[35.0488,-89.973,35.0241,-89.9724,150,"18L","36R"],[35.0495,-89.9874,35.0239,-89.9869,150,"18R","36L"]],"MIA":[[25.8029,-80.3015,25.804,-80.2754,150,"08L","26R"],[25.8007,-80.3014,25.802,-80.2695,200,"08R","26L"],[25.7861,-80.3148,25.7877,-80.2754,150,"09","27"],[25.7993,-80.3023,25.7866,-80.2775,150,"12","30"]],"MSP":[[44.8723,-93.2383,44.8936,-93.2083,150,"04","22"],[44.8929,-93.221,44.8813,-93.194,150,"12L","30R"],[44.8878,-93.2341,44.8735,-93.2012,200,"12R","30L"],[44.8878,-93.2422,44.8662,-93.2366,150,"17","35"]],"MSY":[[29.9845,-90.2514,30.0031,-90.2455,150,"02","20"],[29.9966,-90.2817,29.9892,-90.251,150,"11","29"]],"OKC":[[35.4046,-97.6159,35.3894,-97.5974,150,"13","31"],[35.4052,-97.5889,35.3782,-97.5889,150,"17L","35R"],[35.4059,-97.6057,35.379,-97.6057,150,"17R","35L"],[35.3935,-97.6077,35.3854,-97.6077,75,"18","36"]],"ORD":[[41.9817,-87.9139,41.9975,-87.8964,150,"04L","22R"],[41.9533,-87.8994,41.9699,-87.8798,150,"04R","22L"],[41.98831,-87.93158,41.98833,-87.89021,200,"09C","27C"],[42.00283,-87.92667,42.00283,-87.89909,150,"09L","27R"],[41.9839,-87.91835,41.9839,-87.88905,150,"09R","27L"],[41.9657,-87.9315,41.9657,-87.8918,200,"10C","28C"],[41.969,-87.9315,41.9691,-87.8837,150,"10L","28R"],[41.9572,-87.9279,41.95724,-87.90029,150,"10R","28L"]],"PDX":[[45.59654,-122.60006,45.58343,-122.56644,150,"10L","28R"],[45.59515,-122.62151,45.58051,-122.5839,150,"10R","28L"],[45.58241,-122.61686,45.59406,-122.60026,150,"3","21"]],"PHL":[[39.8783,-75.23,39.8818,-75.2128,150,"08","26"],[39.8687,-75.2557,39.8752,-75.2229,150,"09L","27R"],[39.8608,-75.2752,39.868,-75.239,200,"09R","27L"],[39.886,-75.2353,39.872,-75.2283,150,"17","35"]],"PHX":[[33.4311,-112.027,33.431,-111.993,150,"07L","25R"],[33.4289,-112.027,33.4288,-112.002,150,"07R","25L"],[33.4409,-112.03,33.4408,-111.992,150,"08","26"]],"PIT":[[40.4899,-80.2463,40.489,-80.2114,150,"10C","28C"],[40.5023,-80.2712,40.5014,-80.2334,150,"10L","28R"],[40.4867,-80.2519,40.4856,-80.2106,200,"10R","28L"],[40.496,-80.2249,40.4799,-80.2048,150,"14","32"]],"RDU":[[35.8745,-78.802,35.8938,-78.778,150,"05L","23R"],[35.8646,-78.7973,35.8792,-78.7794,150,"05R","23L"],[35.875,-78.7827,35.8681,-78.7742,100,"14","32"]],"SAN":[[32.73713,-117.20437,32.73,-117.17499,200,"09","27"]],"SAT":[[29.5232,-98.4699,29.5389,-98.4545,150,"04","22"],[29.5403,-98.4777,29.5302,-98.4647,100,"13L","31R"],[29.5427,-98.4855,29.5272,-98.4656,150,"13R","31L"]],"SEA":[[47.4638,-122.311,47.438,-122.311,150,"16C","34C"],[47.4638,-122.308,47.4312,-122.308,150,"16L","34R"],[47.4638,-122.318,47.4405,-122.318,150,"16R","34L"]],"SFO":[[37.62874,-122.39341,37.61354,-122.35716,200,"10L","28R"],[37.6263,-122.39312,37.61172,-122.35837,200,"10R","28L"],[37.6079,-122.38295,37.62648,-122.37063,200,"1L","19R"],[37.60633,-122.38106,37.62735,-122.36712,200,"1R","19L"]],"SJC":[[37.375,-121.94,37.3523,-121.915,150,"12L","30R"],[37.3737,-121.942,37.351,-121.917,150,"12R","30L"]],"SLC":[[40.80746,-111.97695,40.77465,-111.97315,150,"16L","34R"],[40.80778,-111.9993,40.77498,-111.99549,150,"16R","34L"],[40.79892,-111.96209,40.77259,-111.96209,150,"17","35"]],"SMF":[[38.70714,-121.58008,38.68352,-121.58047,150,"17L","35R"],[38.70735,-121.6011,38.68372,-121.60149,150,"17R","35L"]],"STL":[[38.74668,-90.38122,38.75622,-90.3575,150,"06","24"],[38.75995,-90.40987,38.74679,-90.38316,150,"11","29"],[38.75179,-90.36632,38.73861,-90.33958,150,"12L","30R"],[38.7539,-90.37916,38.73778,-90.34646,200,"12R","30L"]],"TPA":[[27.9708,-82.5361,27.9702,-82.5144,150,"10","28"],[27.9871,-82.5282,27.9643,-82.529,150,"19L","01R"],[27.9935,-82.5413,27.9633,-82.5424,150,"19R","01L"]]};
 /* Marketing code -> radio callsign prefixes (mainline first, then regional partners). */
 const PREFIX={AA:["AAL","ENY","JIA","PDT","RPA","SKW"],DL:["DAL","EDV","SKW","RPA"],UA:["UAL","SKW","RPA","ASH","GJS"],
 WN:["SWA"],B6:["JBU"],AS:["ASA","QXE","SKW"],NK:["NKS"],F9:["FFT"],G4:["AAY"],HA:["HAL"],AC:["ACA","JZA"],WS:["WJA"]};
@@ -369,28 +373,32 @@ function setSrc(name,state,text,ms,route){
   srcs[name]={state,text,t:Date.now(),ms:ms!=null?ms:(keep?p.ms:null),route:route!=null?route:(keep?p.route:null)};renderSrcs();}
 function resetLive(){LIVE.forEach(n=>srcs[n]={state:"idle",text:"Waiting its turn",t:Date.now()});activeSrc="";renderSrcs();}
 function ago(t){const s=Math.round((Date.now()-t)/1000);return s<5?"now":s<90?s+"s ago":Math.round(s/60)+"m ago";}
-const msTxt=m=>m>=10000?(m/1000).toFixed(1)+"k ms":m+" ms";
+const msTxt=m=>m>=1000?(m/1000).toFixed(1)+"s":m+"ms";
 const SHORT={"airplanes.live":"airplanes"};
 function word(n,st){
   return st.state==="ok"?(activeSrc===n?"In use":LIVE.includes(n)?"Ready":"Connected"):st.state==="try"?"Trying…":st.state==="miss"?"No flight":
     st.state==="fail"?(st.text.startsWith("Blocked")?"Blocked":st.text.startsWith("Timed")?"Timed out":"Failed"):"Waiting";}
+const EXTRAS=[["Weather","Winds"],["Traffic","Traffic"],["History","History"],["Airport map","Airport"]];
+function cellHtml(n,label,force){
+  const st=srcs[n]||{state:"idle",text:"Not tried yet"},done=st.state!=="idle"&&st.state!=="try";
+  const kpi=force||(done?[st.ms!=null?msTxt(st.ms):"",st.t?ago(st.t):""].filter(Boolean).join(" "):st.state==="try"?"trying…":"waiting");
+  return '<li class="'+(force?"idle":st.state)+(activeSrc===n?" use":"")+(selSrc===n?" sel":"")+'" data-n="'+n+'" tabindex="0" role="button" aria-label="'+label+": "+(force||word(n,st))+
+    '"><span class="d"></span><span class="nm">'+label+'</span><span class="m">'+kpi+"</span></li>";
+}
 function renderSrcs(){
-  const html=LIVE.map(n=>{
-    const st=srcs[n]||{state:"idle",text:"Not tried yet"},done=st.state!=="idle"&&st.state!=="try";
-    const kpi=done?[st.ms!=null?msTxt(st.ms):"",st.t?ago(st.t):""].filter(Boolean).join(" "):st.state==="try"?"trying…":"waiting";
-    return '<li class="'+st.state+(activeSrc===n?" use":"")+(selSrc===n?" sel":"")+'" data-n="'+n+'" tabindex="0" role="button" aria-label="'+n+": "+word(n,st)+
-      '"><span class="d"></span><span class="nm">'+(SHORT[n]||n)+'</span><span class="m">'+kpi+"</span></li>";}).join("");
+  const html=LIVE.map(n=>cellHtml(n,SHORT[n]||n)).join("");
   const el=$("srcList");if(el.innerHTML!==html)el.innerHTML=html;
-  const ex=[["Weather","Winds"],["History","Earlier flight"]].concat(typeof trafOn!=="undefined"&&trafOn?[["Traffic","Traffic"]]:[]).map(([n,label])=>{const st=srcs[n];
-    return label+": <b>"+(st?word(n,st)+(st.state==="ok"||st.state==="fail"?" · "+ago(st.t):""):"not tried yet")+"</b>";}).join(" &nbsp;·&nbsp; ");
-  if($("srcExtra").innerHTML!==ex)$("srcExtra").innerHTML=ex;
-  const d=selSrc&&srcs[selSrc]?"<b>"+selSrc+":</b> "+srcs[selSrc].text:"";
+  const ex=EXTRAS.map(([n,label])=>cellHtml(n,label,n==="Traffic"&&typeof trafOn!=="undefined"&&!trafOn?"off":null)).join("");
+  const el2=$("srcList2");if(el2.innerHTML!==ex)el2.innerHTML=ex;
+  const lbl=n=>(EXTRAS.find(x=>x[0]===n)||[n,n])[1];
+  const d=selSrc&&srcs[selSrc]?"<b>"+lbl(selSrc)+":</b> "+srcs[selSrc].text:selSrc?"<b>"+lbl(selSrc)+":</b> not tried yet.":"";
   if($("srcDetail").innerHTML!==d)$("srcDetail").innerHTML=d;
   const rs=relayBase()?"Your relay: set":"Your relay: not set";
   if($("relayState").textContent!==rs)$("relayState").textContent=rs;
 }
-$("srcList").addEventListener("click",e=>{const li=e.target.closest("li");if(li){selSrc=selSrc===li.dataset.n?"":li.dataset.n;renderSrcs();}});
-$("srcList").addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){const li=e.target.closest("li");if(li){e.preventDefault();selSrc=selSrc===li.dataset.n?"":li.dataset.n;renderSrcs();}}});
+["srcList","srcList2"].forEach(id=>{const L=$(id);
+L.addEventListener("click",e=>{const li=e.target.closest("li");if(li){selSrc=selSrc===li.dataset.n?"":li.dataset.n;renderSrcs();}});
+L.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){const li=e.target.closest("li");if(li){e.preventDefault();selSrc=selSrc===li.dataset.n?"":li.dataset.n;renderSrcs();}}});});
 function failText(tried){
   const t=tried.filter(x=>!x.endsWith("not set"));
   const all=k=>t.length&&t.every(x=>x.endsWith(k));
@@ -810,16 +818,38 @@ function draw(){
   if(trail.length){g.strokeStyle=C("--accent");g.lineWidth=2.5;g.lineJoin="round";g.beginPath();
     trail.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));
     if(p)g.lineTo(X(p[1]),Y(p[0]));g.stroke();}
+  // runways: appear as the map zooms in on an airport
+  if(scale>120&&!(scale>=SURF_SCALE&&surf)){
+    const ftDeg=1/364000,rwyTaken=[];
+    for(const code in RUNWAYS){const a=AIRPORTS[code];if(!a)continue;
+      const ax=X(a[1]),ay=Y(a[0]);if(ax<-200||ax>w+200||ay<-200||ay>h+200)continue;
+      for(const r of RUNWAYS[code]){
+        const x1=X(r[1]),y1=Y(r[0]),x2=X(r[3]),y2=Y(r[2]);
+        g.strokeStyle="rgba(200,212,224,.85)";g.lineCap="butt";g.lineWidth=Math.max(2,r[4]*ftDeg*scale);
+        g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();
+        if(scale>900){
+          g.strokeStyle="rgba(11,21,34,.9)";g.lineWidth=1;g.setLineDash([6,6]);g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();g.setLineDash([]);
+          const ang=Math.atan2(y2-y1,x2-x1),ox=Math.cos(ang)*12,oy=Math.sin(ang)*12;
+          g.font="700 10px "+C("--mono");g.fillStyle=C("--ink");g.textAlign="center";g.textBaseline="middle";
+          for(const [t,lx,ly] of [[r[5],x1-ox,y1-oy],[r[6],x2+ox,y2+oy]]){
+            const bw=g.measureText(t).width/2+2,bx=[lx-bw,ly-7,lx+bw,ly+7];
+            if(rwyTaken.some(q=>bx[0]<q[2]&&bx[2]>q[0]&&bx[1]<q[3]&&bx[3]>q[1]))continue;
+            rwyTaken.push(bx);g.fillText(t,lx,ly);}
+        }
+      }
+    }
+  }
   // airports
   g.font="700 12px "+C("--mono");g.textBaseline="middle";
   if(!(scale>=SURF_SCALE&&surf))[[org,$("from").value],[dst,$("to").value]].forEach(([a,code])=>{if(!a)return;const x=X(a[1]),y=Y(a[0]);if(x<-8||x>w+8||y<-8||y>h+8)return;
+    if(scale>500){g.fillStyle=C("--ink");g.font="700 12px "+C("--mono");g.textAlign="center";g.textBaseline="middle";g.fillText(code.toUpperCase(),x,y-Math.min(80,0.03*scale)-10);return;}
     g.strokeStyle=C("--ink");g.lineWidth=2;g.fillStyle="#0d1b2b";g.beginPath();g.arc(x,y,5,0,7);g.fill();g.stroke();
     g.fillStyle=C("--ink");g.textAlign="center";g.fillText(code.toUpperCase(),Math.max(18,Math.min(w-18,x)),y+(y>h-26?-15:16));});
   try{drawTraffic(g,X,Y,w,h,scale,p,C);}catch(e){}
   if(scale>=SURF_SCALE){
     const lines=[];const where=surfWhere(p);if(where)lines.push(where);
     if(p&&trafOn){const n=traf.filter(a=>distNm(p,[a.lat,a.lon])<2).length;lines.push(n+" aircraft within 2 mi");}
-    if(!surf)lines.push(surfBusy?"Loading airport map…":"Airport map unavailable");
+    if(!surf)lines.push(surfBusy?"Loading airport map…":"Runways only · detailed map unavailable");
     if(lines.length){g.font="700 11px "+C("--mono");const tw=Math.max(...lines.map(t=>g.measureText(t).width))+14;
       g.fillStyle="rgba(11,21,34,.9)";g.strokeStyle=C("--line");g.lineWidth=1;g.beginPath();g.rect(8,h-14-lines.length*16,tw,lines.length*16+6);g.fill();g.stroke();
       g.fillStyle=C("--ink");g.textAlign="left";g.textBaseline="middle";lines.forEach((t,i)=>g.fillText(t,15,h-8-(lines.length-i)*16+8));}
@@ -1218,6 +1248,7 @@ function renderAircraft(){
 /* ---------- airport surface map from OpenStreetMap (runways, taxiways, aprons, terminals, gates) ---------- */
 const SURF_SCALE=700;      // map scale (px per degree) at which the airport layer appears
 let surf=null,surfBusy=false,surfTried=0;
+const OVERPASS=["https://overpass-api.de/api/interpreter","https://overpass.kumi.systems/api/interpreter","https://overpass.private.coffee/api/interpreter"];
 const isOverpass=j=>!!(j&&Array.isArray(j.elements));
 function surfCovers(lat,lon){return surf&&lat>surf.b[0]+.01&&lat<surf.b[2]-.01&&lon>surf.b[1]+.01&&lon<surf.b[3]-.01;}
 async function fetchSurface(lat,lon){
@@ -1226,7 +1257,9 @@ async function fetchSurface(lat,lon){
   const q='[out:json][timeout:25];(way["aeroway"~"^(runway|taxiway|taxilane|apron|terminal|hangar|parking_position)$"]('+b.join(",")+');'+
     'node["aeroway"~"^(gate|parking_position)$"]('+b.join(",")+'););out geom qt;';
   try{
-    const j=await getJSON("https://overpass-api.de/api/interpreter?data="+encodeURIComponent(q),isOverpass,"Airport map");
+    let j=null;
+    for(const host of OVERPASS){try{j=await getJSON(host+"?data="+encodeURIComponent(q),isOverpass,"Airport map");break;}catch(e){}}
+    if(!j)throw new Error("unreachable");
     const S={b:b.map(Number),areas:[],lines:[],gates:[],labels:[]};
     for(const e of j.elements){
       const t=e.tags||{},k=t.aeroway;
