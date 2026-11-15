@@ -21,7 +21,7 @@ h1{font-size:1rem;margin:0;letter-spacing:.04em;text-transform:uppercase;color:v
 form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
 .flightrow{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 .fr1{display:flex;align-items:center;gap:10px}
-.fr-ph{font:700 .66rem var(--sans);text-transform:uppercase;letter-spacing:.05em;padding:5px 8px;text-align:center;border-radius:5px;white-space:nowrap}
+.fr-ph{font:700 .66rem/1 var(--sans);text-transform:uppercase;letter-spacing:.05em;height:28px;padding:0 6px;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:5px;white-space:nowrap}
 .ph-idle{background:rgba(142,163,183,.18);color:var(--muted)}.ph-go{background:rgba(111,208,140,.18);color:var(--good)}
 .ph-warn{background:rgba(240,160,75,.18);color:var(--warn)}.ph-done{background:rgba(111,195,223,.18);color:var(--route)}
 .fr-id{font:700 1.1rem var(--mono);color:var(--accent)}
@@ -68,7 +68,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srcs ul.x3 li:last-child:nth-child(odd){grid-column:1/-1}
 .srcs summary{list-style:none;cursor:pointer}.srcs summary::-webkit-details-marker{display:none}
 .srctop{display:flex;align-items:center;gap:6px}
-.srctitle{display:none;flex:1;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.srctitle{display:none;flex:1;font-size:.68rem;line-height:20px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .srcs[open] .srctitle{display:block}
 .srcbot{display:flex;align-items:flex-end;gap:8px}
 .srcbot .srcsum{flex:1;min-width:0}
@@ -78,7 +78,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srcs[open] .c-open{display:flex}.srcs[open] .srcbot{display:none}
 .srcs summary:focus-visible .chev{outline:2px solid var(--route);outline-offset:2px}
 .srcs[open] .srcicons,.srcs[open] .srcsum{display:none}
-.srcbody{margin-top:2px}
+.srcbody{padding-top:6px;overflow:hidden}
+.srcs[open] .srctop{min-height:20px}
 .srcicons{flex:1;min-width:0;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:1px}
 .si{display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--muted);min-width:0}
 .si .ic{position:relative;width:28px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px}
@@ -140,8 +141,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .frl{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
 .fr-rack{display:flex;flex-direction:column;gap:6px;flex:none;width:118px}
 .fr-rack>*{width:100%;box-sizing:border-box}
-.fr-rack button{display:flex;align-items:center;justify-content:center;gap:6px;padding:5px 8px;font-size:.7rem;border-radius:6px;line-height:1.3;white-space:nowrap}
-.fr-rack svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
+.fr-rack button{display:flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 8px;font-size:.7rem;border-radius:6px;line-height:1;white-space:nowrap}
+.fr-rack button span{display:block;line-height:1}
+.fr-rack svg{display:block;flex:none;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
 .mapwrap{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#0d1b2b}
 canvas{display:block;width:100%;aspect-ratio:4/3;max-height:460px}
 #view{position:absolute;right:8px;top:8px;padding:6px 10px;font-size:.75rem;background:rgba(11,21,34,.85)}
@@ -182,7 +184,7 @@ canvas.spark{display:block;width:100%;height:112px;border-radius:6px;border:1px 
 .kpifoot{font-size:.7rem;color:var(--muted);line-height:1.4;border-top:1px solid var(--line);padding-top:6px}
 .relay{font-size:.85rem;color:var(--muted)}.relay summary{cursor:pointer;padding:4px 0}
 .relay form{margin-top:8px}.relay label{flex:1 1 220px}
-.ref{font-size:.62rem;color:var(--route);margin-left:2px;cursor:pointer;padding:0 3px;text-transform:none}
+.ref{font-size:.62rem;line-height:0;color:var(--route);margin-left:2px;cursor:pointer;padding:0 3px;text-transform:none}
 .mapref{position:absolute;left:6px;top:4px;background:rgba(11,21,34,.85);border:1px solid var(--line);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
 .mapref .ref{margin:0;font-size:.7rem;vertical-align:baseline;line-height:1}
 .notes,.acard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
@@ -226,8 +228,8 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   </div>
   <div class="fr-rack">
     <span class="fr-ph ph-idle" id="frPhase">Not seen yet</span>
-    <button type="button" id="gps" title="Use your phone's own GPS for position, speed and altitude"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg>Use my GPS</button>
-    <button type="button" id="demo" title="Play a simulated CLT to DFW flight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg>Demo flight</button>
+    <button type="button" id="gps" title="Use your phone's own GPS for position, speed and altitude"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg><span>Enable GPS</span></button>
+    <button type="button" id="demo" title="Play a simulated CLT to DFW flight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg><span>Play Demo</span></button>
   </div>
 </div>
 <details class="srcs" id="srcBox" aria-label="Data source status">
@@ -483,7 +485,24 @@ function renderSrcs(){
   if($("srcDetail").innerHTML!==d)$("srcDetail").innerHTML=d;
 
 }
-$("statusLine").addEventListener("click",()=>{const b=$("srcBox");b.open=true;b.scrollIntoView({block:"nearest"});});
+/* Animate the data sources box open and closed. */
+function setSrcOpen(want){
+  const box=$("srcBox"),body=box.querySelector(".srcbody");
+  if(box._anim){box._anim.cancel();box._anim=null;}
+  if(want===box.open)return;
+  if(reduced||!body.animate){box.open=want;return;}
+  if(want){
+    box.open=true;const h=body.scrollHeight;
+    box._anim=body.animate([{height:"0px",opacity:0},{height:h+"px",opacity:1}],{duration:220,easing:"cubic-bezier(.2,.7,.2,1)"});
+    box._anim.onfinish=()=>{box._anim=null;};
+  }else{
+    const h=body.offsetHeight;
+    box._anim=body.animate([{height:h+"px",opacity:1},{height:"0px",opacity:0}],{duration:180,easing:"ease-in"});
+    box._anim.onfinish=()=>{box._anim=null;box.open=false;};
+  }
+}
+$("srcBox").querySelector("summary").addEventListener("click",e=>{e.preventDefault();setSrcOpen(!$("srcBox").open);});
+$("statusLine").addEventListener("click",()=>{setSrcOpen(true);$("srcBox").scrollIntoView({block:"nearest"});});
 ["srcList","srcList2"].forEach(id=>{const L=$(id);
 L.addEventListener("click",e=>{const li=e.target.closest("li");if(li){selSrc=selSrc===li.dataset.n?"":li.dataset.n;renderSrcs();}});
 L.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){const li=e.target.closest("li");if(li){e.preventDefault();selSrc=selSrc===li.dataset.n?"":li.dataset.n;renderSrcs();}}});});
