@@ -153,8 +153,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .kpi .kpigrid .c.L0 .cv{color:#39ff14;text-shadow:0 0 6px #39ff1466}
 .kpi .kpigrid .c.L1 .cv{color:#b6ff00;text-shadow:0 0 6px #b6ff0066}
 .kpi .kpigrid .c.L2 .cv{color:#ffe600;text-shadow:0 0 6px #ffe60066}
-.kpi .kpigrid .c.L3 .cv{color:#ff9900;text-shadow:0 0 6px #ff990066}
-.kpi .kpigrid .c.L4 .cv{color:#ff2a2a;text-shadow:0 0 6px #ff2a2a66}
+.kpi .kpigrid .c.L3 .cv{color:#ffc400;text-shadow:0 0 6px #ffc40066}
+.kpi .kpigrid .c.L4 .cv{color:#ff9f1a;text-shadow:0 0 6px #ff9f1a66}
 .kpigrid .k{font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .kpigrid .cv{font:700 1.05rem var(--mono);font-variant-numeric:tabular-nums}
 .kpigrid .cv small{font-size:.66rem;color:var(--muted);font-weight:600;margin-left:3px}
@@ -1175,8 +1175,8 @@ const TURB=[
   {label:"Smooth air",cls:"t0",note:"Conditions along your path look calm."},
   {label:"Slight bumps",cls:"t1",note:"An occasional small bump or a light, steady jiggle is normal here. It's the air, not the plane."},
   {label:"Light bumps",cls:"t2",note:"Light bumps are expected in this air. Routine for the crew and the aircraft; drinks might jiggle."},
-  {label:"Light–moderate chop",cls:"t3",note:"Steady bumpiness is expected. Uncomfortable but not dangerous; the plane is built for far more. Keep your seatbelt on."},
-  {label:"Moderate turbulence",cls:"t4",note:"Firmer bumps are expected. Crews often change altitude to find smoother air. Stay buckled in."}
+  {label:"Bumpy stretch",cls:"t3",note:"A bumpy stretch is expected. Common and routine; the plane is built for far more than this. Keep your seatbelt on."},
+  {label:"Firmer bumps",cls:"t4",note:"Firmer bumps are expected for a while. Crews plan for this and often move to smoother air. Uncomfortable, not dangerous; stay buckled in."}
 ];
 function shearLvl(s){return s<2?0:s<3.5?1:s<5?2:s<7?3:4;}
 function capeLvl(c){return c<100?0:c<300?1:c<1000?2:c<2000?3:4;}
@@ -1218,7 +1218,7 @@ function turbulence(){
   }
   set("tFor",forTxt);
   let note=T.note;
-  if(jl>0&&jl>=now0)note="The plane's own readings show "+["","slight","light","steady","firm"][jl]+" bumps: normal turbulence, not a problem with the aircraft.";
+  if(jl>0&&jl>=now0)note="The plane's own readings show "+["","slight","light","steady","firmer"][jl]+" bumps: ordinary air movement, not a problem with the aircraft.";
   if(next!=null)note+=" Then "+TURB[next].label.toLowerCase()+".";
   else if(fix.altFt!=null&&fix.altFt<10000&&fix.altFt>500)note+=" Bumps are normal at low altitude.";
   set("tNote","<span>"+note+"</span>");
@@ -1226,11 +1226,11 @@ function turbulence(){
   if(w){
     const from=(w.to+180)%360;let wl="";
     if(fix.track!=null){const c=w.spd*Math.cos((w.to-fix.track)*R);wl=fmt(Math.abs(c)*1.15078)+(c>=0?" tail":" head");}
-    put("sh",w.shear.toFixed(1),"kt/1k ft",["low","slight","mild","notable","high"][shearLvl(w.shear)],shearLvl(w.shear));
-    put("cp",fmt(w.cape),"J/kg",["none","slight","low","some","high"][capeLvl(w.cape)],capeLvl(w.cape));
+    put("sh",w.shear.toFixed(1),"kt/1k ft",["low","slight","mild","moderate","elevated"][shearLvl(w.shear)],shearLvl(w.shear));
+    put("cp",fmt(w.cape),"J/kg",["none","slight","low","some","more"][capeLvl(w.cape)],capeLvl(w.cape));
     put("wd",fmt(w.spd*1.15078),"mph · "+COMPASS[Math.round(from/45)%8],wl,null);
   }else{put("sh","—","kt/1k ft","waiting",null);put("cp","—","J/kg","waiting",null);put("wd","—","mph","waiting",null);}
-  put("st",jt!=null?"±"+fmt(jt):"—","ft/min",jt!=null?["steady","slight wobble","bumpy","choppy","very bumpy"][jl]:"needs level",jt!=null?jl:null);
+  put("st",jt!=null?"±"+fmt(jt):"—","ft/min",jt!=null?["steady","slight","light bumps","bumpy","firmer"][jl]:"needs level",jt!=null?jl:null);
   TT.lvl=lvl;TT.sh=w?w.shear:null;TT.cp=w?w.cape:null;TT.wd=w?w.spd*1.15078:null;TT.st=jt;
   TT.score=Math.max(w?contOf("sh",w.shear):0,w?contOf("cp",w.cape):0,jt!=null?contOf("st",jt):0);
   if(Math.floor(TT.score)!==lvl)TT.score=lvl;
@@ -1239,14 +1239,15 @@ function clearTurb(){for(const [m,u] of [["sh","kt/1k ft"],["cp","J/kg"],["wd","
   TT.score=null;TT.sh=TT.cp=TT.wd=TT.st=null;set("tFor","");}
 
 /* ---------- turbulence LED bars: a live horizontal meter and one vertical bar per reading ---------- */
-const LEDC=["#39ff14","#b6ff00","#ffe600","#ff9900","#ff2a2a"],LED_WIND="#00e5ff";
+const LEDC=["#39ff14","#b6ff00","#ffe600","#ffc400","#ff9f1a"],LED_WIND="#00e5ff";
 const BANDS={sh:[0,2,3.5,5,7],cp:[0,100,300,1000,2000],st:[0,55,100,180,350]};
-const BMAX={sh:10,cp:2500,wd:200,st:500};
+const BMAX={sh:16,cp:4000,wd:320,st:800};
+const H_SPAN=7;   // horizontal meter covers 0-7 so the top level still leaves the bar partly empty
 const lvlOf=(m,v)=>{const b=BANDS[m];let i=0;while(i<4&&v>=b[i+1])i++;return i;};
 function contOf(m,v){const b=BANDS[m],i=lvlOf(m,v),hi=i<4?b[i+1]:BMAX[m];return Math.min(i+.999,i+(v-b[i])/Math.max(1e-6,hi-b[i]));}
 function buildBar(el,n,colorAt){el.innerHTML="";for(let i=0;i<n;i++){const s=document.createElement("i");s.style.setProperty("--c",colorAt((i+.5)/n));el.appendChild(s);}}
 const H_N=16,V_N=9;
-buildBar($("tBar"),H_N,f=>LEDC[Math.min(4,Math.floor(f*5))]);
+buildBar($("tBar"),H_N,f=>LEDC[Math.min(4,Math.floor(f*H_SPAN))]);
 buildBar($("b_sh"),V_N,f=>LEDC[lvlOf("sh",f*BMAX.sh)]);
 buildBar($("b_cp"),V_N,f=>LEDC[lvlOf("cp",f*BMAX.cp)]);
 buildBar($("b_wd"),V_N,()=>LED_WIND);
@@ -1269,7 +1270,7 @@ function animTurb(){
   };
   const L=TT.lvl;
   const sc=wob("score",TT.score,L,L+.999,.18);
-  lightBar($("tBar"),sc==null?null:Math.max(.04,(sc+.001)/5),false);
+  lightBar($("tBar"),sc==null?null:Math.max(.04,(sc+.001)/H_SPAN),false);
   for(const m of ["sh","cp","st"]){
     const v=TT[m];let d=null;
     if(v!=null){const b=BANDS[m],i=lvlOf(m,v),hi=i<4?b[i+1]-1e-6:BMAX[m]*1.5;d=wob(m,v,b[i],hi,BMAX[m]*.02);}else TD[m]=null;
