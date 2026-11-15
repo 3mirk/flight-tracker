@@ -46,6 +46,10 @@ canvas{display:block;width:100%;aspect-ratio:4/3;max-height:460px}
 .tile .v{font:700 1.5rem var(--mono);font-variant-numeric:tabular-nums;margin-top:2px;overflow-wrap:anywhere}
 .tile .v small{font-size:.75rem;color:var(--muted);font-weight:600;margin-left:4px}
 .tile .s{font-size:.75rem;color:var(--muted);margin-top:2px;min-height:1em}
+.tile.wide{grid-column:1/-1}
+.tile .row{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.tile .row .s{text-align:right}
+canvas.spark{display:block;width:100%;height:96px;margin-top:8px;aspect-ratio:auto;max-height:none;touch-action:pan-y;cursor:crosshair}
 .chip{display:inline-block;padding:1px 6px;border-radius:4px;font-weight:700;font-size:.68rem}
 .chip.up{background:rgba(111,208,140,.18);color:var(--good)}
 .chip.dn{background:rgba(240,160,75,.18);color:var(--warn)}
@@ -80,8 +84,10 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 <div class="prog"><span id="pFrom">CLT</span><div class="bar"><i id="pBar"></i></div><span id="pTo">DFW</span></div>
 
 <div class="tiles">
-  <div class="tile"><div class="k">Altitude</div><div class="v" id="alt">—</div><div class="s" id="altS"></div></div>
-  <div class="tile"><div class="k">Ground speed</div><div class="v" id="spd">—</div><div class="s" id="spdS"></div></div>
+  <div class="tile wide"><div class="row"><div><div class="k">Altitude</div><div class="v" id="alt">—</div></div><div class="s" id="altS"></div></div>
+    <canvas class="spark" id="altChart" aria-label="Altitude over time, in feet"></canvas></div>
+  <div class="tile wide"><div class="row"><div><div class="k">Ground speed</div><div class="v" id="spd">—</div></div><div class="s" id="spdS"></div></div>
+    <canvas class="spark" id="spdChart" aria-label="Ground speed over time, in miles per hour"></canvas></div>
   <div class="tile"><div class="k">Heading</div><div class="v" id="hdg">—</div><div class="s" id="hdgS"></div></div>
   <div class="tile"><div class="k">Vertical speed</div><div class="v" id="vs">—</div><div class="s" id="vsS"></div></div>
   <div class="tile"><div class="k">Distance to go</div><div class="v" id="dist">—</div><div class="s" id="distS"></div></div>
@@ -271,8 +277,28 @@ async function track(){
     if(miss>=5){src=null;}
   }
 }
+/* ---------- history for the charts ---------- */
+const HIST_MS=4*3600*1000;
+let hist={alt:[],spd:[]},histKey="";
+function histLoad(key){
+  histKey=key;hist={alt:[],spd:[]};
+  if(!key)return;
+  try{const h=JSON.parse(localStorage.getItem("sfm-h:"+key)||"null");
+    if(h&&Array.isArray(h.alt)&&Array.isArray(h.spd)){const cut=Date.now()-HIST_MS;
+      hist={alt:h.alt.filter(q=>q[0]>cut),spd:h.spd.filter(q=>q[0]>cut)};}}catch(e){}
+}
+let histSaved=0;
+function histAdd(p){
+  const put=(arr,v)=>{if(v==null||isNaN(v))return;const last=arr[arr.length-1];
+    if(last&&p.t-last[0]<5000){last[1]=v;return;}   // at most one point per 5 s
+    arr.push([p.t,v]);const cut=p.t-HIST_MS;while(arr.length&&arr[0][0]<cut)arr.shift();};
+  put(hist.alt,p.altFt);put(hist.spd,p.gsKt!=null?p.gsKt*1.15078:null);
+  if(histKey&&mode!=="demo"&&Date.now()-histSaved>15000){histSaved=Date.now();
+    try{localStorage.setItem("sfm-h:"+histKey,JSON.stringify(hist));}catch(e){}}
+}
 function apply(p,name){
   if(fix&&p.t<fix.t)return;
+  if(!fix||p.t!==fix.t)histAdd(p);
   fix=p;lastSource=name;
   const last=trail[trail.length-1];
   if(!last||Math.abs(last[0]-p.lat)+Math.abs(last[1]-p.lon)>0.02){trail.push([p.lat,p.lon]);if(trail.length>600)trail.shift();}
@@ -284,7 +310,7 @@ function stopExtras(){
   if(demoTimer){clearInterval(demoTimer);demoTimer=null;}
 }
 function startGps(){
-  ++run;stopExtras();fix=null;trail=[];mode="gps";$("banner").hidden=true;
+  ++run;stopExtras();fix=null;trail=[];mode="gps";histLoad("gps");$("banner").hidden=true;
   if(!navigator.geolocation){status("bad","This browser has no location service.");return;}
   status("search","Waiting for a GPS fix. A window seat helps.");
   try{
@@ -299,7 +325,7 @@ function startGps(){
   }catch(e){status("bad","Location is blocked in this viewer.");}
 }
 function startDemo(){
-  ++run;stopExtras();mode="demo";fix=null;trail=[];$("banner").hidden=false;
+  ++run;stopExtras();mode="demo";fix=null;trail=[];histLoad("");$("banner").hidden=false;
   const o=org||AIRPORTS.CLT,d=dst||AIRPORTS.DFW,total=distNm(o,d);let f=0.3;
   status("demo","<b>Demo.</b> Simulated flight at 60× speed, not real data.");
   const step=()=>{
@@ -308,7 +334,7 @@ function startDemo(){
     const gs=f<cl?250+190*f/cl:f>ds?440-200*(f-ds)/(1-ds):440;
     const p=along(o,d,f);
     apply({lat:p[0],lon:p[1],altFt:alt,gsKt:gs,track:bearing(p,d),vsFpm:f<cl?1900:f>ds?-1700:0,callsign:"DEMO",type:"A321",t:Date.now()},"demo");
-    f+=gs/3600*60/total;if(f>=1){f=0;trail=[];fix=null;}
+    f+=gs/3600*60/total;if(f>=1){f=0;trail=[];fix=null;hist={alt:[],spd:[]};}
   };
   step();demoTimer=setInterval(step,1000);
 }
@@ -417,6 +443,70 @@ function draw(){
   else{g.fillStyle=C("--muted");g.font="13px "+C("--sans");g.textAlign="center";g.fillText("Waiting for a position",w/2,h-16);}
 }
 
+/* ---------- line charts: one series each, own y-scale, zero baseline ---------- */
+const CHARTS=[
+  {el:$("altChart"),data:()=>hist.alt,unit:"ft",step:[1000,2000,5000,10000]},
+  {el:$("spdChart"),data:()=>hist.spd,unit:"mph",step:[50,100,200]}
+];
+function niceMax(v,steps){for(const s of steps){const m=Math.ceil(v/s)*s;if(m/s<=5)return {max:m,step:s};}
+  const s=steps[steps.length-1];return {max:Math.ceil(v/s)*s,step:s};}
+function clock(t){return new Date(t).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});}
+function drawChart(ch){
+  const cv=ch.el,dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;
+  if(!w||!h)return;
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
+  const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
+  const css=getComputedStyle(document.documentElement),C=n=>css.getPropertyValue(n).trim();
+  const d=ch.data(),L=44,Rt=8,T=6,B=18,pw=w-L-Rt,ph=h-T-B;
+  g.font="10px "+C("--mono");g.fillStyle=C("--muted");
+  if(d.length<2){g.textAlign="center";g.textBaseline="middle";
+    g.fillText(d.length?"Collecting data…":"Chart starts with the first position",w/2,h/2);return;}
+  const t0=d[0][0],t1=Math.max(d[d.length-1][0],t0+60000);
+  const vmax=Math.max(...d.map(q=>q[1]),1),{max,step}=niceMax(vmax,ch.step);
+  const X=t=>L+(t-t0)/(t1-t0)*pw,Y=v=>T+ph-(v/max)*ph;
+  // grid + y labels
+  g.strokeStyle="rgba(142,163,183,.14)";g.lineWidth=1;g.textAlign="right";g.textBaseline="middle";
+  for(let v=0;v<=max+1e-6;v+=step){const y=Math.round(Y(v))+.5;g.beginPath();g.moveTo(L,y);g.lineTo(w-Rt,y);g.stroke();
+    g.fillText(v>=10000?(v/1000)+"k":fmt(v),L-6,y);}
+  // x labels: start and latest
+  g.textBaseline="alphabetic";g.textAlign="left";g.fillText(clock(t0),L,h-4);
+  g.textAlign="right";g.fillText(clock(d[d.length-1][0]),w-Rt,h-4);
+  // area + line (gaps over 3 min are left open)
+  const acc=C("--accent");
+  const segs=[];let cur=[];
+  d.forEach((q,i)=>{if(i&&q[0]-d[i-1][0]>180000){segs.push(cur);cur=[];}cur.push(q);});segs.push(cur);
+  for(const s of segs){if(!s.length)continue;
+    g.beginPath();s.forEach((q,i)=>i?g.lineTo(X(q[0]),Y(q[1])):g.moveTo(X(q[0]),Y(q[1])));
+    g.lineTo(X(s[s.length-1][0]),Y(0));g.lineTo(X(s[0][0]),Y(0));g.closePath();
+    g.fillStyle="rgba(255,179,71,.14)";g.fill();
+    g.beginPath();s.forEach((q,i)=>i?g.lineTo(X(q[0]),Y(q[1])):g.moveTo(X(q[0]),Y(q[1])));
+    g.strokeStyle=acc;g.lineWidth=2;g.lineJoin="round";g.stroke();}
+  // latest point
+  const e=d[d.length-1];g.fillStyle=acc;g.strokeStyle=C("--panel");g.lineWidth=2;
+  g.beginPath();g.arc(X(e[0]),Y(e[1]),4,0,7);g.fill();g.stroke();
+  // hover / touch readout
+  if(ch.hx!=null){
+    const tt=t0+(Math.max(L,Math.min(w-Rt,ch.hx))-L)/pw*(t1-t0);
+    let q=d[0];for(const r of d)if(Math.abs(r[0]-tt)<Math.abs(q[0]-tt))q=r;
+    const x=X(q[0]),y=Y(q[1]);
+    g.strokeStyle="rgba(232,238,244,.45)";g.lineWidth=1;g.beginPath();g.moveTo(Math.round(x)+.5,T);g.lineTo(Math.round(x)+.5,T+ph);g.stroke();
+    g.fillStyle=C("--ink");g.beginPath();g.arc(x,y,4,0,7);g.fill();
+    const label=fmt(q[1])+" "+ch.unit+" · "+clock(q[0]);
+    g.font="700 11px "+C("--mono");const tw=g.measureText(label).width+12;
+    let bx=x+8;if(bx+tw>w-2)bx=x-8-tw;const by=T;
+    g.fillStyle="rgba(11,21,34,.92)";g.strokeStyle=C("--line");g.beginPath();g.rect(bx,by,tw,20);g.fill();g.stroke();
+    g.fillStyle=C("--ink");g.textAlign="left";g.textBaseline="middle";g.fillText(label,bx+6,by+10);
+  }
+}
+function drawCharts(){CHARTS.forEach(drawChart);}
+CHARTS.forEach(ch=>{
+  const at=e=>{const r=ch.el.getBoundingClientRect();ch.hx=e.clientX-r.left;drawChart(ch);};
+  ch.el.addEventListener("pointerdown",at);ch.el.addEventListener("pointermove",at);
+  const off=()=>{ch.hx=null;drawChart(ch);};
+  ch.el.addEventListener("pointerleave",off);ch.el.addEventListener("pointercancel",off);
+  ch.el.addEventListener("pointerup",e=>{if(e.pointerType!=="mouse")setTimeout(off,1500);});
+});
+
 /* ---------- wiring ---------- */
 function readForm(){
   const a=$("from").value.trim().toUpperCase(),b=$("to").value.trim().toUpperCase();
@@ -424,16 +514,16 @@ function readForm(){
   $("pFrom").textContent=a||"—";$("pTo").textContent=b||"—";
   try{localStorage.setItem("sfm",JSON.stringify([$("flight").value,a,b]));}catch(e){}
 }
-$("form").addEventListener("submit",e=>{e.preventDefault();readForm();fix=null;trail=[];lastSource="";
+$("form").addEventListener("submit",e=>{e.preventDefault();readForm();fix=null;trail=[];lastSource="";histLoad(cands[0]||"");
   if(!cands.length){status("bad","Enter a flight number, like AA3101.");return;}track();});
 $("gps").addEventListener("click",()=>{readForm();startGps();});
 $("demo").addEventListener("click",()=>{readForm();startDemo();});
 $("view").addEventListener("click",()=>{view=view==="route"?"follow":"route";$("view").textContent="View: "+(view==="route"?"route":"close-up");draw();});
 try{const s=JSON.parse(localStorage.getItem("sfm")||"null");if(s){$("flight").value=s[0];$("from").value=s[1];$("to").value=s[2];}}catch(e){}
 readForm();
-setInterval(()=>{readouts();draw();},500);
-window.addEventListener("resize",draw);
-readouts();draw();track();
+setInterval(()=>{readouts();draw();drawCharts();},500);
+window.addEventListener("resize",()=>{draw();drawCharts();});
+histLoad(cands[0]||"");readouts();draw();drawCharts();track();
 </script>
 </body>
 </html>
