@@ -1,0 +1,4 @@
+# Cloudflare Worker config: deploys worker.js as the data relay for the tracker page.
+name = "flight-tracker-relay"
+main = "worker.js"
+compatibility_date = "2025-06-01"
