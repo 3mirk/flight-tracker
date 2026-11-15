@@ -25,7 +25,8 @@ input{width:100%;background:var(--panel);border:1px solid var(--line);color:var(
 button{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px 14px;font:600 .9rem var(--sans);cursor:pointer}
 button.primary{background:var(--accent);border-color:var(--accent);color:#1b1206}
 button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-offset:2px}
-.status{display:flex;gap:8px;align-items:flex-start;font-size:.85rem;color:var(--muted);line-height:1.35}
+.status{display:flex;gap:8px;align-items:flex-start;font-size:.8rem;color:var(--muted);line-height:1.35;height:2.7em}
+#msg{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
 .dot{flex:none;width:10px;height:10px;border-radius:50%;margin-top:4px;background:var(--muted)}
 .dot.live{background:var(--good)}.dot.search{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.demo{background:var(--route)}
 .status b{color:var(--ink)}
@@ -432,13 +433,13 @@ async function track(){
       if(!f||f.none){
         const net=f&&f.liveReached?true:await online();if(id!==run)return;
         const head=f&&f.liveReached
-          ?`No aircraft is broadcasting as ${cands.join(", ")} right now. Check the flight number.`
+          ?`No aircraft found as <b>${cands[0]}</b>${cands.length>1?" or "+(cands.length-1)+" partner callsigns":""}. Check the flight number.`
           :whereAmI().includes("preview")
-            ?"This preview blocks network requests. Open the page in Safari or Chrome itself."
+            ?"This preview blocks network requests. Open the page in your browser."
             :!net
-              ?"<b>You seem to be offline.</b> The plane's Wi-Fi may have dropped or its login expired. Open aainflight.com in a new tab to reconnect."
-              :"Your browser couldn't get live data from the flight services.";
-        status("bad",head+" Retrying in 20 s. See Data sources below for each service.");
+              ?"<b>Offline.</b> Reconnect the plane's Wi-Fi at aainflight.com."
+              :"<b>No source reachable.</b> Tap a source below for details.";
+        status("bad",head+" Retrying in 20 s.");
         await sleep(20000);continue;
       }
       src=f;miss=0;activeSrc=f.key;renderSrcs();apply(f.first,f.name);backfill(f.first.hex,id);
@@ -535,7 +536,7 @@ function startGps(){
       apply({lat:c.latitude,lon:c.longitude,altFt:c.altitude!=null?c.altitude*3.28084:null,
         gsKt:c.speed!=null?c.speed*1.94384:null,track:c.heading!=null&&!isNaN(c.heading)?c.heading:(prev?prev.track:null),
         vsFpm:vs,callsign:"",t:g.timestamp},"phone GPS");
-    },()=>status("bad","Location was refused or has no signal here. Allow location for this page, or move to a window."),
+    },()=>status("bad","No location. Allow location for this page, or move to a window."),
     {enableHighAccuracy:true,maximumAge:2000,timeout:60000});
   }catch(e){status("bad","Location is blocked in this viewer.");}
 }
@@ -570,8 +571,7 @@ function readouts(){
   const f=fix,age=Math.round((Date.now()-f.t)/1000);
   if(mode!=="demo"&&lastSource){
     const stale=age>45;
-    status(stale?"search":"live",`<b>${f.callsign||"Your position"}</b> ${stale?"last seen":"live"} via ${lastSource}, updated ${age<60?age+" s":Math.round(age/60)+" min"} ago.`
-      +(stale?" Coverage can drop out between receivers.":""));
+    status(stale?"search":"live",`<b>${f.callsign||"Your position"}</b> ${stale?"last seen":"live"} · ${lastSource} · ${age<60?age+"s":Math.round(age/60)+"m"} ago`);
   }
   set("alt",f.altFt!=null?fmt(f.altFt)+"<small>ft</small>":"—");
   set("altS",f.altFt!=null?"FL"+String(Math.round(f.altFt/100)).padStart(3,"0")+" · "+fmt(f.altFt*0.3048)+" m":"");
