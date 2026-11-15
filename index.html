@@ -58,6 +58,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srcx:empty{display:none}
 .srcx b{color:var(--ink);font-weight:600}
 .hint{font-size:.72rem;color:var(--muted);line-height:1.4;margin-top:-6px}
+#traf{position:absolute;right:8px;top:42px;padding:6px 10px;font-size:.75rem;background:rgba(11,21,34,.85)}
+#traf[aria-pressed="true"]{border-color:var(--route);color:var(--route)}
 #map{touch-action:manipulation;cursor:grab}
 .zoom{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:4px}
 .zoom button{width:36px;height:36px;padding:0;font-size:1.2rem;line-height:1;background:rgba(11,21,34,.85)}
@@ -150,9 +152,10 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <canvas id="map"></canvas>
   <span class="banner" id="banner" hidden>DEMO · SIMULATED</span>
   <button type="button" id="view">View: route</button>
+  <button type="button" id="traf">Traffic: off</button>
   <div class="zoom"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button></div>
 </div>
-<div class="hint">Pinch or double-tap to zoom in. Tap with two fingers to zoom out. Drag to move once zoomed.</div>
+<div class="hint">Pinch or double-tap to zoom in. Tap with two fingers to zoom out. Drag to move once zoomed. Traffic shows up to 10 aircraft within 60 miles and 5,000 ft of you; tap one for details.</div>
 
 <div class="prog"><span id="pFrom">CLT</span><div class="bar"><i id="pBar"></i></div><span id="pTo">DFW</span></div>
 
@@ -305,7 +308,7 @@ function renderSrcs(){
     return '<li class="'+st.state+(activeSrc===n?" use":"")+(selSrc===n?" sel":"")+'" data-n="'+n+'" tabindex="0" role="button" aria-label="'+n+": "+word(n,st)+
       '"><span class="d"></span><span class="nm">'+(SHORT[n]||n)+'</span><span class="m">'+kpi+"</span></li>";}).join("");
   const el=$("srcList");if(el.innerHTML!==html)el.innerHTML=html;
-  const ex=[["Weather","Winds"],["History","Earlier flight"]].map(([n,label])=>{const st=srcs[n];
+  const ex=[["Weather","Winds"],["History","Earlier flight"]].concat(typeof trafOn!=="undefined"&&trafOn?[["Traffic","Traffic"]]:[]).map(([n,label])=>{const st=srcs[n];
     return label+": <b>"+(st?word(n,st)+(st.state==="ok"||st.state==="fail"?" · "+ago(st.t):""):"not tried yet")+"</b>";}).join(" &nbsp;·&nbsp; ");
   if($("srcExtra").innerHTML!==ex)$("srcExtra").innerHTML=ex;
   const d=selSrc&&srcs[selSrc]?"<b>"+selSrc+":</b> "+srcs[selSrc].text:"";
@@ -722,6 +725,7 @@ function draw(){
   [[org,$("from").value],[dst,$("to").value]].forEach(([a,code])=>{if(!a)return;const x=X(a[1]),y=Y(a[0]);
     g.strokeStyle=C("--ink");g.lineWidth=2;g.fillStyle="#0d1b2b";g.beginPath();g.arc(x,y,5,0,7);g.fill();g.stroke();
     g.fillStyle=C("--ink");g.textAlign="center";g.fillText(code.toUpperCase(),Math.max(18,Math.min(w-18,x)),y+(y>h-26?-15:16));});
+  try{drawTraffic(g,X,Y,w,h,scale,p,C);}catch(e){}
   // aircraft
   if(p){const x=X(p[1]),y=Y(p[0]),old=Date.now()-fix.t>90000;
     if(old){g.fillStyle=C("--ink");g.font="10px "+C("--sans");g.textAlign="center";g.textBaseline="middle";g.fillText("last known",x,y-22);}
@@ -767,7 +771,8 @@ cv.addEventListener("touchend",e=>{
   if(!tch||e.touches.length)return;const tN=performance.now();
   if(tch.mode===2){if(!tch.moved&&tN-tch.t<450){e.preventDefault();zoomAt(tch.mx,tch.my,zoom/2);}lastTap=null;}
   else if(!tch.moved&&tN-tch.t<300){
-    if(lastTap&&tN-lastTap.t<380&&Math.hypot(tch.x0-lastTap.x,tch.y0-lastTap.y)<40){e.preventDefault();zoomAt(tch.x0,tch.y0,zoom*2);lastTap=null;}
+    if(pickTraffic(tch.x0,tch.y0)){e.preventDefault();lastTap=null;}
+    else if(lastTap&&tN-lastTap.t<380&&Math.hypot(tch.x0-lastTap.x,tch.y0-lastTap.y)<40){e.preventDefault();zoomAt(tch.x0,tch.y0,zoom*2);lastTap=null;}
     else lastTap={t:tN,x:tch.x0,y:tch.y0};
   }
   tch=null;
@@ -994,6 +999,81 @@ CHARTS.forEach(ch=>{
   ch.el.addEventListener("pointerleave",off);ch.el.addEventListener("pointercancel",off);
   ch.el.addEventListener("pointerup",e=>{if(e.pointerType!=="mouse")setTimeout(off,1500);});
 });
+
+/* ---------- nearby traffic: up to 10 aircraft within ~60 mi and 5,000 ft of the plane ---------- */
+const TRAF_NM=52,TRAF_FT=5000,TRAF_MAX=10;
+const TRAF_URLS=[(a,o)=>"https://api.adsb.lol/v2/point/"+a+"/"+o+"/55",(a,o)=>"https://api.airplanes.live/v2/point/"+a+"/"+o+"/55",
+  (a,o)=>"https://opendata.adsb.fi/api/v2/lat/"+a+"/lon/"+o+"/dist/55"];
+var trafOn=false;let traf=[],trafBusy=false,trafSel="",trafUrl=0,tfScreen=[];
+try{trafOn=localStorage.getItem("sfm-traf")==="1";}catch(e){}
+async function fetchTraffic(){
+  if(!trafOn||trafBusy||document.hidden||mode==="demo"||!fix||Date.now()-fix.t>120000)return;
+  const p=now();if(!p)return;trafBusy=true;
+  try{
+    let j=null;
+    for(let i=0;i<TRAF_URLS.length&&!j;i++){const n=(trafUrl+i)%TRAF_URLS.length;
+      try{j=await getJSON(TRAF_URLS[n](p[0].toFixed(3),p[1].toFixed(3)),isReadsb,"Traffic");trafUrl=n;}catch(e){}}
+    if(j&&fix){
+      const me=now()||p,list=[];
+      for(const a of (j.ac||j.aircraft||[])){
+        if(a.lat==null||a.lon==null||a.alt_baro==null||a.alt_baro==="ground")continue;
+        if((fix.hex&&a.hex===fix.hex)||(fix.callsign&&(a.flight||"").trim()===fix.callsign))continue;
+        if(fix.altFt!=null&&Math.abs(a.alt_baro-fix.altFt)>TRAF_FT)continue;
+        const d=distNm(me,[a.lat,a.lon]);if(d>TRAF_NM)continue;
+        list.push({hex:a.hex,cs:(a.flight||"").trim(),type:a.t||"",lat:a.lat,lon:a.lon,alt:a.alt_baro,gs:a.gs||0,track:a.track,
+          heli:a.category==="A7",d,t:Date.now()-(a.seen_pos||0)*1000});
+      }
+      list.sort((x,y)=>x.d-y.d);traf=list.slice(0,TRAF_MAX);
+    }
+  }finally{trafBusy=false;}
+}
+function pickTraffic(mx,my){
+  let best=null,bd=24;for(const s of tfScreen){const d=Math.hypot(s.x-mx,s.y-my);if(d<bd){bd=d;best=s;}}
+  if(best){trafSel=trafSel===best.a.hex?"":best.a.hex;draw();return true;}
+  if(trafSel){trafSel="";draw();}
+  return false;
+}
+function drawTraffic(g,X,Y,w,h,scale,p,C){
+  tfScreen=[];
+  if(!trafOn)return;
+  g.font="10px "+C("--sans");g.textAlign="left";g.textBaseline="bottom";
+  if(scale<45){g.fillStyle="rgba(232,238,244,.75)";g.fillText("Zoom in to see nearby traffic",8,h-22);return;}
+  if(p){g.setLineDash([2,5]);g.strokeStyle="rgba(200,215,230,.35)";g.lineWidth=1;g.beginPath();g.arc(X(p[1]),Y(p[0]),TRAF_NM/60*scale,0,7);g.stroke();g.setLineDash([]);}
+  let sel=null;
+  for(const a of traf){
+    const dt=Math.min(30,(Date.now()-a.t)/1000);
+    const q=a.gs>40&&a.track!=null?move([a.lat,a.lon],a.track,a.gs*dt/3600):[a.lat,a.lon];
+    const x=X(q[1]),y=Y(q[0]);if(x<-10||x>w+10||y<-10||y>h+10)continue;
+    tfScreen.push({x,y,a});if(trafSel===a.hex)sel={x,y,a,q};
+    g.save();g.translate(x,y);g.rotate((a.track||0)*R);
+    g.fillStyle="rgba(170,190,210,.45)";g.strokeStyle="rgba(225,233,242,.85)";g.lineWidth=1;
+    if(a.heli){
+      g.beginPath();g.arc(0,0,3.5,0,7);g.fill();g.stroke();
+      g.beginPath();g.moveTo(0,3.5);g.lineTo(0,10);g.moveTo(-7,-7);g.lineTo(7,7);g.moveTo(7,-7);g.lineTo(-7,7);g.stroke();
+    }else{
+      g.scale(.55,.55);g.lineWidth=1.8;g.beginPath();
+      g.moveTo(0,-13);g.lineTo(3,-4);g.lineTo(13,3);g.lineTo(13,6);g.lineTo(3,3);g.lineTo(2,10);g.lineTo(6,13);g.lineTo(-6,13);
+      g.lineTo(-2,10);g.lineTo(-3,3);g.lineTo(-13,6);g.lineTo(-13,3);g.lineTo(-3,-4);g.closePath();g.fill();g.stroke();
+    }
+    g.restore();
+  }
+  if(sel){
+    const a=sel.a,mi=p?distNm(p,sel.q)*1.15078:a.d*1.15078;
+    g.strokeStyle=C("--route");g.lineWidth=1.5;g.beginPath();g.arc(sel.x,sel.y,12,0,7);g.stroke();
+    const txt=[a.cs||"No callsign",a.heli?(a.type||"")+" helicopter":a.type,fmt(a.alt)+" ft",fmt(mi)+" mi away"].filter(Boolean).join(" · ");
+    g.font="700 11px "+C("--mono");const tw=g.measureText(txt).width+12;
+    const bx=Math.max(4,Math.min(w-tw-4,sel.x-tw/2)),by=sel.y>44?sel.y-38:sel.y+18;
+    g.fillStyle="rgba(11,21,34,.94)";g.strokeStyle=C("--line");g.lineWidth=1;g.beginPath();g.rect(bx,by,tw,20);g.fill();g.stroke();
+    g.fillStyle=C("--ink");g.textAlign="left";g.textBaseline="middle";g.fillText(txt,bx+6,by+10);
+  }else if(!traf.length){g.fillStyle="rgba(232,238,244,.75)";g.fillText(srcs.Traffic&&srcs.Traffic.state==="ok"?"No traffic within 60 mi at your altitude":"Looking for nearby traffic…",8,h-22);}
+}
+function trafLabel(){$("traf").textContent="Traffic: "+(trafOn?"on":"off");$("traf").setAttribute("aria-pressed",trafOn?"true":"false");}
+$("traf").addEventListener("click",()=>{
+  trafOn=!trafOn;try{localStorage.setItem("sfm-traf",trafOn?"1":"0");}catch(e){}
+  if(trafOn){if(!isCustom()&&view==="route")view="follow";fetchTraffic();}else{traf=[];trafSel="";delete srcs.Traffic;}
+  trafLabel();renderSrcs();viewChanged();});
+cv.addEventListener("click",e=>{if(Date.now()-lastTouchT>800){const m=local(e);pickTraffic(m[0],m[1]);}});
+setInterval(fetchTraffic,10000);trafLabel();
 
 /* ---------- connection indicator: type, status, measured download speed ---------- */
 const NET_URL="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2";   // ~150 KB test file
