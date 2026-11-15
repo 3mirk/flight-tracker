@@ -442,9 +442,10 @@ async function getOnce(url,ms){
   const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
   try{
     const r=await fetch(url,{signal:c.signal,cache:"no-store"});
-    if(!r.ok)throw new Error("HTTP "+r.status);
+    const up=r.headers.get("X-Relay-Upstream");   // set by your relay when the answer came from the service behind it
+    if(!r.ok){const e=new Error("HTTP "+r.status);e.upstream=up!=null;throw e;}
     const txt=await r.text();
-    try{return JSON.parse(txt);}catch(e){throw new Error("not JSON");}
+    try{return JSON.parse(txt);}catch(e){const e2=new Error("not JSON");e2.upstream=up!=null;throw e2;}
   }finally{clearTimeout(t);}
 }
 /* Fast path: the route that worked last time, alone. If that fails, race every other route at once
@@ -456,7 +457,9 @@ async function viaRoute(n,url,ok){
   try{const j=await getOnce(target,v.ms);if(!ok(j))throw new Error("wrong reply");
     if(n===RELAY_I)setSrc("Relay","ok","Working: last request through your relay succeeded.",Math.round(performance.now()-t0));
     return {n,j};}
-  catch(e){if(n===RELAY_I)setSrc("Relay","fail","Your relay "+why(e)+". Check the address in Data relay settings at the bottom of the page.",Math.round(performance.now()-t0));
+  catch(e){if(n===RELAY_I){const host=(()=>{try{return new URL(url).hostname;}catch(x){return "the service";}})();
+      if(e.upstream||e.message==="wrong reply")setSrc("Relay","ok","Relay working. "+host+" answered through it with "+why(e)+".",Math.round(performance.now()-t0));
+      else setSrc("Relay","fail","Couldn't reach your relay ("+why(e)+"). The network may be down, or this device blocks workers.dev.",Math.round(performance.now()-t0));}
     throw new Error(v.name+" "+why(e));}
 }
 /* ---------- data source status panel ---------- */

@@ -96,6 +96,9 @@ async function relay(u, CORS) {
   const headers = new Headers(upstream.headers);
   for (const [k, v] of Object.entries(CORS)) headers.set(k, v);
   headers.delete("set-cookie");
+  // Tell the page this answer came from the service behind the relay, so a refusal there isn't blamed on the relay.
+  headers.set("X-Relay-Upstream", String(upstream.status));
+  headers.set("Access-Control-Expose-Headers", "X-Relay-Upstream");
   return new Response(upstream.body, { status: upstream.status, headers });
 }
 
