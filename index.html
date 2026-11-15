@@ -49,7 +49,9 @@ canvas{display:block;width:100%;aspect-ratio:4/3;max-height:460px}
 .tile.wide{grid-column:1/-1}
 .tile .row{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
 .tile .row .s{text-align:right}
-canvas.spark{display:block;width:100%;height:96px;margin-top:8px;aspect-ratio:auto;max-height:none;touch-action:pan-y;cursor:crosshair}
+canvas.dial{display:block;width:100%;height:200px;margin-top:6px;border-radius:6px;aspect-ratio:auto;max-height:none}
+.dialcap{text-align:center}
+canvas.spark{display:block;width:100%;height:110px;margin-top:8px;border-radius:6px;border:1px solid #1d3a2a;aspect-ratio:auto;max-height:none;touch-action:pan-y;cursor:crosshair}
 .chip{display:inline-block;padding:1px 6px;border-radius:4px;font-weight:700;font-size:.68rem}
 .chip.up{background:rgba(111,208,140,.18);color:var(--good)}
 .chip.dn{background:rgba(240,160,75,.18);color:var(--warn)}
@@ -88,8 +90,11 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
     <canvas class="spark" id="altChart" aria-label="Altitude over time, in feet"></canvas></div>
   <div class="tile wide"><div class="row"><div><div class="k">Ground speed</div><div class="v" id="spd">—</div></div><div class="s" id="spdS"></div></div>
     <canvas class="spark" id="spdChart" aria-label="Ground speed over time, in miles per hour"></canvas></div>
-  <div class="tile"><div class="k">Heading</div><div class="v" id="hdg">—</div><div class="s" id="hdgS"></div></div>
-  <div class="tile"><div class="k">Vertical speed</div><div class="v" id="vs">—</div><div class="s" id="vsS"></div></div>
+  <div class="tile wide"><div class="row"><div><div class="k">Vertical speed</div><div class="v" id="vs">—</div></div><div class="s" id="vsS"></div></div>
+    <canvas class="spark" id="vsChart" aria-label="Vertical speed over time, in feet per minute; above the center line is climbing"></canvas></div>
+  <div class="tile wide"><div class="row"><div><div class="k">Heading</div><div class="v" id="hdg">—</div></div><div class="s" id="hdgS"></div></div>
+    <canvas class="dial" id="hdgChart" aria-label="Heading history: center is the start of tracking, outer ring is now"></canvas>
+    <div class="s dialcap">Trace spirals outward over time: center is when tracking began, the edge is now. Tap a chart title to change its window (5, 15 or 60 min).</div></div>
   <div class="tile"><div class="k">Distance to go</div><div class="v" id="dist">—</div><div class="s" id="distS"></div></div>
   <div class="tile"><div class="k">Time to go</div><div class="v" id="eta">—</div><div class="s" id="etaS"></div></div>
 </div>
@@ -279,20 +284,21 @@ async function track(){
 }
 /* ---------- history for the charts ---------- */
 const HIST_MS=4*3600*1000;
-let hist={alt:[],spd:[]},histKey="";
+const EMPTY=()=>({alt:[],spd:[],vs:[],hdg:[]});
+let hist=EMPTY(),histKey="";
 function histLoad(key){
-  histKey=key;hist={alt:[],spd:[]};
+  histKey=key;hist=EMPTY();
   if(!key)return;
   try{const h=JSON.parse(localStorage.getItem("sfm-h:"+key)||"null");
-    if(h&&Array.isArray(h.alt)&&Array.isArray(h.spd)){const cut=Date.now()-HIST_MS;
-      hist={alt:h.alt.filter(q=>q[0]>cut),spd:h.spd.filter(q=>q[0]>cut)};}}catch(e){}
+    if(h&&typeof h==="object"){const cut=Date.now()-HIST_MS;
+      for(const k of Object.keys(hist))if(Array.isArray(h[k]))hist[k]=h[k].filter(q=>q[0]>cut);}}catch(e){}
 }
 let histSaved=0;
 function histAdd(p){
   const put=(arr,v)=>{if(v==null||isNaN(v))return;const last=arr[arr.length-1];
     if(last&&p.t-last[0]<5000){last[1]=v;return;}   // at most one point per 5 s
     arr.push([p.t,v]);const cut=p.t-HIST_MS;while(arr.length&&arr[0][0]<cut)arr.shift();};
-  put(hist.alt,p.altFt);put(hist.spd,p.gsKt!=null?p.gsKt*1.15078:null);
+  put(hist.alt,p.altFt);put(hist.spd,p.gsKt!=null?p.gsKt*1.15078:null);put(hist.vs,p.vsFpm);put(hist.hdg,p.track);
   if(histKey&&mode!=="demo"&&Date.now()-histSaved>15000){histSaved=Date.now();
     try{localStorage.setItem("sfm-h:"+histKey,JSON.stringify(hist));}catch(e){}}
 }
@@ -334,7 +340,7 @@ function startDemo(){
     const gs=f<cl?250+190*f/cl:f>ds?440-200*(f-ds)/(1-ds):440;
     const p=along(o,d,f);
     apply({lat:p[0],lon:p[1],altFt:alt,gsKt:gs,track:bearing(p,d),vsFpm:f<cl?1900:f>ds?-1700:0,callsign:"DEMO",type:"A321",t:Date.now()},"demo");
-    f+=gs/3600*60/total;if(f>=1){f=0;trail=[];fix=null;hist={alt:[],spd:[]};}
+    f+=gs/3600*60/total;if(f>=1){f=0;trail=[];fix=null;hist=EMPTY();}
   };
   step();demoTimer=setInterval(step,1000);
 }
@@ -362,8 +368,9 @@ function readouts(){
   set("altS",f.altFt!=null?"FL"+String(Math.round(f.altFt/100)).padStart(3,"0")+" · "+fmt(f.altFt*0.3048)+" m":"");
   set("spd",f.gsKt!=null?fmt(f.gsKt*1.15078)+"<small>mph</small>":"—");
   set("spdS",f.gsKt!=null?fmt(f.gsKt)+" kt · "+fmt(f.gsKt*1.852)+" km/h":"");
-  set("hdg",f.track!=null?String(Math.round(f.track)%360).padStart(3,"0")+"°":"—");
-  set("hdgS",f.track!=null?"Tracking "+COMPASS[Math.round(f.track/45)%8]:"");
+  const hd=f.track!=null?((Math.round(f.track)%360)+360)%360:null;
+  set("hdg",hd!=null?String(hd).padStart(3,"0")+"°":"—");
+  set("hdgS",hd!=null?"Tracking "+COMPASS[Math.round(hd/45)%8]:"");
   if(f.vsFpm!=null){const v=Math.round(f.vsFpm/50)*50;
     set("vs",(v>0?"+":"")+fmt(v)+"<small>ft/min</small>");
     set("vsS",v>250?'<span class="chip up">CLIMBING</span>':v<-250?'<span class="chip dn">DESCENDING</span>':'<span class="chip lv">LEVEL</span>');
@@ -443,62 +450,112 @@ function draw(){
   else{g.fillStyle=C("--muted");g.font="13px "+C("--sans");g.textAlign="center";g.fillText("Waiting for a position",w/2,h-16);}
 }
 
-/* ---------- line charts: one series each, own y-scale, zero baseline ---------- */
+/* ---------- live scrolling charts, Task Manager style: fixed window, newest at right ---------- */
+const SCOPE={bg:"#000000",grid:"#00703a",trace:"#00ff41",dim:"#00b830",text:"#00ff41"};
+const WINDOWS=[5,15,60];   // minutes shown across the chart
+let winIdx=0;
 const CHARTS=[
-  {el:$("altChart"),data:()=>hist.alt,unit:"ft",step:[1000,2000,5000,10000]},
-  {el:$("spdChart"),data:()=>hist.spd,unit:"mph",step:[50,100,200]}
+  {el:$("altChart"),data:()=>hist.alt,unit:"ft",lo:0,hi:40000,step:5000},
+  {el:$("spdChart"),data:()=>hist.spd,unit:"mph",lo:0,hi:600,step:100},
+  {el:$("vsChart"),data:()=>hist.vs,unit:"ft/min",lo:-4000,hi:4000,step:1000,sym:true}
 ];
-function niceMax(v,steps){for(const s of steps){const m=Math.ceil(v/s)*s;if(m/s<=5)return {max:m,step:s};}
-  const s=steps[steps.length-1];return {max:Math.ceil(v/s)*s,step:s};}
 function clock(t){return new Date(t).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});}
-function drawChart(ch){
-  const cv=ch.el,dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;
-  if(!w||!h)return;
+function prep(cv){
+  const dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;
+  if(!w||!h)return null;
   if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
-  const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,w,h);
-  const css=getComputedStyle(document.documentElement),C=n=>css.getPropertyValue(n).trim();
-  const d=ch.data(),L=44,Rt=8,T=6,B=18,pw=w-L-Rt,ph=h-T-B;
-  g.font="10px "+C("--mono");g.fillStyle=C("--muted");
-  if(d.length<2){g.textAlign="center";g.textBaseline="middle";
-    g.fillText(d.length?"Collecting data…":"Chart starts with the first position",w/2,h/2);return;}
-  const t0=d[0][0],t1=Math.max(d[d.length-1][0],t0+60000);
-  const vmax=Math.max(...d.map(q=>q[1]),1),{max,step}=niceMax(vmax,ch.step);
-  const X=t=>L+(t-t0)/(t1-t0)*pw,Y=v=>T+ph-(v/max)*ph;
-  // grid + y labels
-  g.strokeStyle="rgba(142,163,183,.14)";g.lineWidth=1;g.textAlign="right";g.textBaseline="middle";
-  for(let v=0;v<=max+1e-6;v+=step){const y=Math.round(Y(v))+.5;g.beginPath();g.moveTo(L,y);g.lineTo(w-Rt,y);g.stroke();
-    g.fillText(v>=10000?(v/1000)+"k":fmt(v),L-6,y);}
-  // x labels: start and latest
-  g.textBaseline="alphabetic";g.textAlign="left";g.fillText(clock(t0),L,h-4);
-  g.textAlign="right";g.fillText(clock(d[d.length-1][0]),w-Rt,h-4);
-  // area + line (gaps over 3 min are left open)
-  const acc=C("--accent");
-  const segs=[];let cur=[];
-  d.forEach((q,i)=>{if(i&&q[0]-d[i-1][0]>180000){segs.push(cur);cur=[];}cur.push(q);});segs.push(cur);
-  for(const s of segs){if(!s.length)continue;
-    g.beginPath();s.forEach((q,i)=>i?g.lineTo(X(q[0]),Y(q[1])):g.moveTo(X(q[0]),Y(q[1])));
-    g.lineTo(X(s[s.length-1][0]),Y(0));g.lineTo(X(s[0][0]),Y(0));g.closePath();
-    g.fillStyle="rgba(255,179,71,.14)";g.fill();
-    g.beginPath();s.forEach((q,i)=>i?g.lineTo(X(q[0]),Y(q[1])):g.moveTo(X(q[0]),Y(q[1])));
-    g.strokeStyle=acc;g.lineWidth=2;g.lineJoin="round";g.stroke();}
-  // latest point
-  const e=d[d.length-1];g.fillStyle=acc;g.strokeStyle=C("--panel");g.lineWidth=2;
-  g.beginPath();g.arc(X(e[0]),Y(e[1]),4,0,7);g.fill();g.stroke();
-  // hover / touch readout
-  if(ch.hx!=null){
-    const tt=t0+(Math.max(L,Math.min(w-Rt,ch.hx))-L)/pw*(t1-t0);
-    let q=d[0];for(const r of d)if(Math.abs(r[0]-tt)<Math.abs(q[0]-tt))q=r;
+  const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);return {g,w,h};
+}
+function drawChart(ch){
+  const c=prep(ch.el);if(!c)return;const {g,w,h}=c;
+  const span=WINDOWS[winIdx]*60000,tNow=Date.now(),t0=tNow-span;
+  const d=ch.data();
+  // scale is fixed like Task Manager, but grows if the data goes past it
+  let hi=ch.hi,lo=ch.lo;
+  for(const q of d){if(q[0]<t0)continue;while(q[1]>hi)hi+=ch.step;while(q[1]<lo)lo-=ch.step;}
+  if(ch.sym){const m=Math.max(hi,-lo);hi=m;lo=-m;}
+  const X=t=>(t-t0)/span*w,Y=v=>h-(v-lo)/(hi-lo)*h;
+  g.fillStyle=SCOPE.bg;g.fillRect(0,0,w,h);
+  // grid: fixed horizontal lines, vertical lines that scroll left with time
+  g.strokeStyle=SCOPE.grid;g.lineWidth=1;g.beginPath();
+  const rows=8;for(let i=1;i<rows;i++){const y=Math.round(i*h/rows)+.5;g.moveTo(0,y);g.lineTo(w,y);}
+  const cell=span/12;for(let t=Math.ceil(t0/cell)*cell;t<tNow;t+=cell){const x=Math.round(X(t))+.5;g.moveTo(x,0);g.lineTo(x,h);}
+  g.stroke();
+  if(ch.sym){g.strokeStyle=SCOPE.dim;g.beginPath();const y=Math.round(Y(0))+.5;g.moveTo(0,y);g.lineTo(w,y);g.stroke();}
+  // trace; the latest value is held out to "now" so the line keeps moving between reports
+  const vis=[];for(let i=0;i<d.length;i++){if(d[i][0]>=t0||(d[i+1]&&d[i+1][0]>=t0))vis.push(d[i]);}
+  if(vis.length){
+    const last=vis[vis.length-1];
+    const pts=vis.slice();if(tNow-last[0]<90000)pts.push([tNow,last[1]]);
+    g.strokeStyle=SCOPE.trace;g.lineWidth=2;g.lineJoin="round";g.shadowColor=SCOPE.trace;g.shadowBlur=4;
+    g.beginPath();
+    pts.forEach((q,i)=>{const x=X(q[0]),y=Y(q[1]);
+      if(!i||q[0]-pts[i-1][0]>180000)g.moveTo(x,y);else g.lineTo(x,y);});
+    g.stroke();g.shadowBlur=0;
+  }
+  // labels: scale top/bottom, window at right
+  g.font="10px "+getComputedStyle(document.documentElement).getPropertyValue("--mono");
+  g.fillStyle=SCOPE.text;g.textBaseline="top";g.textAlign="left";
+  const lab=v=>(ch.sym&&v>0?"+":"")+(Math.abs(v)>=10000?(v/1000)+"k":fmt(v));
+  g.fillText(lab(hi)+" "+ch.unit,4,3);g.textBaseline="bottom";g.fillText(lab(lo),4,h-3);
+  g.textAlign="right";g.fillText(WINDOWS[winIdx]+" min",w-4,h-3);
+  if(!vis.length){g.textAlign="center";g.textBaseline="middle";g.fillStyle=SCOPE.dim;g.fillText("waiting for data",w/2,h/2);}
+  // touch / hover readout
+  if(ch.hx!=null&&vis.length){
+    const tt=t0+Math.max(0,Math.min(w,ch.hx))/w*span;
+    let q=vis[0];for(const r of vis)if(Math.abs(r[0]-tt)<Math.abs(q[0]-tt))q=r;
     const x=X(q[0]),y=Y(q[1]);
-    g.strokeStyle="rgba(232,238,244,.45)";g.lineWidth=1;g.beginPath();g.moveTo(Math.round(x)+.5,T);g.lineTo(Math.round(x)+.5,T+ph);g.stroke();
-    g.fillStyle=C("--ink");g.beginPath();g.arc(x,y,4,0,7);g.fill();
-    const label=fmt(q[1])+" "+ch.unit+" · "+clock(q[0]);
-    g.font="700 11px "+C("--mono");const tw=g.measureText(label).width+12;
-    let bx=x+8;if(bx+tw>w-2)bx=x-8-tw;const by=T;
-    g.fillStyle="rgba(11,21,34,.92)";g.strokeStyle=C("--line");g.beginPath();g.rect(bx,by,tw,20);g.fill();g.stroke();
-    g.fillStyle=C("--ink");g.textAlign="left";g.textBaseline="middle";g.fillText(label,bx+6,by+10);
+    g.strokeStyle=SCOPE.dim;g.beginPath();g.moveTo(Math.round(x)+.5,0);g.lineTo(Math.round(x)+.5,h);g.stroke();
+    g.fillStyle=SCOPE.trace;g.beginPath();g.arc(x,y,3.5,0,7);g.fill();
+    const val=ch.sym?Math.round(q[1]/50)*50:Math.round(q[1]);
+    const label=(ch.sym&&val>0?"+":"")+fmt(val)+" "+ch.unit+" · "+clock(q[0]);
+    g.font="700 11px "+getComputedStyle(document.documentElement).getPropertyValue("--mono");
+    const tw=g.measureText(label).width+10;let bx=x+6;if(bx+tw>w-2)bx=x-6-tw;
+    g.fillStyle="#000";g.strokeStyle=SCOPE.trace;g.lineWidth=1;g.fillRect(bx,16,tw,18);g.strokeRect(bx+.5,16.5,tw-1,17);
+    g.fillStyle=SCOPE.text;g.textAlign="left";g.textBaseline="middle";g.fillText(label,bx+5,25);
   }
 }
-function drawCharts(){CHARTS.forEach(drawChart);}
+function drawCharts(){CHARTS.forEach(drawChart);drawDial();}
+/* Heading dial in the same scope style: spiral of past headings, center = start, edge = now. */
+function drawDial(){
+  const c=prep($("hdgChart"));if(!c)return;const {g,w,h}=c;
+  const cx=w/2,cy=h/2,r=Math.min(w,h)/2-16;
+  const P=(deg,rad)=>[cx+Math.sin(deg*R)*rad,cy-Math.cos(deg*R)*rad];
+  g.fillStyle=SCOPE.bg;g.fillRect(0,0,w,h);
+  g.strokeStyle=SCOPE.grid;g.lineWidth=1;
+  [.35,.65].forEach(f=>{g.beginPath();g.arc(cx,cy,r*f,0,7);g.stroke();});
+  for(let a=0;a<360;a+=45){const[x,y]=P(a,r);g.beginPath();g.moveTo(cx,cy);g.lineTo(x,y);g.stroke();}
+  g.strokeStyle=SCOPE.dim;g.lineWidth=1.5;g.beginPath();g.arc(cx,cy,r,0,7);g.stroke();
+  for(let a=0;a<360;a+=10){const[x1,y1]=P(a,r),[x2,y2]=P(a,r-(a%30?3:7));g.beginPath();g.moveTo(x1,y1);g.lineTo(x2,y2);g.stroke();}
+  g.font="700 11px "+getComputedStyle(document.documentElement).getPropertyValue("--mono");
+  g.textAlign="center";g.textBaseline="middle";g.fillStyle=SCOPE.text;
+  [["N",0],["E",90],["S",180],["W",270]].forEach(([t,a])=>{const[x,y]=P(a,r+10);g.fillText(t,x,y);});
+  const d=hist.hdg;
+  if(d.length<2){g.fillStyle=SCOPE.dim;g.font="10px "+getComputedStyle(document.documentElement).getPropertyValue("--mono");
+    g.fillText(d.length?"collecting…":"waiting for data",cx,cy+r*.5);}
+  else{
+    const t0=d[0][0],t1=Math.max(Date.now(),t0+60000),rad=t=>r*(.1+.87*(t-t0)/(t1-t0));
+    g.strokeStyle=SCOPE.trace;g.lineWidth=2;g.lineCap="round";g.shadowColor=SCOPE.trace;g.shadowBlur=4;
+    for(let i=1;i<d.length;i++){
+      if(d[i][0]-d[i-1][0]>180000)continue;
+      g.globalAlpha=.25+.75*i/d.length;
+      // step the shorter way round so 350° -> 10° doesn't sweep the long way
+      let a0=d[i-1][1],a1=d[i][1];if(a1-a0>180)a0+=360;else if(a0-a1>180)a1+=360;
+      const n=Math.max(1,Math.ceil(Math.abs(a1-a0)/5));g.beginPath();
+      for(let k=0;k<=n;k++){const f=k/n,[x,y]=P(a0+(a1-a0)*f,rad(d[i-1][0]+(d[i][0]-d[i-1][0])*f));k?g.lineTo(x,y):g.moveTo(x,y);}
+      g.stroke();}
+    g.globalAlpha=1;g.shadowBlur=0;
+  }
+  if(fix&&fix.track!=null){
+    const[nx,ny]=P(fix.track,r-1);
+    g.strokeStyle=SCOPE.dim;g.lineWidth=1;g.setLineDash([3,3]);g.beginPath();g.moveTo(cx,cy);g.lineTo(nx,ny);g.stroke();g.setLineDash([]);
+    g.save();g.translate(nx,ny);g.rotate(fix.track*R);g.fillStyle=SCOPE.trace;
+    g.beginPath();g.moveTo(0,-2);g.lineTo(6,10);g.lineTo(-6,10);g.closePath();g.fill();g.restore();
+  }
+}
+document.querySelectorAll(".tile.wide .row").forEach(r=>{if(r.parentElement.querySelector("canvas.spark")){
+  r.style.cursor="pointer";r.title="Tap to change the time window";
+  r.addEventListener("click",()=>{winIdx=(winIdx+1)%WINDOWS.length;drawCharts();});}});
 CHARTS.forEach(ch=>{
   const at=e=>{const r=ch.el.getBoundingClientRect();ch.hx=e.clientX-r.left;drawChart(ch);};
   ch.el.addEventListener("pointerdown",at);ch.el.addEventListener("pointermove",at);
@@ -521,7 +578,8 @@ $("demo").addEventListener("click",()=>{readForm();startDemo();});
 $("view").addEventListener("click",()=>{view=view==="route"?"follow":"route";$("view").textContent="View: "+(view==="route"?"route":"close-up");draw();});
 try{const s=JSON.parse(localStorage.getItem("sfm")||"null");if(s){$("flight").value=s[0];$("from").value=s[1];$("to").value=s[2];}}catch(e){}
 readForm();
-setInterval(()=>{readouts();draw();drawCharts();},500);
+setInterval(()=>{readouts();draw();},500);
+setInterval(drawCharts,250);
 window.addEventListener("resize",()=>{draw();drawCharts();});
 histLoad(cands[0]||"");readouts();draw();drawCharts();track();
 </script>
