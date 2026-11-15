@@ -94,9 +94,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srcs[open] .srcicons,.srcs[open] .srcsum{display:none}
 .srcbody{padding-top:6px;overflow:hidden}
 .srcs[open] .srctop{min-height:20px}
-.srcicons{flex:1;min-width:0;display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:1px}
+.srcicons{flex:1;min-width:0;display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:1px}
 .si{display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--muted);min-width:0}
-.si .ic{position:relative;width:28px;height:24px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px}
+.si .ic{position:relative;width:24px;height:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px}
 .si svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 .si .led{position:absolute;right:-3px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--line);border:1.5px solid var(--panel)}
 .si .lb{font:600 .52rem var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
@@ -324,7 +324,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <div class="kpigrid">
     <div class="c"><div class="k">Flights today</div><div class="cv" id="acToday">—</div><div class="cl">from today's track</div></div>
     <div class="c"><div class="k">Last 7 days</div><div class="cv" id="acWeek">—</div><div class="cl">may lag a day</div></div>
-    <div class="c"><div class="k">Lifetime flights</div><div class="cv">n/a</div><div class="cl">not in free data</div></div>
+    <div class="c"><div class="k">First flight</div><div class="cv" id="acFirstV">n/a</div><div class="cl" id="acFirstS">needs your relay</div></div>
     <div class="c"><div class="k">Built</div><div class="cv" id="acBuiltV">n/a</div><div class="cl" id="acBuiltS">not in free data</div></div>
   </div>
   <div class="k">Recent flights (your phone's time)</div>
@@ -470,7 +470,7 @@ function word(n,st){
   if(n==="Relay"&&st.state==="idle")return "Standby";
   return st.state==="ok"?(activeSrc===n?"In use":LIVE.includes(n)?"Ready":"Connected"):st.state==="try"?"Trying…":st.state==="miss"?"No flight":
     st.state==="fail"?((st.text||"").startsWith("Blocked")?"Blocked":(st.text||"").startsWith("Timed")?"Timed out":"Failed"):"Waiting";}
-const EXTRAS=[["Weather","Winds"],["Traffic","Traffic"],["History","History"],["Airport map","Airport"],["Relay","Your relay"]];
+const EXTRAS=[["Weather","Winds"],["Traffic","Traffic"],["History","History"],["Airport map","Airport"],["Schedule","Schedules"],["Cloud","Cloud saves"],["Relay","Your relay"]];
 function cellHtml(n,label,force){
   const st=srcs[n]||{state:"idle",text:"Not tried yet"},done=st.state!=="idle"&&st.state!=="try";
   const kpi=force||(done?[st.ms!=null?msTxt(st.ms):"",st.t?ago(st.t):""].filter(Boolean).join(" "):st.state==="try"?"trying…":n==="Relay"?"standby":"waiting");
@@ -486,8 +486,10 @@ const ICONS={
   "Traffic":'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/><circle cx="16.5" cy="15" r="1" fill="currentColor"/><circle cx="8" cy="8.5" r="1" fill="currentColor"/>',
   "History":'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 3v4h4"/><path d="M12 7.5V12l3 2"/>',
   "Airport map":'<path d="M9 3l-2 18M15 3l2 18"/><path d="M12 5v2M12 10v2M12 15v2"/>',
-  "Relay":'<path d="M4 8h13l-3-3M20 16H7l3 3"/>'};
-const ICON_LB={"adsb.lol":"lol","airplanes.live":"live","adsb.fi":"fi","OpenSky":"OSky","Weather":"Wind","Traffic":"Traf","History":"Hist","Airport map":"Apt","Relay":"Relay"};
+  "Relay":'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
+  "Schedule":'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  "Cloud":'<path d="M7 18h10a4 4 0 0 0 .6-8A6 6 0 0 0 6.2 9.6 4.2 4.2 0 0 0 7 18z"/><path d="M12 10v6M9.5 12.5L12 10l2.5 2.5"/>'};
+const ICON_LB={"adsb.lol":"lol","airplanes.live":"live","adsb.fi":"fi","OpenSky":"OSky","Weather":"Wind","Traffic":"Traf","History":"Hist","Airport map":"Apt","Schedule":"Sched","Cloud":"Save","Relay":"Relay"};
 function renderIcons(){
   const all=LIVE.concat(EXTRAS.map(x=>x[0]));
   const html=all.map(n=>{
@@ -1531,6 +1533,7 @@ function renderAircraft(){
   renderFlightDate();
   const i=ac.info||{},m=ac.meta||{},f=fix||{};
   set("acReg",esc(i.registration||m.registration||f.reg||"—"));
+  {const rg=i.registration||m.registration||f.reg;if(rg&&relayBase()&&acx.reg!==String(rg).toUpperCase())loadAircraftExtra(rg);}
   const type=i.type?(i.manufacturer&&!i.type.startsWith(i.manufacturer)?i.manufacturer+" ":"")+i.type:[m.manufacturerName,m.model].filter(Boolean).join(" ")||f.type||"";
   set("acType",esc(type)||(ac.hex?(acBusy?"Looking up details…":"Details unavailable"):"Details appear once your flight is found"));
   set("acOwner",esc(i.registered_owner||m.operator||m.owner||""));
@@ -1544,7 +1547,11 @@ function renderAircraft(){
   }else{img.hidden=true;$("acNoImg").hidden=false;$("acNoImg").textContent=ac.hex&&acBusy?"Looking for a photo…":"No photo";$("acPhotoL").removeAttribute("href");set("acCredit","");}
   // built / first flight
   const y=s=>{const mm=/(19|20)\d\d/.exec(String(s||""));return mm?+mm[0]:null;};
-  const by=y(m.built)||y(m.firstFlightDate);
+  const X=acx.v&&acx.v.info||{};
+  const by=y(m.built)||y(m.firstFlightDate)||y(X.firstFlight)||y(X.delivered)||y(X.built);
+  const ff=X.firstFlight||X.delivered;
+  set("acFirstV",ff?esc(String(ff).slice(0,10)):"n/a");
+  set("acFirstS",X.firstFlight?(X.delivered?"delivered "+esc(String(X.delivered).slice(0,7)):"")+(X.productionLine?" · "+esc(X.productionLine):""):X.delivered?"delivery date":relayBase()?"not found":"needs your relay");
   set("acBuiltV",by?String(by):"n/a");
   set("acBuiltS",by?(new Date().getFullYear()-by)+" years old"+(m.serialNumber?" · serial "+esc(m.serialNumber):""):"not in free data");
   // flights: past days from OpenSky, today from the plane's own track
@@ -1553,7 +1560,8 @@ function renderAircraft(){
   for(const g2 of (ac.flights||[]))if(!all.some(l=>Math.abs(l.t0-g2.t0)<45*60000))all.push(g2);
   all.sort((a,b)=>b.t0-a.t0);
   const mid=new Date();mid.setHours(0,0,0,0);
-  set("acToday",ac.legs.length?String(ac.legs.filter(l=>l.t0>=mid.getTime()).length):"—");
+  const tl=acx.v&&Array.isArray(acx.v.today)?acx.v.today:null;
+  set("acToday",tl?String(tl.length):ac.legs.length?String(ac.legs.filter(l=>l.t0>=mid.getTime()).length):"—");
   set("acWeek",ac.flights?String(all.filter(l=>l.t0>=Date.now()-7*86400000).length):"—");
   const A=$("from").value.trim().toUpperCase(),B=$("to").value.trim().toUpperCase();
   let rows=all.slice(0,3).map(l=>{
@@ -1711,7 +1719,13 @@ async function chooseFlight(text,quiet){
 }
 /* Earlier flights under this number: departures from its origin over the last two days (OpenSky). */
 async function loadInstances(f,r){
-  const id=run;
+  const id=run;sched=null;cloudIdx=[];
+  if(relayBase()){
+    fillInstances("loading");
+    const [sc,cl]=await Promise.all([loadSchedule(f.code),loadCloudList(f.code)]);
+    if(id!==run)return;sched=sc;cloudIdx=cl;fillInstances();
+    if(sched&&sched.length){const reg=(sched.find(x=>x.reg)||{}).reg;if(reg)loadAircraftExtra(reg);return;}
+  }
   if(!r||!r.o.icao&&!/^[A-Z]{3}$/.test(r.o.c)){fillInstances("none");return;}
   const icao=r.o.icao||("K"+r.o.c),end=Math.floor(Date.now()/1000),begin=end-172800;
   fillInstances("loading");
@@ -1729,11 +1743,19 @@ function fillInstances(state){
   const A=$("from").value||"",B=$("to").value||"";
   // earlier flights: saved on this device first, then OpenSky's list, without duplicates
   const saved=archLoad().filter(r=>r.code===code&&!(mode==="live"&&Date.now()-r.t1<15*60000)).map(r=>({type:"saved",rec:r,t:depOf(r).t,from:r.from,to:r.to}));
-  const os=insts.filter(x=>!saved.some(v=>Math.abs(v.t-x.t0)<90*60000)).map((x,i)=>({type:"os",x,t:x.t0,from:x.from,to:x.to||"?"}));
-  const past=saved.concat(os).sort((p,q)=>q.t-p.t);
+  for(const c of cloudIdx)if(!saved.some(v=>v.rec.id===c.id||Math.abs(v.t-c.t0)<90*60000))saved.push({type:"cloud",entry:c,t:c.t0,from:c.from,to:c.to});
+  // real schedule (relay): finished flights join "Earlier", future ones become "Scheduled"
+  const nowT=Date.now(),schedPast=[],schedNext=[];
+  for(const x of (sched||[])){
+    const end=x.arrActual||x.arr||x.dep+3*3600000,start=x.depActual||x.dep;
+    if(end<nowT-30*60000){if(!saved.some(v=>Math.abs(v.t-start)<90*60000))schedPast.push({type:"os",x:{icao24:x.hex,t0:start,t1:end,from:x.from,to:x.to},t:start,from:x.from,to:x.to,st:x.status});}
+    else if(start>nowT+20*60000)schedNext.push({type:"plan",t:x.dep,from:x.from,to:x.to,real:true,st:x.status});
+  }
+  const os=insts.filter(x=>!saved.concat(schedPast).some(v=>Math.abs(v.t-x.t0)<90*60000)).map((x,i)=>({type:"os",x,t:x.t0,from:x.from,to:x.to||"?"}));
+  const past=saved.concat(schedPast,os).sort((p,q)=>q.t-p.t);
   // expected: same time of day as the most recent known departure, today and the next two days
-  const plan=[];const ref=past[0];
-  if(ref){const d0=new Date(ref.t);
+  const plan=schedNext.slice();const ref=past[0];
+  if(!plan.length&&ref){const d0=new Date(ref.t);
     for(let k=0;k<3;k++){const d=new Date();d.setDate(d.getDate()+k);d.setHours(d0.getHours(),d0.getMinutes(),0,0);
       if(d.getTime()<Date.now()-3*3600000)continue;
       if(past.some(p=>Math.abs(p.t-d.getTime())<3*3600000))continue;
@@ -1743,11 +1765,11 @@ function fillInstances(state){
     return dd===0?"Today":dd===1?"Tomorrow":dd===-1?"Yesterday":MON[d.getMonth()]+"-"+p2(d.getDate());};
   const tm=t=>{const d=new Date(t),h=d.getHours();return (h%12||12)+":"+p2(d.getMinutes())+(h<12?"a":"p");};
   let html='<option value="0">Live · today</option>';
-  if(plan.length){html+='<optgroup label="Expected (estimated from recent days)">';
-    plan.forEach(x=>{const i=menu.indexOf(x);html+='<option value="'+i+'">'+dayLbl(x.t)+" ~"+tm(x.t)+" "+esc(x.from)+"»"+esc(x.to)+"</option>";});html+="</optgroup>";}
+  if(plan.length){html+='<optgroup label="'+(plan[0].real?"Scheduled":"Expected (estimated from recent days)")+'">';
+    plan.forEach(x=>{const i=menu.indexOf(x);html+='<option value="'+i+'">'+dayLbl(x.t)+" "+(x.real?"":"~")+tm(x.t)+" "+esc(x.from)+"»"+esc(x.to)+(x.st&&/cancel/i.test(x.st)?" · cancelled":"")+"</option>";});html+="</optgroup>";}
   else html+='<option disabled>No upcoming times known yet</option>';
   if(past.length){html+='<optgroup label="Earlier">';
-    past.forEach(x=>{const i=menu.indexOf(x);html+='<option value="'+i+'">'+dayLbl(x.t)+" "+tm(x.t)+" "+esc(x.from||"?")+"»"+esc(x.to||"?")+(x.type==="saved"?" · saved":"")+"</option>";});html+="</optgroup>";}
+    past.forEach(x=>{const i=menu.indexOf(x);html+='<option value="'+i+'">'+dayLbl(x.t)+" "+tm(x.t)+" "+esc(x.from||"?")+"»"+esc(x.to||"?")+(x.type==="saved"?" · saved":x.type==="cloud"?" · saved (cloud)":"")+"</option>";});html+="</optgroup>";}
   else if(state==="loading")html+='<option disabled>Loading earlier flights…</option>';
   else html+='<option disabled>No earlier flights found</option>';
   if(sel.innerHTML!==html){sel.innerHTML=html;sel.value=[...sel.options].some(o=>o.value===keep)?keep:"0";}
@@ -1806,13 +1828,82 @@ $("fq").addEventListener("keydown",e=>{
 $("fsug").addEventListener("mousedown",e=>{const li=e.target.closest("li");if(li){e.preventDefault();pickSug(+li.dataset.i);}});
 $("finst").addEventListener("change",()=>{const m=menu[+$("finst").value];if(!m)return;
   if(m.type==="live")chooseFlight(curFlight||"AA3101");else if(m.type==="plan")showPlanned(m);
-  else if(m.type==="saved")showSaved(m.rec);else if(m.type==="os")showPast(m.x);});
+  else if(m.type==="saved")showSaved(m.rec);else if(m.type==="cloud")showCloud(m.entry);
+  else if(m.type==="os"){if(m.x.icao24)showPast(m.x);else{status("bad","No aircraft recorded for that flight, so no track. Showing the route.");}}});
 addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(h&&normFlight(h)&&normFlight(h).code!==curFlight)chooseFlight(h);});
 
 /* ---------- saved flights on this device (up to 50), plus expected upcoming flights ---------- */
-const ARCH_MAX=50,ARCH_STEP=20000;
-function archLoad(){try{return JSON.parse(localStorage.getItem("sfm-arch")||"[]")||[];}catch(e){return [];}}
-function archStore(a){while(a.length){try{localStorage.setItem("sfm-arch",JSON.stringify(a));return true;}catch(e){a.shift();}}return false;}
+/* ---------- your relay's own services: schedules, aircraft details, shared saved flights ---------- */
+async function relayApi(path,opts){
+  const base=relayBase();if(!base)throw new Error("no relay");
+  const c=new AbortController(),t=setTimeout(()=>c.abort(),12000);
+  try{const r=await fetch(base+path,Object.assign({signal:c.signal,cache:"no-store"},opts||{}));
+    const j=await r.json().catch(()=>null);if(!r.ok||!j||j.error)throw new Error((j&&(j.detail||j.error))||("HTTP "+r.status));return j;}
+  finally{clearTimeout(t);}
+}
+/* small client-side cache so one visitor doesn't re-ask the relay */
+function memo(key,ttl,fn){
+  try{const c=JSON.parse(localStorage.getItem("sfm-c:"+key)||"null");if(c&&Date.now()-c.t<ttl)return Promise.resolve(c.v);}catch(e){}
+  return fn().then(v=>{try{localStorage.setItem("sfm-c:"+key,JSON.stringify({t:Date.now(),v}));}catch(e){}return v;});
+}
+let sched=null,cloudIdx=[];
+async function loadSchedule(code){
+  try{const j=await memo("s:"+code,20*60000,()=>relayApi("/api/schedule?f="+encodeURIComponent(code)));
+    setSrc("Schedule","ok","Schedules from "+j.source+(j.cached?" (cached)":"")+".");return j.flights||[];}
+  catch(e){setSrc("Schedule","fail","Schedules unavailable: "+e.message);return null;}
+}
+async function loadCloudList(code){
+  try{const j=await relayApi("/api/flights?code="+encodeURIComponent(code));return j.flights||[];}catch(e){return [];}
+}
+let cloudAt={};
+async function cloudSave(rec,final){
+  if(!relayBase()||!rec)return;
+  if(!final&&Date.now()-(cloudAt[rec.id]||0)<10*60000)return;cloudAt[rec.id]=Date.now();
+  const body=JSON.stringify({code:rec.code,t0:rec.t0,t1:rec.t1,from:rec.from,to:rec.to,hex:rec.hex,alt:rec.alt,spd:rec.spd,vs:rec.vs,hdg:rec.hdg,pos:rec.pos,final:!!final});
+  try{await relayApi("/api/flight",{method:"POST",headers:{"Content-Type":"application/json"},body});setSrc("Cloud","ok","Saved to your relay's storage.");}
+  catch(e){setSrc("Cloud","fail","Couldn't save to your relay: "+e.message);}
+}
+async function showCloud(entry){
+  status("search","Loading saved flight…");
+  try{const rec=await relayApi("/api/flight?id="+encodeURIComponent(entry.id));showSaved(rec);archPut(rec);}
+  catch(e){status("bad","Couldn't load that saved flight: "+e.message);}
+}
+let acx={reg:"",v:null};
+async function loadAircraftExtra(reg){
+  reg=String(reg||"").toUpperCase();if(!reg||acx.reg===reg)return;acx={reg,v:null};
+  try{acx.v=await memo("a:"+reg,30*60000,()=>relayApi("/api/aircraft?reg="+encodeURIComponent(reg)));}catch(e){acx.v=null;}
+  renderAircraft();
+}
+
+/* ---------- saved flights on this device: up to 500, in the browser's database ---------- */
+const ARCH_MAX=500,ARCH_STEP=20000;
+let archMem=[],idb=null;
+function idbOpen(){return new Promise(res=>{try{const r=indexedDB.open("sfm",1);
+  r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains("flights"))r.result.createObjectStore("flights",{keyPath:"id"});};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>res(null);r.onblocked=()=>res(null);}catch(e){res(null);}});}
+const idbTx=(mode,fn)=>new Promise(res=>{try{const tx=idb.transaction("flights",mode),st=tx.objectStore("flights");const out=fn(st);
+  tx.oncomplete=()=>res(out&&out.result!==undefined?out.result:true);tx.onerror=()=>res(null);}catch(e){res(null);}});
+async function archInit(){
+  idb=await idbOpen();
+  let old=[];try{old=JSON.parse(localStorage.getItem("sfm-arch")||"[]")||[];}catch(e){}
+  if(idb){
+    archMem=(await idbTx("readonly",st=>st.getAll()))||[];
+    for(const r of old){r.id=r.id||r.code+"-"+r.t0;if(!archMem.some(x=>x.id===r.id)){archMem.push(r);await idbTx("readwrite",st=>st.put(r));}}
+    if(old.length)try{localStorage.removeItem("sfm-arch");}catch(e){}
+  }else archMem=old.map(r=>Object.assign(r,{id:r.id||r.code+"-"+r.t0}));
+  archMem.sort((x,y)=>x.t0-y.t0);
+  if(typeof fillInstances==="function")fillInstances();
+}
+function archLoad(){return archMem;}
+async function archPut(rec){
+  rec.id=rec.id||rec.code+"-"+rec.t0;
+  const i=archMem.findIndex(x=>x.id===rec.id);if(i>=0)archMem[i]=rec;else archMem.push(rec);
+  archMem.sort((x,y)=>x.t0-y.t0);
+  const drop=archMem.length>ARCH_MAX?archMem.splice(0,archMem.length-ARCH_MAX):[];
+  if(idb){await idbTx("readwrite",st=>{st.put(rec);for(const d of drop)st.delete(d.id);});}
+  else{let a=archMem.slice(-50);while(a.length){try{localStorage.setItem("sfm-arch",JSON.stringify(a));break;}catch(e){a.shift();}}}
+}
+archInit();
 function thinMerge(old,add,round){
   const all=(old||[]).concat(add.map(round)).sort((x,y)=>x[0]-y[0]),out=[];
   for(const q of all)if(!out.length||q[0]-out[out.length-1][0]>=ARCH_STEP)out.push(q);
@@ -1822,16 +1913,17 @@ let archAt=0;
 function archiveNow(force){
   if(mode!=="live"||!curFlight||hist.alt.length<6)return;
   if(!force&&Date.now()-archAt<30000)return;archAt=Date.now();
-  const t0=hist.alt[0][0],t1=hist.alt[hist.alt.length-1][0],a=archLoad();
-  let rec=a.find(r=>r.code===curFlight&&r.t0<t1+30*60000&&r.t1>t0-30*60000);
-  if(!rec){rec={code:curFlight,t0,t1};a.push(rec);}
+  const t0=hist.alt[0][0],t1=hist.alt[hist.alt.length-1][0];
+  let rec=archLoad().find(r=>r.code===curFlight&&r.t0<t1+30*60000&&r.t1>t0-30*60000);
+  rec=rec?Object.assign({},rec):{code:curFlight,t0,t1,id:curFlight+"-"+t0};
   const R0=q=>[q[0],Math.round(q[1])],R4=q=>[q[0],+q[1].toFixed(4),+q[2].toFixed(4)];
   rec.alt=thinMerge(rec.alt,hist.alt,R0);rec.spd=thinMerge(rec.spd,hist.spd,R0);rec.vs=thinMerge(rec.vs,hist.vs,R0);
   rec.hdg=thinMerge(rec.hdg,hist.hdg,R0);rec.pos=thinMerge(rec.pos,hist.pos||[],R4);
   rec.t0=Math.min(rec.t0,t0);rec.t1=Math.max(rec.t1,t1);
   rec.from=$("from").value||rec.from||"";rec.to=$("to").value||rec.to||"";if(fix&&fix.hex)rec.hex=fix.hex;
-  a.sort((x,y)=>x.t0-y.t0);while(a.length>ARCH_MAX)a.shift();
-  archStore(a);
+  archPut(rec);
+  const done=["landed","taxiIn","arrived"].includes(phase());
+  cloudSave(rec,done&&!rec.cloudFinal);if(done)rec.cloudFinal=true;
 }
 addEventListener("pagehide",()=>archiveNow(true));
 document.addEventListener("visibilitychange",()=>{if(document.hidden)archiveNow(true);});
@@ -1861,7 +1953,7 @@ function showPlanned(x){
   planned={t:x.t,from:x.from,to:x.to,mid:x.t+nm/440*3600000/2};
   camAnimate();view="route";zoom=1;pan=[0,0];viewChanged();
   wx=null;wxTried=0;wg=null;parts=[];fetchWinds();
-  status("idle","Expected "+fmtDT(x.t)+" · forecast winds for that time");
+  status("idle",(x.real?"Scheduled ":"Expected ")+fmtDT(x.t)+" · forecast winds for that time");
   renderFlightRow();
 }
 function turbForecast(){
