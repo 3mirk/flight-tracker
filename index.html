@@ -116,27 +116,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srcx:empty{display:none}
 .srcx b{color:var(--ink);font-weight:600}
 .hint{font-size:.72rem;color:var(--muted);line-height:1.4;margin-top:-6px}
-#traf{position:absolute;right:8px;top:38px;padding:5px 9px}
-#wnum{position:absolute;right:8px;top:68px;padding:5px 9px}
-#radar{position:absolute;right:8px;top:98px;padding:5px 9px}
-#radar[aria-pressed="true"]{border-color:#ff6a2a;background:rgba(255,90,31,.14)}
-#wnum[aria-pressed="true"]{border-color:#ff6a2a;background:rgba(255,90,31,.14)}
-#traf[aria-pressed="true"]{border-color:#ff6a2a;background:rgba(255,90,31,.14)}
 #map{touch-action:manipulation;cursor:grab;border-radius:14px}
 .mapwrap::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:14px;box-shadow:inset 0 0 28px rgba(0,0,0,.85),inset 0 0 2px rgba(255,90,31,.25)}
-.zoom{position:absolute;right:8px;bottom:8px;display:flex;flex-direction:column;gap:4px}
-.zoom button{width:34px;height:34px;padding:0;font-size:1.1rem;line-height:1}
 @font-face{font-family:"DSEG7";src:url("fonts/DSEG7Classic-Bold.woff2") format("woff2");font-display:swap}
-.charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
-.charts .tile.chart{padding:6px 6px 6px;position:relative;overflow:hidden;box-shadow:inset 0 0 14px rgba(0,0,0,.8),0 0 0 1px rgba(255,90,31,.06)}
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.charts .tile.chart{padding:8px 10px;position:relative;overflow:hidden;box-shadow:inset 0 0 14px rgba(0,0,0,.8),0 0 0 1px rgba(255,90,31,.06)}
 .charts .tile.chart::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
   background:repeating-linear-gradient(to bottom,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
-.charts .tile .k{font-size:.58rem;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 6px rgba(255,90,20,.6)}
-.charts .tile .s{font-size:.58rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:1.3em;min-height:0}
+.charts .tile .k{font-size:.66rem;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 0 6px rgba(255,90,20,.6)}
+.charts .tile .s{font-size:.66rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:1.3em;min-height:0}
 .charts .tile .v{white-space:nowrap;min-width:0;overflow:hidden;gap:2px;margin-top:3px}
-.charts .tile .lcd{font-size:1.02rem}
-.charts .tile .v small{font-size:.54rem}
-.charts .tile canvas.spark,.charts .tile canvas.dial{height:84px;margin-top:5px;image-rendering:pixelated}
+.charts .tile .lcd{font-size:1.3rem}
+.charts .tile .v small{font-size:.62rem}
+.charts .tile canvas.spark,.charts .tile canvas.dial{height:104px;margin-top:5px;image-rendering:pixelated}
 .tile.chart{padding:8px 10px;display:flex;flex-direction:column;background:#0a0503;border-color:#3d1e0d}
 .chart canvas{margin-top:auto}
 .chart .k{color:#c25a1e;font-family:var(--mono);font-weight:700}
@@ -164,6 +156,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .kpi .kpigrid .c{position:relative;overflow:hidden;box-shadow:inset 0 0 12px rgba(0,0,0,.8)}
 .kpi .kpigrid .c::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,rgba(0,0,0,.28) 0 1px,transparent 1px 3px)}
 .kpi .kpigrid .k{text-shadow:0 0 6px rgba(255,90,20,.6)}
+.kpi .kpigrid .c.L0 .cv{color:#39ff14;text-shadow:0 0 4px #39ff14,0 0 12px #39ff1488}
+.kpi .kpigrid .c.L1 .cv{color:#b6ff00;text-shadow:0 0 4px #b6ff00,0 0 12px #b6ff0088}
+.kpi .kpigrid .c.L2 .cv{color:#ffe600;text-shadow:0 0 4px #ffe600,0 0 12px #ffe60088}
+.kpi .kpigrid .c.L3 .cv{color:#ffc400;text-shadow:0 0 4px #ffc400,0 0 12px #ffc40088}
+.kpi .kpigrid .c.L4 .cv{color:#ff9f1a;text-shadow:0 0 4px #ff9f1a,0 0 12px #ff9f1a88}
+.kpi .kpigrid .c.L5 .cv{color:#ff6a1a;text-shadow:0 0 4px #ff6a1a,0 0 12px #ff6a1a88}
+.kpi .kpigrid .c.L6 .cv{color:#ff2a2a;text-shadow:0 0 4px #ff2a2a,0 0 12px #ff2a2a88}
+.kpi .kpigrid #c_wd.c .cv{color:#00e5ff;text-shadow:0 0 4px #00e5ff,0 0 12px #00e5ff88}
 .kpi .kpigrid .k{color:#c25a1e;font-family:var(--mono);font-weight:700}
 .kpi .kpigrid .cl{color:#c25a1e;opacity:.8;font-family:var(--mono)}
 .kpi .kpigrid .c .cv{color:#ff7a24;font-family:"VT323",var(--mono);font-weight:400;font-size:1.12rem;line-height:1;text-shadow:0 0 4px rgba(255,122,36,.9),0 0 12px rgba(255,90,20,.55)}
@@ -179,8 +179,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .frow>button svg{display:block;flex:none;width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2;stroke-linejoin:round}
 .mapwrap{position:relative;border:8px solid #17110e;border-radius:22px;overflow:hidden;background:#080200;box-shadow:0 0 0 1px #2a3135,inset 0 0 18px rgba(0,0,0,.9)}
 canvas{display:block;width:100%;aspect-ratio:4/3;max-height:460px}
-#view{position:absolute;right:8px;top:8px;padding:5px 9px}
-#view,#traf,#wnum,#radar,.zoom button{background:rgba(7,4,0,.75);border:1px solid rgba(255,90,31,.55);color:#ff6a2a;font:700 .66rem var(--mono);text-transform:uppercase;letter-spacing:.06em;border-radius:4px;text-shadow:0 0 6px rgba(255,90,31,.5)}
 .banner{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);background:rgba(7,8,10,.8);color:#ff8a2a;border:1px solid rgba(255,138,42,.7);font:700 .64rem var(--mono);padding:3px 8px;border-radius:4px;letter-spacing:.08em;pointer-events:none}
 .banner[hidden]{display:none}
 .prog{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font:700 .95rem var(--mono)}
@@ -229,6 +227,20 @@ canvas.spark{display:block;width:100%;height:112px;border-radius:6px;border:1px 
 .relay{font-size:.85rem;color:var(--muted)}.relay summary{cursor:pointer;padding:4px 0}
 .relay form{margin-top:8px}.relay label{flex:1 1 220px}
 .ref{font-size:.62rem;line-height:0;color:var(--route);margin-left:2px;cursor:pointer;padding:0 3px;text-transform:none}
+.mapbar{display:flex;align-items:center;gap:4px;margin-top:-4px;min-width:0}
+.mstat{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:6px;height:32px;padding:0 8px;border:1px solid #3d1e0d;border-radius:5px;background:#0a0503;
+  font:20px/1 "VT323",var(--mono);color:#ff7a24;text-transform:uppercase;letter-spacing:.04em;text-shadow:0 0 4px rgba(255,122,36,.9),0 0 10px rgba(255,90,20,.5);white-space:nowrap;overflow:hidden}
+.mstat span{overflow:hidden;text-overflow:ellipsis}
+.mstat i{flex:none;width:7px;height:7px;background:currentColor;box-shadow:0 0 6px currentColor}
+.mstat.live{color:#39ff14;text-shadow:0 0 4px rgba(57,255,20,.8),0 0 10px rgba(57,255,20,.4)}.mstat.live i{animation:breathe 2.4s ease-in-out infinite}
+.mstat.try i{animation:blink .7s steps(2,start) infinite}
+.mstat.off{color:#8a4a2a;text-shadow:none}
+.mb{flex:none;width:34px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;background:#0a0503;border:1px solid #3d1e0d;border-radius:5px;color:#8a4a2a}
+.mb svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mb[aria-pressed="true"],.mb:not([aria-pressed]){color:#ff7a24;border-color:rgba(255,106,42,.6);filter:drop-shadow(0 0 3px rgba(255,90,20,.6))}
+.mb[aria-pressed="true"]{background:rgba(255,90,31,.12)}
+.mb:active{transform:translateY(1px)}
+@media(max-width:360px){.mb{width:30px}.mstat{padding:0 5px}}
 .mapref{position:absolute;left:6px;top:4px;background:rgba(7,4,0,.8);border:1px solid rgba(255,90,31,.55);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center}
 .mapref .ref{color:#ff6a2a;margin:0;font-size:.7rem;vertical-align:baseline;line-height:1}
 .notes,.acard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
@@ -302,11 +314,16 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <canvas id="map"></canvas>
   <span class="mapref"><sup class="ref" data-n="2" role="button" tabindex="0" aria-label="Note 2">2</sup></span>
   <span class="banner" id="banner" hidden>DEMO · SIMULATED</span>
-  <button type="button" id="view">View: close-up</button>
-  <button type="button" id="traf">Traffic: off</button>
-  <button type="button" id="wnum" aria-pressed="true">Wind mph: on</button>
-  <button type="button" id="radar" aria-pressed="true">Storms: on</button>
-  <div class="zoom"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button></div>
+</div>
+<div class="mapbar" role="toolbar" aria-label="Map controls">
+  <span class="mstat" id="mStat"><i></i><span>Offline</span></span>
+  <button type="button" class="mb" id="view" aria-label="View"><svg viewBox="0 0 24 24" aria-hidden="true"></svg></button>
+  <button type="button" class="mb" id="traf" aria-label="Nearby traffic" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/><circle cx="16.5" cy="15" r="1" fill="currentColor"/><circle cx="8" cy="8.5" r="1" fill="currentColor"/></svg></button>
+  <button type="button" class="mb" id="wind" aria-label="Wind streaks" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h8"/></svg></button>
+  <button type="button" class="mb" id="wnum" aria-label="Wind speeds in mph" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="15.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none" font-family="monospace">MPH</text><path d="M3 4h18v16H3z" stroke-dasharray="2 2.5"/></svg></button>
+  <button type="button" class="mb" id="radar" aria-label="Storm radar" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14h10a3.5 3.5 0 0 0 .5-7A5.2 5.2 0 0 0 6.6 7.4 3.4 3.4 0 0 0 7 14z"/><path d="M13 14l-2.5 4h3L11 22"/></svg></button>
+  <button type="button" class="mb" id="zin" aria-label="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+  <button type="button" class="mb" id="zout" aria-label="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
 </div>
 
 <div class="prog"><span id="pFrom">CLT</span><div class="bar"><i id="pBar"></i></div><span id="pTo">DFW</span></div>
@@ -316,13 +333,13 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 <div class="charts">
   <div class="tile chart"><div class="head"><div class="k">Altitude</div><div class="v" id="alt">—</div><div class="s" id="altS"></div></div>
     <canvas class="spark" id="altChart" aria-label="Altitude over time, in feet"></canvas></div>
-  <div class="tile chart"><div class="head"><div class="k">Gnd speed</div><div class="v" id="spd">—</div><div class="s" id="spdS"></div></div>
+  <div class="tile chart"><div class="head"><div class="k">Ground speed</div><div class="v" id="spd">—</div><div class="s" id="spdS"></div></div>
     <canvas class="spark" id="spdChart" aria-label="Ground speed over time, in miles per hour"></canvas></div>
-  <div class="tile chart"><div class="head"><div class="k">Vert speed</div><div class="v" id="vs">—</div><div class="s" id="vsS"></div></div>
+  <div class="tile chart"><div class="head"><div class="k">Vertical speed</div><div class="v" id="vs">—</div><div class="s" id="vsS"></div></div>
     <canvas class="spark" id="vsChart" aria-label="Vertical speed over time, in feet per minute; above the center line is climbing"></canvas></div>
   <div class="tile chart"><div class="head"><div class="k">Heading<sup class="ref" data-n="3" role="button" tabindex="0" aria-label="Note 3">3</sup></div><div class="v" id="hdg">—</div><div class="s" id="hdgS"></div></div>
     <canvas class="dial" id="hdgChart" aria-label="Heading history: center is the start of tracking, outer ring is now"></canvas></div>
-  <div class="tile chart"><div class="head"><div class="k">Dist to go</div><div class="v" id="dist">—</div><div class="s" id="distS"></div></div>
+  <div class="tile chart"><div class="head"><div class="k">Distance to go</div><div class="v" id="dist">—</div><div class="s" id="distS"></div></div>
     <canvas class="spark" id="distChart" aria-label="Distance left to the destination over time, in miles"></canvas></div>
   <div class="tile chart"><div class="head"><div class="k">Time to go<sup class="ref" data-n="4" role="button" tabindex="0" aria-label="Note 4">4</sup></div><div class="v" id="eta">—</div><div class="s" id="etaS"></div></div>
     <canvas class="spark" id="etaChart" aria-label="Estimated time left over time, in minutes"></canvas></div>
@@ -913,8 +930,8 @@ const LBL=a=>"rgba(255,232,205,"+a+")",LBLC="#ffe8cd";                         /
 const TRAILC="#ff8a2a",AHEADC="#ffb066",PLANEC="#ff8a2a",GREY=a=>"rgba(175,180,186,"+a+")";
 const VFONT=(px)=>px+'px "DSEG14",'+getComputedStyle(document.documentElement).getPropertyValue("--mono");
 function glowStroke(g,width,alpha,col){col=col||PHA;g.lineWidth=width*3;g.strokeStyle=col(alpha*.18);g.stroke();g.lineWidth=width;g.strokeStyle=col(alpha);g.stroke();}
-let planeAt=null,windNums=true,radarShown=false;
-try{windNums=localStorage.getItem("sfm-wnum")!=="0";}catch(e){}
+let planeAt=null,windNums=true,windOn=true,radarShown=false;
+try{windNums=localStorage.getItem("sfm-wnum")!=="0";windOn=localStorage.getItem("sfm-wind")!=="0";}catch(e){}
 function draw(){
   planeAt=null;
   const dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth,h=cv.clientHeight;
@@ -983,7 +1000,7 @@ function draw(){
     g.fillStyle=LBL(.45);g.textAlign="left";g.fillText(nm,bx,y);}
 
   // winds at the plane's altitude: streaks flow where the air is going, faster = stronger
-  const windPass=g=>{if(wx&&scale<SURF_SCALE)try{
+  const windPass=g=>{if(wx&&windOn&&scale<SURF_SCALE)try{
     const alt=fix&&fix.altFt!=null&&mode!=="past"?fix.altFt:mode==="planned"?35000:33000;
     g.lineCap="round";
     if(reduced){
@@ -1135,8 +1152,15 @@ addEventListener("resize",fitMap);if(window.visualViewport)visualViewport.addEve
 addEventListener("orientationchange",()=>setTimeout(fitMap,300));
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitMap);
 setTimeout(fitMap,0);setTimeout(fitMap,800);
+const VIEW_IC={route:'<circle cx="5" cy="18" r="2"/><circle cx="19" cy="6" r="2"/><path d="M7 17c5-1 4-9 10-10" stroke-dasharray="2.5 2.5"/>',
+  track:'<circle cx="12" cy="12" r="6"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
+  follow:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21M10.5 7.5v6M7.5 10.5h6"/>',
+  reset:'<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 3.5v4.5h4.5"/>'};
 function viewChanged(){
-  $("view").textContent=isCustom()?"Reset view":"View: "+({route:"route",track:"tracking",follow:"close-up"}[view]);draw();}
+  const k=isCustom()?"reset":view,b=$("view");
+  if(b.dataset.k!==k){b.dataset.k=k;b.querySelector("svg").innerHTML=VIEW_IC[k];
+    const t=k==="reset"?"Reset view":"View: "+({route:"whole route",track:"tracking",follow:"close-up"}[k])+" (tap to change)";b.title=t;b.setAttribute("aria-label",t);}
+  draw();}
 function zoomAt(mx,my,z){
   if(!proj)return;const g0=geoAt(mx,my);zoom=Math.max(.5,Math.min(1500,z));const S=proj.bS*zoom;
   pan=[g0[0]+(my-proj.h/2)/S-proj.bLat,g0[1]-(mx-proj.w/2)/(proj.k*S)-proj.bLon];viewChanged();}
@@ -2216,19 +2240,36 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
     g.fillStyle=C("--ink");g.textAlign="left";g.textBaseline="middle";g.fillText(txt,bx+6,by+10);
   }else if(!traf.length){pxText(g,srcs.Traffic&&srcs.Traffic.state==="ok"?"NO TRAFFIC NEARBY":"LOOKING FOR TRAFFIC",10,h-26,"rgba(255,138,42,.95)","left","alphabetic",11);}
 }
-function trafLabel(){$("traf").textContent="Traffic: "+(trafOn?"on":"off");$("traf").setAttribute("aria-pressed",trafOn?"true":"false");}
+function trafLabel(){$("traf").title="Nearby traffic: "+(trafOn?"on":"off");$("traf").setAttribute("aria-pressed",trafOn?"true":"false");}
 $("traf").addEventListener("click",()=>{
   trafOn=!trafOn;try{localStorage.setItem("sfm-traf2",trafOn?"1":"0");}catch(e){}
   if(trafOn){if(!isCustom()&&view==="route")view="follow";fetchTraffic();}else{traf=[];trafSel="";delete srcs.Traffic;}
   trafLabel();renderSrcs();viewChanged();});
 cv.addEventListener("click",e=>{if(Date.now()-lastTouchT>800){const m=local(e);pickTraffic(m[0],m[1]);}});
 setInterval(fetchTraffic,10000);trafLabel();
-function wnumLabel(){$("wnum").textContent="Wind mph: "+(windNums?"on":"off");$("wnum").setAttribute("aria-pressed",String(windNums));}
-$("wnum").addEventListener("click",()=>{windNums=!windNums;try{localStorage.setItem("sfm-wnum",windNums?"1":"0");}catch(e){}wnumLabel();
-function radarLabel(){$("radar").textContent="Storms: "+(radarOn?"on":"off");$("radar").setAttribute("aria-pressed",String(radarOn));}
+function wnumLabel(){$("wnum").title="Wind speeds (mph): "+(windNums?"on":"off");$("wnum").setAttribute("aria-pressed",String(windNums));}
+$("wnum").addEventListener("click",()=>{windNums=!windNums;try{localStorage.setItem("sfm-wnum",windNums?"1":"0");}catch(e){}wnumLabel();draw();});
+function radarLabel(){$("radar").title="Storm radar: "+(radarOn?"on":"off");$("radar").setAttribute("aria-pressed",String(radarOn));}
 $("radar").addEventListener("click",()=>{radarOn=!radarOn;try{localStorage.setItem("sfm-radar",radarOn?"1":"0");}catch(e){}radarLabel();if(radarOn)loadRadar();renderSrcs();draw();});
-radarLabel();loadRadar();setInterval(loadRadar,60000);draw();});
-wnumLabel();
+wnumLabel();radarLabel();loadRadar();setInterval(loadRadar,60000);
+function windLabel(){$("wind").title="Wind streaks: "+(windOn?"on":"off");$("wind").setAttribute("aria-pressed",String(windOn));
+  $("wnum").disabled=!windOn;$("wnum").style.opacity=windOn?"":".35";}
+$("wind").addEventListener("click",()=>{windOn=!windOn;try{localStorage.setItem("sfm-wind",windOn?"1":"0");}catch(e){}windLabel();parts=[];draw();});
+windLabel();viewChanged();
+/* status chip under the map: live / demo / connecting / disconnected */
+function mapStat(){
+  const el=$("mStat");if(!el)return;const S=n=>(srcs[n]||{}).state||"idle";let t,c;
+  if(mode==="demo"){t="Demo";c="";}
+  else if(mode==="gps"){t="GPS";c=fix?"live":"try";}
+  else if(mode==="past"){t="Replay";c="";}
+  else if(mode==="planned"){t="Forecast";c="";}
+  else if(fix&&activeSrc&&Date.now()-fix.t<120000){t="Live";c="live";}
+  else if(LIVE.some(n=>S(n)==="try")){t="Seeking";c="try";}
+  else if(fix){t="Lost";c="off";}
+  else{t="Offline";c="off";}
+  if(el.dataset.t!==t){el.dataset.t=t;el.querySelector("span").textContent=t;el.className="mstat "+c;el.title="Data: "+({Seeking:"looking for a live source",Lost:"signal lost",Offline:"no source connected",Replay:"saved flight",Forecast:"planned flight, forecast winds"}[t]||t);}
+}
+setInterval(mapStat,1000);mapStat();
 
 /* ---------- connection indicator: type, status, measured download speed ---------- */
 const NET_URL="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2";   // ~150 KB test file
