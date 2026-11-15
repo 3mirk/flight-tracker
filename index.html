@@ -339,7 +339,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <li id="note4">Time to go assumes your current speed on a direct path. Clock times use your phone's time zone.</li>
   <li id="note5">Aircraft details and photos come from volunteer databases (adsbdb, planespotters.net, OpenSky) and can be missing or out of date. Past flights come from OpenSky and can lag by a day. No free source has an aircraft's lifetime flight count or the factory that built it.</li>
   <li id="note6">Positions come from community ADS-B receiver networks (adsb.lol, airplanes.live, adsb.fi, OpenSky), through a public relay if your browser blocks the direct request. Winds are from Open-Meteo. State outlines are US Census data. For curiosity only, not for navigation.</li>
-  <li id="note7">Data sources: the top four supply your plane's live position; the page asks all four at once and uses the best one that has your flight. <b>Winds</b> is the weather model behind the wind streaks and turbulence estimate. <b>Traffic</b> is the nearby-aircraft lookup. <b>History</b> fetches the part of this flight flown before the page was opened or while it was offline, to fill in the charts and the flown path. <b>Your relay</b> is your own Cloudflare Worker, used first when set (grey until you add one). <b>Airport map</b> loads taxiways, aprons and gates from OpenStreetMap when you zoom in on an airport; if it can't, the map still shows the runways from built-in data. Green = working, red square = every route failed, hollow ring = reachable but your flight isn't there, amber = trying.</li>
+  <li id="note7">Data sources: the top four supply your plane's live position; the page asks all four at once and uses the best one that has your flight. <b>Winds</b> is the weather model behind the wind streaks and turbulence estimate. <b>Traffic</b> is the nearby-aircraft lookup. <b>History</b> fetches the part of this flight flown before the page was opened or while it was offline, to fill in the charts and the flown path. <b>Your relay</b> is your own Cloudflare Worker, kept as a backup: it is only used when the other routes have failed for 15 seconds, and the page goes back to the free routes when they work again. <b>Airport map</b> loads taxiways, aprons and gates from OpenStreetMap when you zoom in on an airport; if it can't, the map still shows the runways from built-in data. Green = working, red square = every route failed, hollow ring = reachable but your flight isn't there, amber = trying.</li>
 </ol></details>
 
 <details class="relay"><summary>Data relay settings</summary>
@@ -418,16 +418,17 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
    A relay's answer counts only if it really is the service's data (checked by `ok`).
    The route that worked last is tried first next time. */
 const E=encodeURIComponent;
-const RELAY_DEFAULT="";   // set once your Cloudflare Worker exists
+const RELAY_DEFAULT="https://flight-tracker-relay.ahmet-kara.workers.dev";   // backup only: used after other routes fail for 15 s
 function relayBase(){let r="";try{r=localStorage.getItem("sfm-relay")||"";}catch(e){}return (r||RELAY_DEFAULT).trim().replace(/\/+$/,"");}
 const VIA=[
-  {name:"your relay",wrap:u=>relayBase()?relayBase()+"/?url="+E(u):null,ms:9000},
   {name:"direct",wrap:u=>u,ms:9000},
   {name:"cors.lol",wrap:u=>"https://api.cors.lol/?url="+E(u),ms:9000},
   {name:"codetabs",wrap:u=>"https://api.codetabs.com/v1/proxy?quest="+E(u),ms:9000},
-  {name:"allorigins",wrap:u=>"https://api.allorigins.win/raw?url="+E(u),ms:12000}
+  {name:"allorigins",wrap:u=>"https://api.allorigins.win/raw?url="+E(u),ms:12000},
+  {name:"your relay",wrap:u=>relayBase()?relayBase()+"/?url="+E(u):null,ms:9000}
 ];
-let via=0;const viaBy={};
+const RELAY_I=VIA.length-1,RELAY_AFTER=15000,DIRECT_RETRY=120000;
+let via=0;const viaBy={};   // per service host: {pref, failSince, pinnedAt}
 const log={};   // service -> what happened last time, shown in Details
 function why(e){
   if(e.name==="AbortError")return "timed out";
@@ -450,9 +451,9 @@ async function viaRoute(n,url,ok){
   if(!target)throw new Error(v.name+" not set");
   const t0=performance.now();
   try{const j=await getOnce(target,v.ms);if(!ok(j))throw new Error("wrong reply");
-    if(n===0)setSrc("Relay","ok","Working: last request through your relay succeeded.",Math.round(performance.now()-t0));
+    if(n===RELAY_I)setSrc("Relay","ok","Working: last request through your relay succeeded.",Math.round(performance.now()-t0));
     return {n,j};}
-  catch(e){if(n===0)setSrc("Relay","fail","Your relay "+why(e)+". Check the address in Data relay settings at the bottom of the page.",Math.round(performance.now()-t0));
+  catch(e){if(n===RELAY_I)setSrc("Relay","fail","Your relay "+why(e)+". Check the address in Data relay settings at the bottom of the page.",Math.round(performance.now()-t0));
     throw new Error(v.name+" "+why(e));}
 }
 /* ---------- data source status panel ---------- */
@@ -466,12 +467,13 @@ function ago(t){const s=Math.round((Date.now()-t)/1000);return s<5?"now":s<90?s+
 const msTxt=m=>m>=1000?(m/1000).toFixed(1)+"s":m+"ms";
 const SHORT={"airplanes.live":"airplanes"};
 function word(n,st){
+  if(n==="Relay"&&st.state==="idle")return "Standby";
   return st.state==="ok"?(activeSrc===n?"In use":LIVE.includes(n)?"Ready":"Connected"):st.state==="try"?"Trying…":st.state==="miss"?"No flight":
     st.state==="fail"?((st.text||"").startsWith("Blocked")?"Blocked":(st.text||"").startsWith("Timed")?"Timed out":"Failed"):"Waiting";}
 const EXTRAS=[["Weather","Winds"],["Traffic","Traffic"],["History","History"],["Airport map","Airport"],["Relay","Your relay"]];
 function cellHtml(n,label,force){
   const st=srcs[n]||{state:"idle",text:"Not tried yet"},done=st.state!=="idle"&&st.state!=="try";
-  const kpi=force||(done?[st.ms!=null?msTxt(st.ms):"",st.t?ago(st.t):""].filter(Boolean).join(" "):st.state==="try"?"trying…":"waiting");
+  const kpi=force||(done?[st.ms!=null?msTxt(st.ms):"",st.t?ago(st.t):""].filter(Boolean).join(" "):st.state==="try"?"trying…":n==="Relay"?"standby":"waiting");
   return '<li class="'+(force?"idle":st.state)+(activeSrc===n?" use":"")+(selSrc===n?" sel":"")+'" data-n="'+n+'" tabindex="0" role="button" aria-label="'+label+": "+(force||word(n,st))+
     '"><span class="d"></span><span class="nm">'+label+'</span><span class="m">'+kpi+"</span></li>";
 }
@@ -548,20 +550,24 @@ function failText(tried){
   return (all("blocked")?"Blocked on every route":all("timed out")?"Timed out on every route":"No route worked")+" ("+t.join(", ")+")";
 }
 async function getJSON(url,ok,svc){
-  const host=new URL(url).hostname,first=viaBy[host]||0;
+  const host=new URL(url).hostname,R0=viaBy[host]||(viaBy[host]={pref:0,failSince:0,pinnedAt:0});
+  let first=R0.pref;if(first===RELAY_I&&Date.now()-R0.pinnedAt>DIRECT_RETRY)first=0;   // see if the free routes work again
+  const relayOk=()=>R0.failSince&&Date.now()-R0.failSince>=RELAY_AFTER;
   const t0=performance.now(),quiet=svc&&srcs[svc]&&srcs[svc].state==="ok";   // don't flicker a working source
   const rn=n=>VIA[n].name==="direct"?"direct":"via "+VIA[n].name;
   if(svc&&!quiet)setSrc(svc,"try","Trying…",null,VIA[first].wrap(url)?rn(first):"direct");
   const tried=[];
   const good=n=>{if(svc){log[svc]="ok via "+VIA[n].name;setSrc(svc,"ok","Connected "+rn(n)+".",Math.round(performance.now()-t0),rn(n));}};
-  try{const r=await viaRoute(first,url,ok);via=first;good(first);return r.j;}
+  const won=n=>{via=n;R0.pref=n;if(n===RELAY_I){if(first!==RELAY_I||!R0.pinnedAt)R0.pinnedAt=Date.now();}else{R0.failSince=0;R0.pinnedAt=0;}};
+  try{const r=await viaRoute(first,url,ok);won(first);good(first);return r.j;}
   catch(e){tried.push(e.message);}
   if(svc)setSrc(svc,"try","Trying backup routes…",null,(VIA.length-1)+" backup routes");
-  const rest=VIA.map((_,i)=>i).filter(i=>i!==first);
+  const rest=VIA.map((_,i)=>i).filter(i=>i!==first&&(i!==RELAY_I||relayOk()));
   try{
     const r=await Promise.any(rest.map(n=>viaRoute(n,url,ok).catch(e=>{tried.push(e.message);throw e;})));
-    via=viaBy[host]=r.n;good(r.n);return r.j;
+    won(r.n);good(r.n);return r.j;
   }catch(e){}
+  if(!R0.failSince)R0.failSince=Date.now();
   if(svc){log[svc]=tried.filter(x=>!x.endsWith("not set")).join(", ");setSrc(svc,"fail",failText(tried),Math.round(performance.now()-t0));}
   throw new Error("unreachable");
 }
@@ -675,7 +681,7 @@ async function track(){
 }
 /* ---------- history for the charts ---------- */
 const HIST_MS=4*3600*1000;
-const EMPTY=()=>({alt:[],spd:[],vs:[],hdg:[]});
+const EMPTY=()=>({alt:[],spd:[],vs:[],hdg:[],pos:[]});
 let hist=EMPTY(),histKey="";
 function histLoad(key){
   histKey=key;hist=EMPTY();
@@ -692,11 +698,14 @@ function histAdd(p){
     if(last&&p.t-last[0]<5000){last[1]=v;return;}   // at most one point per 5 s
     arr.push([p.t,v]);const cut=p.t-HIST_MS;while(arr.length&&arr[0][0]<cut)arr.shift();};
   put(hist.alt,p.altFt);put(hist.spd,p.gsKt!=null?p.gsKt*1.15078:null);put(hist.vs,p.vsFpm);put(hist.hdg,p.track);
+  if(p.lat!=null&&p.lon!=null){const P=hist.pos,l=P[P.length-1];if(l&&p.t-l[0]<5000){l[1]=p.lat;l[2]=p.lon;}
+    else{P.push([p.t,p.lat,p.lon]);const cut=p.t-HIST_MS;while(P.length&&P[0][0]<cut)P.shift();}}
   if(Date.now()-histSaved>5000)histSave();
 }
 function histSave(){
   if(!histKey||mode==="demo")return;histSaved=Date.now();
   try{localStorage.setItem("sfm-h:"+histKey,JSON.stringify(Object.assign({trail,fix,src:lastSource},hist)));}catch(e){}
+  if(typeof archiveNow==="function")archiveNow();
 }
 window.addEventListener("pagehide",histSave);
 document.addEventListener("visibilitychange",()=>{if(document.hidden)histSave();});
@@ -733,6 +742,7 @@ async function backfill(hex,id){
     const out=[];for(const q of add.concat(arr).sort((a,b)=>a[0]-b[0]))if(!out.length||q[0]-out[out.length-1][0]>=5000)out.push(q);
     return out;};
   hist.alt=mg(hist.alt,3);hist.spd=mg(hist.spd,4,v=>v*1.15078);hist.vs=mg(hist.vs,6);hist.hdg=mg(hist.hdg,5);
+  {const add=rows.map(r=>[r[0],r[1],r[2]]),out=[];for(const q of add.concat(hist.pos||[]).sort((a,b)=>a[0]-b[0]))if(!out.length||q[0]-out[out.length-1][0]>=5000)out.push(q);hist.pos=out;}
   const tr=[];for(const r of rows){const l=tr[tr.length-1];if(!l||Math.abs(l[0]-r[1])+Math.abs(l[1]-r[2])>0.02)tr.push([r[1],r[2]]);}
   if(fix)tr.push([fix.lat,fix.lon]);
   trail=tr.slice(-900);histSave();
@@ -930,7 +940,7 @@ function draw(){
     g.fillStyle="rgba(142,163,183,.8)";g.textAlign="left";g.fillText(c[0],bx,y);}
   // winds at the plane's altitude: streaks flow where the air is going, faster = stronger
   if(wx&&scale<SURF_SCALE)try{
-    const alt=fix&&fix.altFt!=null?fix.altFt:33000;
+    const alt=fix&&fix.altFt!=null&&mode!=="past"?fix.altFt:mode==="planned"?35000:33000;
     g.lineCap="round";
     if(reduced){
       for(const q of wx.pts){const ww=windAt(q.lat,q.lon,alt);if(!ww)continue;
@@ -1021,12 +1031,12 @@ function draw(){
   }
   // aircraft
   if(p){const x=X(p[1]),y=Y(p[0]),old=Date.now()-fix.t>90000;
-    if(old){g.fillStyle=C("--ink");g.font="10px "+C("--sans");g.textAlign="center";g.textBaseline="middle";g.fillText("last known",x,y-22);}
+    if(old&&mode!=="past"){g.fillStyle=C("--ink");g.font="10px "+C("--sans");g.textAlign="center";g.textBaseline="middle";g.fillText("last known",x,y-22);}
     g.save();g.translate(x,y);g.rotate((fix.track||0)*R);g.globalAlpha=old?.6:1;
     g.fillStyle=C("--accent");g.strokeStyle="#0b1522";g.lineWidth=1.5;g.beginPath();
     g.moveTo(0,-13);g.lineTo(3,-4);g.lineTo(13,3);g.lineTo(13,6);g.lineTo(3,3);g.lineTo(2,10);g.lineTo(6,13);g.lineTo(-6,13);
     g.lineTo(-2,10);g.lineTo(-3,3);g.lineTo(-13,6);g.lineTo(-13,3);g.lineTo(-3,-4);g.closePath();g.fill();g.stroke();g.restore();}
-  else{g.fillStyle=C("--muted");g.font="13px "+C("--sans");g.textAlign="center";g.fillText("Waiting for a position",w/2,h-16);}
+  else if(mode!=="planned"){g.fillStyle=C("--muted");g.font="13px "+C("--sans");g.textAlign="center";g.fillText("Waiting for a position",w/2,h-16);}
 }
 /* ---------- map gestures: pinch or double-tap to zoom in, two-finger tap to zoom out, drag to move ---------- */
 function geoAt(mx,my){const S=proj.bS*zoom;return [proj.bLat+pan[0]-(my-proj.h/2)/S,proj.bLon+pan[1]+(mx-proj.w/2)/(proj.k*S)];}
@@ -1134,10 +1144,10 @@ async function fetchWinds(){
     const vars=[];LEVELS.forEach(([hp])=>vars.push("wind_speed_"+hp+"hPa","wind_direction_"+hp+"hPa"));vars.push("cape");
     const url="https://api.open-meteo.com/v1/forecast?latitude="+pts.map(q=>q[0].toFixed(2)).join(",")+
       "&longitude="+pts.map(q=>q[1].toFixed(2)).join(",")+"&hourly="+vars.join(",")+
-      "&wind_speed_unit=kn&timezone=GMT&forecast_days=1&past_days=0";
+      "&wind_speed_unit=kn&timezone=GMT&forecast_days=3&past_days=0";
     const j=await getJSON(url,isMeteo,"Weather");
     const arr=Array.isArray(j)?j:[j];
-    const hourNow=new Date().toISOString().slice(0,13);
+    const hourNow=new Date(mode==="planned"&&planned?planned.mid:Date.now()).toISOString().slice(0,13);
     wx={t:Date.now(),la,lo,nx:NX,ny:NY,pts:arr.map((r,k)=>{
       let i=r.hourly.time.findIndex(s=>s.slice(0,13)===hourNow);if(i<0)i=0;
       return {lat:pts[k][0],lon:pts[k][1],cape:r.hourly.cape[i]||0,
@@ -1176,6 +1186,7 @@ function jitter(){
   return Math.sqrt(v.reduce((a,b)=>a+(b-m)**2,0)/v.length);
 }
 function turbulence(){
+  if(mode==="planned"&&planned)return turbForecast();
   const box=$("turb");
   const p=now();
   if(!fix||!p){box.className="kpi";set("tLabel","Waiting…");set("tFor","");set("tNote","<span>Shows once the plane's position is known.</span>");clearTurb();return;}
@@ -1437,7 +1448,8 @@ function takeoffT(live){
   return null;
 }
 function renderFlightRow(){
-  const ph=phase(),[label,cls]=PH[ph];
+  let [label,cls]=PH[phase()];const ph=phase();
+  if(mode==="planned"&&planned){label="Expected";cls="ph-idle";}
   const chip=$("frPhase");if(chip.textContent!==label)chip.textContent=label;chip.className="fr-ph "+cls;
   const live=ac.legs.find(l=>l.live)||ac.legs.find(l=>Date.now()-l.t1<6*3600000);
   const t0=takeoffT(live);
@@ -1452,6 +1464,7 @@ function renderFlightRow(){
   else if(t0&&eta)txt=day(t0)+tm(t0)+"→"+tm(eta)+" · "+dur(Date.now()-t0).replace(" ","");
   else if(eta)txt="ETA "+tm(eta);
   else if(t0)txt=day(t0)+"dep "+tm(t0);
+  else if(mode==="planned"&&planned)txt=day(planned.t)+"exp. ~"+tm(planned.t);
   else txt=MON[new Date().getMonth()]+" "+new Date().getDate();
   const A=$("from").value||"???",B=$("to").value||"???";
   set("frDate","<b>"+esc(A)+"»"+esc(B)+"</b> "+txt);
@@ -1674,7 +1687,7 @@ async function chooseFlight(text,quiet){
   const same=curFlight===f.code;curFlight=f.code;
   if(location.hash.slice(1).toUpperCase()!==f.code)try{history.replaceState(null,"","#"+f.code);}catch(e){}
   try{localStorage.setItem("sfm-cur",f.code);}catch(e){}
-  ++run;stopExtras();mode="live";$("banner").hidden=true;
+  ++run;stopExtras();mode="live";planned=null;$("banner").hidden=true;
   $("flight").value=f.code;fix=null;trail=[];lastSource="";filled="";traf=[];trafSel="";
   ac={hex:"",info:null,photo:null,meta:null,flights:null,legs:[]};renderAircraft();
   insts=[];fillInstances();
@@ -1710,17 +1723,37 @@ async function loadInstances(f,r){
     fillInstances();
   }catch(e){if(id===run)fillInstances("none");}
 }
+let menu=[];
 function fillInstances(state){
-  const sel=$("finst"),keep=sel.value;
-  const A=$("from").value||"???",B=$("to").value||"???";
-  let html='<option value="live">Live · today</option>';
-  insts.forEach((x,i)=>{html+='<option value="'+i+'">'+fmtDT(x.t0).replace(/-\d\d /," ")+" · "+esc(x.from)+"»"+esc(x.to||"?")+"</option>";});
-  if(state==="loading")html+='<option disabled>Loading earlier flights…</option>';
-  else if(!insts.length)html+='<option disabled>No earlier flights found</option>';
-  if(sel.innerHTML!==html){sel.innerHTML=html;sel.value=[...sel.options].some(o=>o.value===keep)?keep:"live";}
+  const sel=$("finst"),keep=sel.value,code=curFlight||"";
+  const A=$("from").value||"",B=$("to").value||"";
+  // earlier flights: saved on this device first, then OpenSky's list, without duplicates
+  const saved=archLoad().filter(r=>r.code===code&&!(mode==="live"&&Date.now()-r.t1<15*60000)).map(r=>({type:"saved",rec:r,t:depOf(r).t,from:r.from,to:r.to}));
+  const os=insts.filter(x=>!saved.some(v=>Math.abs(v.t-x.t0)<90*60000)).map((x,i)=>({type:"os",x,t:x.t0,from:x.from,to:x.to||"?"}));
+  const past=saved.concat(os).sort((p,q)=>q.t-p.t);
+  // expected: same time of day as the most recent known departure, today and the next two days
+  const plan=[];const ref=past[0];
+  if(ref){const d0=new Date(ref.t);
+    for(let k=0;k<3;k++){const d=new Date();d.setDate(d.getDate()+k);d.setHours(d0.getHours(),d0.getMinutes(),0,0);
+      if(d.getTime()<Date.now()-3*3600000)continue;
+      if(past.some(p=>Math.abs(p.t-d.getTime())<3*3600000))continue;
+      plan.push({type:"plan",t:d.getTime(),from:ref.from||A,to:ref.to||B});}}
+  menu=[{type:"live"}].concat(plan,past);
+  const dayLbl=t=>{const d=new Date(t),n=new Date(),dd=Math.round((new Date(d).setHours(0,0,0,0)-new Date(n).setHours(0,0,0,0))/86400000);
+    return dd===0?"Today":dd===1?"Tomorrow":dd===-1?"Yesterday":MON[d.getMonth()]+"-"+p2(d.getDate());};
+  const tm=t=>{const d=new Date(t),h=d.getHours();return (h%12||12)+":"+p2(d.getMinutes())+(h<12?"a":"p");};
+  let html='<option value="0">Live · today</option>';
+  if(plan.length){html+='<optgroup label="Expected (estimated from recent days)">';
+    plan.forEach(x=>{const i=menu.indexOf(x);html+='<option value="'+i+'">'+dayLbl(x.t)+" ~"+tm(x.t)+" "+esc(x.from)+"»"+esc(x.to)+"</option>";});html+="</optgroup>";}
+  else html+='<option disabled>No upcoming times known yet</option>';
+  if(past.length){html+='<optgroup label="Earlier">';
+    past.forEach(x=>{const i=menu.indexOf(x);html+='<option value="'+i+'">'+dayLbl(x.t)+" "+tm(x.t)+" "+esc(x.from||"?")+"»"+esc(x.to||"?")+(x.type==="saved"?" · saved":"")+"</option>";});html+="</optgroup>";}
+  else if(state==="loading")html+='<option disabled>Loading earlier flights…</option>';
+  else html+='<option disabled>No earlier flights found</option>';
+  if(sel.innerHTML!==html){sel.innerHTML=html;sel.value=[...sel.options].some(o=>o.value===keep)?keep:"0";}
 }
 async function showPast(x){
-  const id=++run;stopExtras();mode="past";$("banner").hidden=true;
+  const id=++run;stopExtras();mode="past";planned=null;$("banner").hidden=true;
   fix=null;trail=[];hist=EMPTY();histKey="";lastSource="";traf=[];
   status("search","Loading the "+fmtDT(x.t0)+" flight…");
   let rows=null;
@@ -1735,7 +1768,7 @@ async function showPast(x){
   }
   if(id!==run)return;
   if(!rows||!rows.length){status("bad","No track saved for that flight. Showing the route only.");return;}
-  for(const r of rows){if(r[3]!=null)hist.alt.push([r[0],r[3]]);if(r[4]!=null)hist.spd.push([r[0],r[4]*1.15078]);
+  for(const r of rows){if(r[3]!=null)hist.alt.push([r[0],r[3]]);if(r[1]!=null)hist.pos.push([r[0],r[1],r[2]]);if(r[4]!=null)hist.spd.push([r[0],r[4]*1.15078]);
     if(r[6]!=null)hist.vs.push([r[0],r[6]]);if(r[5]!=null)hist.hdg.push([r[0],r[5]]);
     const l=trail[trail.length-1];if(r[1]!=null&&(!l||Math.abs(l[0]-r[1])+Math.abs(l[1]-r[2])>0.02))trail.push([r[1],r[2]]);}
   const L=rows[rows.length-1];
@@ -1771,9 +1804,84 @@ $("fq").addEventListener("keydown",e=>{
   else if(e.key==="Escape"){hideSug();$("fq").value=curFlight||"";$("fq").blur();}
 });
 $("fsug").addEventListener("mousedown",e=>{const li=e.target.closest("li");if(li){e.preventDefault();pickSug(+li.dataset.i);}});
-$("finst").addEventListener("change",()=>{const v=$("finst").value;
-  if(v==="live")chooseFlight(curFlight||"AA3101");else if(insts[+v])showPast(insts[+v]);});
+$("finst").addEventListener("change",()=>{const m=menu[+$("finst").value];if(!m)return;
+  if(m.type==="live")chooseFlight(curFlight||"AA3101");else if(m.type==="plan")showPlanned(m);
+  else if(m.type==="saved")showSaved(m.rec);else if(m.type==="os")showPast(m.x);});
 addEventListener("hashchange",()=>{const h=location.hash.slice(1);if(h&&normFlight(h)&&normFlight(h).code!==curFlight)chooseFlight(h);});
+
+/* ---------- saved flights on this device (up to 50), plus expected upcoming flights ---------- */
+const ARCH_MAX=50,ARCH_STEP=20000;
+function archLoad(){try{return JSON.parse(localStorage.getItem("sfm-arch")||"[]")||[];}catch(e){return [];}}
+function archStore(a){while(a.length){try{localStorage.setItem("sfm-arch",JSON.stringify(a));return true;}catch(e){a.shift();}}return false;}
+function thinMerge(old,add,round){
+  const all=(old||[]).concat(add.map(round)).sort((x,y)=>x[0]-y[0]),out=[];
+  for(const q of all)if(!out.length||q[0]-out[out.length-1][0]>=ARCH_STEP)out.push(q);
+  return out;
+}
+let archAt=0;
+function archiveNow(force){
+  if(mode!=="live"||!curFlight||hist.alt.length<6)return;
+  if(!force&&Date.now()-archAt<30000)return;archAt=Date.now();
+  const t0=hist.alt[0][0],t1=hist.alt[hist.alt.length-1][0],a=archLoad();
+  let rec=a.find(r=>r.code===curFlight&&r.t0<t1+30*60000&&r.t1>t0-30*60000);
+  if(!rec){rec={code:curFlight,t0,t1};a.push(rec);}
+  const R0=q=>[q[0],Math.round(q[1])],R4=q=>[q[0],+q[1].toFixed(4),+q[2].toFixed(4)];
+  rec.alt=thinMerge(rec.alt,hist.alt,R0);rec.spd=thinMerge(rec.spd,hist.spd,R0);rec.vs=thinMerge(rec.vs,hist.vs,R0);
+  rec.hdg=thinMerge(rec.hdg,hist.hdg,R0);rec.pos=thinMerge(rec.pos,hist.pos||[],R4);
+  rec.t0=Math.min(rec.t0,t0);rec.t1=Math.max(rec.t1,t1);
+  rec.from=$("from").value||rec.from||"";rec.to=$("to").value||rec.to||"";if(fix&&fix.hex)rec.hex=fix.hex;
+  a.sort((x,y)=>x.t0-y.t0);while(a.length>ARCH_MAX)a.shift();
+  archStore(a);
+}
+addEventListener("pagehide",()=>archiveNow(true));
+document.addEventListener("visibilitychange",()=>{if(document.hidden)archiveNow(true);});
+function depOf(rec){   // takeoff if it was recorded, else the first point we have
+  const a=rec.alt||[];for(let i=1;i<a.length;i++)if(a[i-1][1]<=200&&a[i][1]>200)return {t:a[i][0],seen:true};
+  return {t:rec.t0,seen:a.length&&a[0][1]<2000};
+}
+function showSaved(rec){
+  ++run;stopExtras();mode="past";$("banner").hidden=true;planned=null;
+  hist=EMPTY();histKey="";traf=[];
+  for(const k of ["alt","spd","vs","hdg","pos"])hist[k]=(rec[k]||[]).map(q=>q.slice());
+  trail=hist.pos.map(q=>[q[1],q[2]]);
+  const L=hist.pos[hist.pos.length-1],last=k=>{const a=hist[k];return a.length?a[a.length-1][1]:null;};
+  fix=L?{lat:L[1],lon:L[2],altFt:last("alt"),gsKt:last("spd")!=null?last("spd")/1.15078:null,track:last("hdg"),vsFpm:last("vs"),
+    ground:(last("alt")||0)<=200,t:L[0],callsign:rec.code}:null;
+  lastSource="saved flight";win="all";winButtons();
+  camAnimate();view="route";zoom=1;pan=[0,0];viewChanged();if(rec.hex)aircraftInfo(rec.hex);
+  status("idle","Saved on this device · "+fmtDT(rec.t0)+(rec.t1-rec.t0>60000?" · "+dur(rec.t1-rec.t0).replace(" ","")+" recorded":""));
+}
+/* Expected flight: route, and forecast winds and turbulence for its time. Times are guessed from the
+   same number's recent departures, so they are labelled as expected, not scheduled. */
+let planned=null;
+function showPlanned(x){
+  ++run;stopExtras();mode="planned";$("banner").hidden=true;
+  fix=null;trail=[];hist=EMPTY();histKey="";lastSource="";traf=[];
+  const nm=org&&dst?distNm(org,dst):600;
+  planned={t:x.t,from:x.from,to:x.to,mid:x.t+nm/440*3600000/2};
+  camAnimate();view="route";zoom=1;pan=[0,0];viewChanged();
+  wx=null;wxTried=0;wg=null;parts=[];fetchWinds();
+  status("idle","Expected "+fmtDT(x.t)+" · forecast winds for that time");
+  renderFlightRow();
+}
+function turbForecast(){
+  const box=$("turb");box.className="kpi";
+  if(!wx||!org||!dst){set("tLabel","Loading forecast…");set("tFor","");set("tNote","<span>Forecast winds for the expected flight time are loading.</span>");clearTurb();return;}
+  const ALT=35000,tot=distNm(org,dst),brg=bearing(org,dst);let worst=0,mxS=0,mxC=0,sw=0,n=0,head=0;
+  for(let nm=0;nm<=tot;nm+=30){const q=along(org,dst,nm/tot),w=windAt(q[0],q[1],ALT);if(!w)continue;
+    worst=Math.max(worst,shearLvl(w.shear),capeLvl(w.cape));mxS=Math.max(mxS,w.shear);mxC=Math.max(mxC,w.cape);
+    sw+=w.spd;head+=w.spd*Math.cos((w.to-bearing(q,dst))*R);n++;}
+  if(!n){set("tLabel","Forecast unavailable");set("tFor","");clearTurb();return;}
+  set("tLabel",TURB[worst].label);set("tFor","» forecast");
+  set("tNote","<span>Forecast for ~"+fmtDT(planned.mid).slice(10)+" at 35,000 ft along the route. Timing and altitude may differ.</span>");
+  const put=(m,v,l1,l2,lv)=>{set("v_"+m,v);set("l_"+m,"<span>"+l1+"</span><span>"+l2+"</span>");$("c_"+m).className="c"+(lv!=null?" L"+lv:"");};
+  put("sh",mxS.toFixed(1),"kt/1k ft","route max",shearLvl(mxS));
+  put("cp",fmt(mxC),"J/kg","route max",capeLvl(mxC));
+  const hv=head/n;put("wd",fmt(sw/n*1.15078),"mph avg",fmt(Math.abs(hv)*1.15078)+(hv>=0?" tail":" head"),null);
+  put("st","—","ft/min","live only",null);
+  TT.lvl=worst;TT.sh=mxS;TT.cp=mxC;TT.wd=sw/n*1.15078;TT.st=null;
+  TT.score=Math.max(contOf("sh",mxS),contOf("cp",mxC));if(Math.floor(TT.score)!==worst)TT.score=worst;
+}
 
 /* ---------- nearby traffic: up to 10 aircraft within ~60 mi and 5,000 ft of the plane ---------- */
 const TRAF_NM=52,TRAF_FT=8000,TRAF_MAX=40,TRAF_GROUND_MAX=80;
@@ -1814,7 +1922,7 @@ function pickTraffic(mx,my){
 }
 function drawTraffic(g,X,Y,w,h,scale,p,C){
   tfScreen=[];
-  if(!trafOn)return;
+  if(!trafOn||mode==="past"||mode==="planned")return;
   g.font="10px "+C("--sans");g.textAlign="left";g.textBaseline="bottom";
   if(scale<TRAF_MIN_SCALE-0.5){if(!p)return;g.fillStyle="rgba(232,238,244,.75)";g.fillText("Zoom in to see nearby traffic",8,h-22);return;}
   if(p){g.setLineDash([2,5]);g.strokeStyle="rgba(200,215,230,.35)";g.lineWidth=1;g.beginPath();g.arc(X(p[1]),Y(p[0]),TRAF_NM/60*scale,0,7);g.stroke();g.setLineDash([]);}
