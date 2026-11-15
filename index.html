@@ -91,6 +91,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .kpi .kpigrid .k{font-size:.56rem;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi .kpigrid .cv{font-size:.86rem;line-height:1.15;white-space:nowrap}
 .kpi .kpigrid .cl{font-size:.58rem;line-height:1.25}
+.kpi .kpigrid .c{border-left-width:3px}
+.kpi .kpigrid .c.L0{border-left-color:var(--good)}.kpi .kpigrid .c.L0 .cv{color:var(--good)}
+.kpi .kpigrid .c.L1{border-left-color:#c9d36a}.kpi .kpigrid .c.L1 .cv{color:#c9d36a}
+.kpi .kpigrid .c.L2{border-left-color:var(--warn)}.kpi .kpigrid .c.L2 .cv{color:var(--warn)}
+.kpi .kpigrid .c.L3{border-left-color:var(--bad)}.kpi .kpigrid .c.L3 .cv{color:var(--bad)}
 .kpigrid .k{font-size:.66rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .kpigrid .cv{font:700 1.05rem var(--mono);font-variant-numeric:tabular-nums}
 .kpigrid .cv small{font-size:.66rem;color:var(--muted);font-weight:600;margin-left:3px}
@@ -965,7 +970,7 @@ function turbulence(){
   if(ahead&&ahead.lvl>lvl&&fix.gsKt>100)note+=` Next ${Math.round(ahead.nm/fix.gsKt*60)} min: ${TURB[ahead.lvl].label.toLowerCase()}.`;
   else if(ahead&&ahead.lvl<lvl)note+=" Looks calmer further along your route.";
   set("tNote",note);
-  const cell=(k,v,l)=>'<div class="c"><div class="k">'+k+'</div><div class="cv">'+v+'</div><div class="cl">'+(l||"&nbsp;")+"</div></div>";
+  const cell=(k,v,l,lv)=>'<div class="c'+(lv!=null?" L"+lv:"")+'"><div class="k">'+k+'</div><div class="cv">'+v+'</div><div class="cl">'+(l||"&nbsp;")+"</div></div>";
   let windV="—",windL="",shV="—",shL="",cpV="—",cpL="";
   if(w){
     shV=w.shear.toFixed(1);shL="kt/1k ft · "+["low","mild","notable","high"][shearLvl(w.shear)];
@@ -974,8 +979,8 @@ function turbulence(){
     windL="mph from "+COMPASS[Math.round(from/45)%8];
     if(fix.track!=null){const c=w.spd*Math.cos((w.to-fix.track)*R);windL+=" · "+fmt(Math.abs(c)*1.15078)+(c>=0?" tail":" head");}
   }
-  set("tDrivers",cell("Shear",shV,shL)+cell("Storms",cpV,cpL)+cell("Wind",windV,windL)+
-    cell("Steadiness",jt!=null?"±"+fmt(jt):"—",jt!=null?"ft/min · "+["steady","slight wobble","bumpy","very bumpy"][jl]:"needs level flight"));
+  set("tDrivers",cell("Shear",shV,shL,w?shearLvl(w.shear):null)+cell("Storms",cpV,cpL,w?capeLvl(w.cape):null)+cell("Wind",windV,windL)+
+    cell("Steadiness",jt!=null?"±"+fmt(jt):"—",jt!=null?"ft/min · "+["steady","slight wobble","bumpy","very bumpy"][jl]:"needs level flight",jt!=null?jl:null));
   setMeter(lvl);
 }
 function setMeter(l){document.querySelectorAll("#tMeter i").forEach((e,i)=>e.className=i<=l?"on":"");}
