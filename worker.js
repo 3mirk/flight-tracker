@@ -20,6 +20,7 @@ const ALLOWED_HOSTS = [
   "opendata.adsb.fi",
   "opensky-network.org",
   "api.open-meteo.com",
+  "api.rainviewer.com",
   "api.adsbdb.com",
   "api.planespotters.net",
   "overpass-api.de",

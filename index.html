@@ -20,6 +20,7 @@ body{max-width:760px;margin:0 auto;padding:12px 16px 24px;display:flex;flex-dire
 h1{font-size:1rem;margin:0;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
 form{display:flex;gap:8px;flex-wrap:wrap;align-items:end}
 .flightrow{display:flex;flex-direction:column;gap:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+@font-face{font-family:"VT323";src:url("fonts/vt323-latin-400-normal.woff2") format("woff2");font-display:swap}
 @font-face{font-family:"DSEG14";src:url("fonts/DSEG14Classic-Bold.woff2") format("woff2");font-display:swap}
 .fr1{display:flex;align-items:stretch;gap:6px;min-width:0}
 .fsearch{position:relative;flex:1 1 0;min-width:104px}
@@ -117,6 +118,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .hint{font-size:.72rem;color:var(--muted);line-height:1.4;margin-top:-6px}
 #traf{position:absolute;right:8px;top:38px;padding:5px 9px}
 #wnum{position:absolute;right:8px;top:68px;padding:5px 9px}
+#radar{position:absolute;right:8px;top:98px;padding:5px 9px}
+#radar[aria-pressed="true"]{border-color:#ff6a2a;background:rgba(255,90,31,.14)}
 #wnum[aria-pressed="true"]{border-color:#ff6a2a;background:rgba(255,90,31,.14)}
 #traf[aria-pressed="true"]{border-color:#ff6a2a;background:rgba(255,90,31,.14)}
 #map{touch-action:manipulation;cursor:grab;border-radius:14px}
@@ -173,7 +176,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .mapwrap{position:relative;border:8px solid #17110e;border-radius:22px;overflow:hidden;background:#080200;box-shadow:0 0 0 1px #2a3135,inset 0 0 18px rgba(0,0,0,.9)}
 canvas{display:block;width:100%;aspect-ratio:4/3;max-height:460px}
 #view{position:absolute;right:8px;top:8px;padding:5px 9px}
-#view,#traf,#wnum,.zoom button{background:rgba(7,4,0,.75);border:1px solid rgba(255,90,31,.55);color:#ff6a2a;font:700 .66rem var(--mono);text-transform:uppercase;letter-spacing:.06em;border-radius:4px;text-shadow:0 0 6px rgba(255,90,31,.5)}
+#view,#traf,#wnum,#radar,.zoom button{background:rgba(7,4,0,.75);border:1px solid rgba(255,90,31,.55);color:#ff6a2a;font:700 .66rem var(--mono);text-transform:uppercase;letter-spacing:.06em;border-radius:4px;text-shadow:0 0 6px rgba(255,90,31,.5)}
 .banner{position:absolute;left:50%;bottom:30px;transform:translateX(-50%);background:rgba(7,8,10,.8);color:#ff8a2a;border:1px solid rgba(255,138,42,.7);font:700 .64rem var(--mono);padding:3px 8px;border-radius:4px;letter-spacing:.08em;pointer-events:none}
 .banner[hidden]{display:none}
 .prog{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font:700 .95rem var(--mono)}
@@ -298,6 +301,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <button type="button" id="view">View: close-up</button>
   <button type="button" id="traf">Traffic: off</button>
   <button type="button" id="wnum" aria-pressed="true">Wind mph: on</button>
+  <button type="button" id="radar" aria-pressed="true">Storms: on</button>
   <div class="zoom"><button type="button" id="zin" aria-label="Zoom in">+</button><button type="button" id="zout" aria-label="Zoom out">−</button></div>
 </div>
 
@@ -344,7 +348,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
   <li id="note4">Time to go assumes your current speed on a direct path. Clock times use your phone's time zone.</li>
   <li id="note5">Aircraft details and photos come from volunteer databases (adsbdb, planespotters.net, OpenSky) and can be missing or out of date. Past flights come from OpenSky and can lag by a day. No free source has an aircraft's lifetime flight count or the factory that built it.</li>
-  <li id="note6">Positions come from community ADS-B receiver networks (adsb.lol, airplanes.live, adsb.fi, OpenSky), through a public relay if your browser blocks the direct request. Winds are from Open-Meteo. State outlines are US Census data. For curiosity only, not for navigation.</li>
+  <li id="note6">Positions come from community ADS-B receiver networks (adsb.lol, airplanes.live, adsb.fi, OpenSky), through a public relay if your browser blocks the direct request. Winds are from Open-Meteo. Storm radar (grey on the map; brighter means heavier rain) is <a href="https://www.rainviewer.com" target="_blank" rel="noopener">weather data by RainViewer</a>. State outlines are US Census data. For curiosity only, not for navigation.</li>
   <li id="note7">Data sources: the top four supply your plane's live position; the page asks all four at once and uses the best one that has your flight. <b>Winds</b> is the weather model behind the wind streaks and turbulence estimate. <b>Traffic</b> is the nearby-aircraft lookup. <b>History</b> fetches the part of this flight flown before the page was opened or while it was offline, to fill in the charts and the flown path. <b>Your relay</b> is your own Cloudflare Worker, kept as a backup: it is only used when the other routes have failed for 15 seconds, and the page goes back to the free routes when they work again. <b>Airport map</b> loads taxiways, aprons and gates from OpenStreetMap when you zoom in on an airport; if it can't, the map still shows the runways from built-in data. Green = working, red square = every route failed, hollow ring = reachable but your flight isn't there, amber = trying.</li>
 </ol></details>
 
@@ -792,7 +796,7 @@ function startGps(){
   }catch(e){status("bad","Location is blocked in this viewer.");}
 }
 function startDemo(){
-  ++run;stopExtras();mode="demo";fix=null;trail=[];histLoad("");$("banner").hidden=false;
+  ++run;stopExtras();mode="demo";fix=null;trail=[];histLoad("");
   const o=org||AIRPORTS.CLT,d=dst||AIRPORTS.DFW,total=distNm(o,d);let f=0.3;
   status("demo","<b>Demo.</b> Simulated flight at 60× speed, not real data.");
   camAnimate();view="track";zoom=1;pan=[0,0];autoTrack=false;viewChanged();
@@ -868,7 +872,10 @@ const cv=$("map"),gMain=cv.getContext("2d");
    pixels. Text is queued and drawn crisp afterwards so it stays readable. */
 const PIXL=2,lc=document.createElement("canvas"),lg=lc.getContext("2d");
 let TQ=[];
-lg.fillText=function(t,x,y){TQ.push([String(t),x,y,this.font,this.fillStyle,this.textAlign,this.textBaseline,this.globalAlpha]);};
+const fillTextRaw=CanvasRenderingContext2D.prototype.fillText;
+function pxText(g,t,x,y,col,align,base,size){
+  TQ.push([String(t),x,y,((size||12)+5)+'px "VT323",monospace',col,align||"left",base||"alphabetic",1,9]);}
+lg.fillText=function(t,x,y){if(this._px)return fillTextRaw.call(this,t,x,y);TQ.push([String(t),x,y,this.font,this.fillStyle,this.textAlign,this.textBaseline,this.globalAlpha]);};
 const wc=document.createElement("canvas"),wpx=wc.getContext("2d");wpx.fillText=lg.fillText;
 const pc=document.createElement("canvas"),pg=pc.getContext("2d");
 let zoom=1,pan=[0,0],proj=null;
@@ -901,7 +908,7 @@ const LBL=a=>"rgba(255,232,205,"+a+")",LBLC="#ffe8cd";                         /
 const TRAILC="#ff8a2a",AHEADC="#ffb066",PLANEC="#ff8a2a",GREY=a=>"rgba(175,180,186,"+a+")";
 const VFONT=(px)=>px+'px "DSEG14",'+getComputedStyle(document.documentElement).getPropertyValue("--mono");
 function glowStroke(g,width,alpha,col){col=col||PHA;g.lineWidth=width*3;g.strokeStyle=col(alpha*.18);g.stroke();g.lineWidth=width;g.strokeStyle=col(alpha);g.stroke();}
-let planeAt=null,windNums=true;
+let planeAt=null,windNums=true,radarShown=false;
 try{windNums=localStorage.getItem("sfm-wnum")!=="0";}catch(e){}
 function draw(){
   planeAt=null;
@@ -945,7 +952,9 @@ function draw(){
   g.fillStyle=CRT_BG;g.fillRect(0,0,w,h);
   // coastline and state lines: thin phosphor vectors, no fills
   g.lineJoin="round";g.lineCap="round";
-  path(LAND);g.fillStyle="#101215";g.fill();glowStroke(g,2,.85);
+  path(LAND);g.fillStyle="#101215";g.fill();
+  radarShown=false;try{radarShown=drawRadar(g,X,Y,w,h,scale,clat,clon,k,lw,lh);}catch(e){}
+  path(LAND);glowStroke(g,2,.85);
   path(BORDERS);g.lineWidth=1.2;g.strokeStyle=GREY(.13);g.stroke();
   // graticule
   const stepDeg=scale>90?1:scale>25?5:10;
@@ -1010,7 +1019,7 @@ function draw(){
     if(windNums)for(const q of wx.pts){const x=X(q.lon),y=Y(q.lat);if(x<10||x>w-10||y<10||y>h-22)continue;
       const ww=windAt(q.lat,q.lon,alt);if(ww)g.fillText(Math.round(ww.spd*1.15078),x,y);}
     g.font="700 9px "+C("--mono");g.textAlign="left";g.textBaseline="bottom";g.fillStyle=LBL(.85);
-    g.fillText("WINDS "+Math.round(alt/1000)+"K FT (MPH) · PINK = SHEAR",10,h-8);
+    pxText(g,"WINDS "+Math.round(alt/1000)+"K FT · PINK=SHEAR"+(radarShown?" · GREY=STORMS":""),10,h-9,LBL(.9),"left","alphabetic",11);
   }catch(e){parts=[];}};
   // planned route, faint, then projected path from the plane to the destination
   if(org&&dst){g.setLineDash([2,8]);g.strokeStyle="rgba(150,200,230,.45)";g.lineWidth=2;g.beginPath();
@@ -1065,6 +1074,10 @@ function draw(){
     if(old&&mode!=="past"){g.fillStyle=LBLC;g.font="700 9px "+C("--mono");g.textAlign="center";g.textBaseline="middle";g.fillText("LAST KNOWN",x,y-22);}
     planeAt={x,y,trk:fix.track||0,old};}
   else if(mode!=="planned"){g.fillStyle=LBL(.8);g.font="700 11px "+C("--mono");g.textAlign="center";g.fillText("WAITING FOR POSITION",w/2,h-16);}
+  if(mode==="demo"){const t="DEMO · SIMULATED";g.font='17px "VT323",monospace';const tw=g.measureText(t).width+16;
+    g.fillStyle="rgba(7,8,10,.85)";g.fillRect(w/2-tw/2,40,tw,20);g.strokeStyle="rgba(255,138,42,.9)";g.lineWidth=2;g.strokeRect(w/2-tw/2,40,tw,20);
+    pxText(g,t,w/2,51,"#ff8a2a","center","middle",12);}
+  if(radarShown){g.fillStyle=LBL(.5);g.font="8px "+C("--mono");g.textAlign="left";g.textBaseline="top";g.fillText("RADAR: RAINVIEWER",10,30);}
   // scale readout, Etak-style: a bar and its length in miles, top centre
   {const mi=60/scale*69.05,nice=[1,2,5,10,20,50,100,200,500,1000].find(v=>v>=mi*.6)||1000,px=nice/69.05*scale;
    const cx=w/2,y0=14;g.strokeStyle=LBL(.85);g.lineWidth=2;g.beginPath();g.moveTo(cx-px/2,y0);g.lineTo(cx+px/2,y0);
@@ -1089,8 +1102,8 @@ function draw(){
   m.setTransform(1,0,0,1,0,0);m.imageSmoothingEnabled=false;m.drawImage(wc,0,0,lw*PIXL*dpr,lh*PIXL*dpr);
   m.globalCompositeOperation="lighter";m.imageSmoothingEnabled=true;m.globalAlpha=.4;m.drawImage(wc,-2*dpr,-2*dpr,lw*PIXL*dpr+4*dpr,lh*PIXL*dpr+4*dpr);
   m.globalAlpha=1;m.globalCompositeOperation="source-over";m.setTransform(dpr,0,0,dpr,0,0);
-  for(const [t,x,y,font,fill,align,base,alpha] of TQ){m.font=font;m.fillStyle=fill;m.textAlign=align;m.textBaseline=base;m.globalAlpha=alpha;
-    m.shadowColor=fill;m.shadowBlur=3;m.fillText(t,x,y);}
+  for(const [t,x,y,font,fill,align,base,alpha,blur] of TQ){m.font=font;m.fillStyle=fill;m.textAlign=align;m.textBaseline=base;m.globalAlpha=alpha;
+    m.shadowColor=fill;m.shadowBlur=blur||3;m.fillText(t,x,y);if(blur)m.fillText(t,x,y);}
   m.shadowBlur=0;m.globalAlpha=1;
   // plane: drawn rotated into a small half-resolution sprite, then blown up with hard pixel edges
   if(planeAt){const S=48,PP=1.5,ps=Math.round(S/PP);if(pc.width!==ps){pc.width=ps;pc.height=ps;}
@@ -2041,6 +2054,50 @@ function turbForecast(){
   TT.score=Math.max(contOf("sh",mxS),contOf("cp",mxC));if(Math.floor(TT.score)!==worst)TT.score=worst;
 }
 
+/* ---------- storms: live radar from RainViewer, turned greyscale and pixelated (free tier: zoom <= 7, one colour scheme) ---------- */
+let radarOn=true,radar={host:"",path:"",t:0,ok:false};const rtiles=new Map();
+try{radarOn=localStorage.getItem("sfm-radar")!=="0";}catch(e){}
+const isRV=j=>!!(j&&j.host&&j.radar&&Array.isArray(j.radar.past)&&j.radar.past.length);
+async function loadRadar(){
+  if(!radarOn||Date.now()-radar.t<10*60000)return;radar.t=Date.now();
+  try{const j=await getJSON("https://api.rainviewer.com/public/weather-maps.json",isRV);
+    const last=j.radar.past[j.radar.past.length-1];if(last.path!==radar.path){radar.host=j.host;radar.path=last.path;rtiles.clear();}radar.ok=true;}
+  catch(e){radar.t=Date.now()-8*60000;}   // try again in about 2 minutes
+}
+function rtile(z,x,y){
+  const key=z+"/"+x+"/"+y;let im=rtiles.get(key);
+  if(!im){im=new Image();im.decoding="async";im.src=radar.host+radar.path+"/256/"+z+"/"+x+"/"+y+"/2/1_0.png";rtiles.set(key,im);
+    if(rtiles.size>150)rtiles.delete(rtiles.keys().next().value);}
+  return im.complete&&im.naturalWidth?im:null;
+}
+const rc=document.createElement("canvas"),rg=rc.getContext("2d");
+const mc=document.createElement("canvas"),mg=mc.getContext("2d");
+/* Draws the radar into the half-res map layer: intensity becomes brightness (heavier = whiter), no colour. */
+function drawRadar(g,X,Y,w,h,scale,clat,clon,k,lw,lh){
+  if(!radarOn||!radar.ok)return false;
+  const z=Math.max(3,Math.min(7,Math.round(Math.log2(scale*360/256)))),n=1<<z;
+  const lonL=clon-w/2/(k*scale),lonR=clon+w/2/(k*scale),latT=Math.min(85,clat+h/2/scale),latB=Math.max(-85,clat-h/2/scale);
+  const tx=lo=>Math.floor((lo+180)/360*n),ty=la=>{const r=la*R;return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n);};
+  const latOf=y=>Math.atan(Math.sinh(Math.PI*(1-2*y/n)))/R;
+  const list=[];
+  for(let x=tx(lonL);x<=tx(lonR);x++)for(let y=ty(latT);y<=ty(latB);y++){
+    const xx=((x%n)+n)%n;if(y<0||y>=n)continue;const im=rtile(z,xx,y);if(!im)continue;
+    const x0=X(x/n*360-180),x1=X((x+1)/n*360-180),y0=Y(latOf(y)),y1=Y(latOf(y+1));list.push([im,x0,y0,x1-x0,y1-y0]);}
+  if(!list.length)return false;
+  if(rc.width!==lw||rc.height!==lh){rc.width=lw;rc.height=lh;mc.width=lw;mc.height=lh;}
+  // all tiles into a mask layer first (destination-in must be applied once, not per tile)
+  mg.setTransform(1,0,0,1,0,0);mg.clearRect(0,0,lw,lh);mg.setTransform(1/PIXL,0,0,1/PIXL,0,0);mg.imageSmoothingEnabled=false;
+  for(const [im,x,y,ww,hh] of list)mg.drawImage(im,x,y,ww,hh);
+  rg.setTransform(1,0,0,1,0,0);rg.globalCompositeOperation="source-over";rg.clearRect(0,0,lw,lh);rg.imageSmoothingEnabled=false;
+  rg.drawImage(mc,0,0);
+  rg.globalCompositeOperation="saturation";rg.fillStyle="#808080";rg.fillRect(0,0,lw,lh);   // drop the colour
+  rg.globalCompositeOperation="difference";rg.fillStyle="#ffffff";rg.fillRect(0,0,lw,lh);   // invert so heavier rain is brighter
+  rg.globalCompositeOperation="destination-in";rg.drawImage(mc,0,0);                        // keep only where there is rain
+  rg.globalCompositeOperation="source-over";
+  g.save();g.globalAlpha=.6;g.imageSmoothingEnabled=false;g.drawImage(rc,0,0,w,h);g.restore();
+  return true;
+}
+
 /* ---------- nearby traffic: up to 10 aircraft within ~60 mi and 5,000 ft of the plane ---------- */
 const TRAF_NM=52,TRAF_FT=8000,TRAF_MAX=40,TRAF_GROUND_MAX=80;
 const TRAF_URLS=[(a,o)=>"https://api.adsb.lol/v2/point/"+a+"/"+o+"/55",(a,o)=>"https://api.airplanes.live/v2/point/"+a+"/"+o+"/55",
@@ -2082,7 +2139,7 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
   tfScreen=[];
   if(!trafOn||mode==="past"||mode==="planned")return;
   g.font="10px "+C("--sans");g.textAlign="left";g.textBaseline="bottom";
-  if(scale<TRAF_MIN_SCALE-0.5){if(!p)return;g.fillStyle=PHA(.8);g.font="700 9px "+C("--mono");g.fillText("ZOOM IN FOR NEARBY TRAFFIC",10,h-22);return;}
+  if(scale<TRAF_MIN_SCALE-0.5){if(!p)return;pxText(g,"ZOOM IN FOR TRAFFIC",10,h-26,"rgba(255,138,42,.95)","left","alphabetic",11);return;}
   if(p){g.setLineDash([2,5]);g.strokeStyle=PHA(.35);g.lineWidth=1;g.beginPath();g.arc(X(p[1]),Y(p[0]),TRAF_NM/60*scale,0,7);g.stroke();g.setLineDash([]);}
   let sel=null;
   for(const a of traf){
@@ -2110,7 +2167,7 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
     const bx=Math.max(4,Math.min(w-tw-4,sel.x-tw/2)),by=sel.y>44?sel.y-38:sel.y+18;
     g.fillStyle="rgba(7,4,0,.94)";g.strokeStyle=PHA(.7);g.lineWidth=2;g.beginPath();g.rect(bx,by,tw,20);g.fill();g.stroke();
     g.fillStyle=C("--ink");g.textAlign="left";g.textBaseline="middle";g.fillText(txt,bx+6,by+10);
-  }else if(!traf.length){g.fillStyle="rgba(232,238,244,.75)";g.fillText(srcs.Traffic&&srcs.Traffic.state==="ok"?"No traffic within 60 mi at your altitude":"Looking for nearby traffic…",8,h-22);}
+  }else if(!traf.length){pxText(g,srcs.Traffic&&srcs.Traffic.state==="ok"?"NO TRAFFIC NEARBY":"LOOKING FOR TRAFFIC",10,h-26,"rgba(255,138,42,.95)","left","alphabetic",11);}
 }
 function trafLabel(){$("traf").textContent="Traffic: "+(trafOn?"on":"off");$("traf").setAttribute("aria-pressed",trafOn?"true":"false");}
 $("traf").addEventListener("click",()=>{
@@ -2120,7 +2177,10 @@ $("traf").addEventListener("click",()=>{
 cv.addEventListener("click",e=>{if(Date.now()-lastTouchT>800){const m=local(e);pickTraffic(m[0],m[1]);}});
 setInterval(fetchTraffic,10000);trafLabel();
 function wnumLabel(){$("wnum").textContent="Wind mph: "+(windNums?"on":"off");$("wnum").setAttribute("aria-pressed",String(windNums));}
-$("wnum").addEventListener("click",()=>{windNums=!windNums;try{localStorage.setItem("sfm-wnum",windNums?"1":"0");}catch(e){}wnumLabel();draw();});
+$("wnum").addEventListener("click",()=>{windNums=!windNums;try{localStorage.setItem("sfm-wnum",windNums?"1":"0");}catch(e){}wnumLabel();
+function radarLabel(){$("radar").textContent="Storms: "+(radarOn?"on":"off");$("radar").setAttribute("aria-pressed",String(radarOn));}
+$("radar").addEventListener("click",()=>{radarOn=!radarOn;try{localStorage.setItem("sfm-radar",radarOn?"1":"0");}catch(e){}radarLabel();if(radarOn)loadRadar();draw();});
+radarLabel();loadRadar();setInterval(loadRadar,60000);draw();});
 wnumLabel();
 
 /* ---------- connection indicator: type, status, measured download speed ---------- */
