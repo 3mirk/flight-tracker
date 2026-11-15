@@ -95,7 +95,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .srcs[open] .srcicons,.srcs[open] .srcsum{display:none}
 .srcbody{padding-top:6px;overflow:hidden}
 .srcs[open] .srctop{min-height:20px}
-.srcicons{flex:1;min-width:0;display:grid;grid-template-columns:repeat(11,minmax(0,1fr));gap:1px}
+.srcicons{flex:1;min-width:0;display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:1px}
 .si{display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--muted);min-width:0}
 .si .ic{position:relative;width:24px;height:22px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);border-radius:6px}
 .si svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
@@ -483,7 +483,7 @@ function word(n,st){
   if(n==="Relay"&&st.state==="idle")return "Standby";
   return st.state==="ok"?(activeSrc===n?"In use":LIVE.includes(n)?"Ready":"Connected"):st.state==="try"?"Trying…":st.state==="miss"?"No flight":
     st.state==="fail"?((st.text||"").startsWith("Blocked")?"Blocked":(st.text||"").startsWith("Timed")?"Timed out":"Failed"):"Waiting";}
-const EXTRAS=[["Weather","Winds"],["Traffic","Traffic"],["History","History"],["Airport map","Airport"],["Schedule","Schedules"],["Cloud","Cloud saves"],["Relay","Your relay"]];
+const EXTRAS=[["Weather","Winds"],["Radar","Storm radar"],["Traffic","Traffic"],["History","History"],["Airport map","Airport"],["Schedule","Schedules"],["Cloud","Cloud saves"],["Relay","Your relay"]];
 function cellHtml(n,label,force){
   const st=srcs[n]||{state:"idle",text:"Not tried yet"},done=st.state!=="idle"&&st.state!=="try";
   const kpi=force||(done?[st.ms!=null?msTxt(st.ms):"",st.t?ago(st.t):""].filter(Boolean).join(" "):st.state==="try"?"trying…":n==="Relay"?"standby":"waiting");
@@ -496,17 +496,18 @@ const ICONS={
   "adsb.fi":'<path d="M4 15a8 8 0 0 0 8-8"/><path d="M5 6l13 13"/><path d="M4 7a12 12 0 0 0 13 13"/><path d="M11 21l2-4M15 15l5 1"/>',
   "OpenSky":'<path d="M7 18h10a4 4 0 0 0 .6-8A6 6 0 0 0 6.2 9.6 4.2 4.2 0 0 0 7 18z"/>',
   "Weather":'<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h8"/>',
+  "Radar":'<path d="M7 14h10a3.5 3.5 0 0 0 .5-7A5.2 5.2 0 0 0 6.6 7.4 3.4 3.4 0 0 0 7 14z"/><path d="M13 14l-2.5 4h3L11 22"/>',
   "Traffic":'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/><circle cx="16.5" cy="15" r="1" fill="currentColor"/><circle cx="8" cy="8.5" r="1" fill="currentColor"/>',
   "History":'<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 3v4h4"/><path d="M12 7.5V12l3 2"/>',
   "Airport map":'<path d="M9 3l-2 18M15 3l2 18"/><path d="M12 5v2M12 10v2M12 15v2"/>',
   "Relay":'<path d="M4 8h13l-3-3M20 16H7l3 3"/>',
   "Schedule":'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
   "Cloud":'<path d="M7 18h10a4 4 0 0 0 .6-8A6 6 0 0 0 6.2 9.6 4.2 4.2 0 0 0 7 18z"/><path d="M12 10v6M9.5 12.5L12 10l2.5 2.5"/>'};
-const ICON_LB={"adsb.lol":"lol","airplanes.live":"live","adsb.fi":"fi","OpenSky":"OSky","Weather":"Wind","Traffic":"Traf","History":"Hist","Airport map":"Apt","Schedule":"Sched","Cloud":"Save","Relay":"Relay"};
+const ICON_LB={"adsb.lol":"lol","airplanes.live":"live","adsb.fi":"fi","OpenSky":"OSky","Weather":"Wind","Radar":"Storm","Traffic":"Traf","History":"Hist","Airport map":"Apt","Schedule":"Sched","Cloud":"Save","Relay":"Relay"};
 function renderIcons(){
   const all=LIVE.concat(EXTRAS.map(x=>x[0]));
   const html=all.map(n=>{
-    const off=(n==="Traffic"&&typeof trafOn!=="undefined"&&!trafOn)||(n==="Relay"&&!relayBase()),st=srcs[n]||{state:"idle"};
+    const off=(n==="Traffic"&&typeof trafOn!=="undefined"&&!trafOn)||(n==="Radar"&&typeof radarOn!=="undefined"&&!radarOn)||(n==="Relay"&&!relayBase()),st=srcs[n]||{state:"idle"};
     const label=(EXTRAS.find(x=>x[0]===n)||[n,SHORT[n]||n])[1];
     return '<span class="si '+(off?"off":st.state)+(activeSrc===n?" use":"")+'" title="'+label+": "+(off?(n==="Relay"?"not set":"off"):word(n,st))+'"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+
       ICONS[n]+'</svg><span class="led"></span></span><span class="lb">'+ICON_LB[n]+"</span></span>";}).join("");
@@ -520,7 +521,7 @@ function renderIcons(){
   else if(up)a="Sources reachable, flight not found";
   else a="Waiting to connect";
   const parts=[a];if(up&&!activeSrc)parts.push(up+" of 4 position sources up");else if(activeSrc&&up<4)parts.push(up+" of 4 up");
-  const ex=EXTRAS.filter(([n])=>!(n==="Traffic"&&typeof trafOn!=="undefined"&&!trafOn)&&!(n==="Relay"&&!relayBase()));
+  const ex=EXTRAS.filter(([n])=>!(n==="Traffic"&&typeof trafOn!=="undefined"&&!trafOn)&&!(n==="Radar"&&typeof radarOn!=="undefined"&&!radarOn)&&!(n==="Relay"&&!relayBase()));
   const bad=ex.filter(([n])=>S(n)==="fail").map(x=>x[1]),okN=ex.filter(([n])=>S(n)==="ok").length;
   parts.push(bad.length?bad.join(", ")+" unavailable":okN===ex.length?"all extras working":okN?okN+" of "+ex.length+" extras working":"extras waiting");
   const t=parts.join(" · ")+'.<sup class="ref" data-n="7" role="button" tabindex="0" aria-label="Note 7">7</sup>';
@@ -530,7 +531,7 @@ function renderSrcs(){
   renderIcons();
   const html=LIVE.map(n=>cellHtml(n,SHORT[n]||n)).join("");
   const el=$("srcList");if(el.innerHTML!==html)el.innerHTML=html;
-  const ex=EXTRAS.map(([n,label])=>cellHtml(n,label,n==="Traffic"&&typeof trafOn!=="undefined"&&!trafOn?"off":n==="Relay"&&!relayBase()?"not set":null)).join("");
+  const ex=EXTRAS.map(([n,label])=>cellHtml(n,label,(n==="Traffic"&&typeof trafOn!=="undefined"&&!trafOn)||(n==="Radar"&&typeof radarOn!=="undefined"&&!radarOn)?"off":n==="Relay"&&!relayBase()?"not set":null)).join("");
   const el2=$("srcList2");if(el2.innerHTML!==ex)el2.innerHTML=ex;
   const lbl=n=>(EXTRAS.find(x=>x[0]===n)||[n,n])[1];
   const d=selSrc==="Relay"&&!relayBase()?"<b>Your relay:</b> not set. Add your Cloudflare Worker address under Data relay settings at the bottom of the page.":
@@ -2060,13 +2061,17 @@ try{radarOn=localStorage.getItem("sfm-radar")!=="0";}catch(e){}
 const isRV=j=>!!(j&&j.host&&j.radar&&Array.isArray(j.radar.past)&&j.radar.past.length);
 async function loadRadar(){
   if(!radarOn||Date.now()-radar.t<10*60000)return;radar.t=Date.now();
-  try{const j=await getJSON("https://api.rainviewer.com/public/weather-maps.json",isRV);
-    const last=j.radar.past[j.radar.past.length-1];if(last.path!==radar.path){radar.host=j.host;radar.path=last.path;rtiles.clear();}radar.ok=true;}
+  try{const j=await getJSON("https://api.rainviewer.com/public/weather-maps.json",isRV,"Radar");
+    const last=j.radar.past[j.radar.past.length-1];if(last.path!==radar.path){radar.host=j.host;radar.path=last.path;rtiles.clear();radar.tok=0;radar.terr=0;}radar.ok=true;
+    const mins=Math.round((Date.now()/1000-last.time)/60);
+    setSrc("Radar","ok","RainViewer radar frame from "+(mins<=1?"just now":mins+" min ago")+". Free tier: coarse above zoom 7.",(srcs.Radar||{}).ms);}
   catch(e){radar.t=Date.now()-8*60000;}   // try again in about 2 minutes
 }
 function rtile(z,x,y){
   const key=z+"/"+x+"/"+y;let im=rtiles.get(key);
-  if(!im){im=new Image();im.decoding="async";im.src=radar.host+radar.path+"/256/"+z+"/"+x+"/"+y+"/2/1_0.png";rtiles.set(key,im);
+  if(!im){im=new Image();im.decoding="async";
+    im.onload=()=>{radar.tok=(radar.tok||0)+1;};
+    im.onerror=()=>{radar.terr=(radar.terr||0)+1;if(!radar.tok&&radar.terr>=4)setSrc("Radar","fail","Radar index loaded, but the image tiles were blocked ("+radar.terr+" failed). Your network may block tilecache.rainviewer.com.");};im.src=radar.host+radar.path+"/256/"+z+"/"+x+"/"+y+"/2/1_0.png";rtiles.set(key,im);
     if(rtiles.size>150)rtiles.delete(rtiles.keys().next().value);}
   return im.complete&&im.naturalWidth?im:null;
 }
@@ -2179,7 +2184,7 @@ setInterval(fetchTraffic,10000);trafLabel();
 function wnumLabel(){$("wnum").textContent="Wind mph: "+(windNums?"on":"off");$("wnum").setAttribute("aria-pressed",String(windNums));}
 $("wnum").addEventListener("click",()=>{windNums=!windNums;try{localStorage.setItem("sfm-wnum",windNums?"1":"0");}catch(e){}wnumLabel();
 function radarLabel(){$("radar").textContent="Storms: "+(radarOn?"on":"off");$("radar").setAttribute("aria-pressed",String(radarOn));}
-$("radar").addEventListener("click",()=>{radarOn=!radarOn;try{localStorage.setItem("sfm-radar",radarOn?"1":"0");}catch(e){}radarLabel();if(radarOn)loadRadar();draw();});
+$("radar").addEventListener("click",()=>{radarOn=!radarOn;try{localStorage.setItem("sfm-radar",radarOn?"1":"0");}catch(e){}radarLabel();if(radarOn)loadRadar();renderSrcs();draw();});
 radarLabel();loadRadar();setInterval(loadRadar,60000);draw();});
 wnumLabel();
 
