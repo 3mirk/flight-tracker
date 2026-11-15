@@ -29,6 +29,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--route);outline-
 .dot{flex:none;width:10px;height:10px;border-radius:50%;margin-top:4px;background:var(--muted)}
 .dot.live{background:var(--good)}.dot.search{background:var(--warn)}.dot.bad{background:var(--bad)}.dot.demo{background:var(--route)}
 .status b{color:var(--ink)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.top h1{font-size:.8rem;letter-spacing:.02em;white-space:nowrap}
+.net{display:flex;align-items:center;gap:5px;padding:2px 4px;border:0;background:none;color:var(--muted);font:600 .62rem var(--mono);white-space:nowrap;margin-left:auto}
+.net.bad{color:var(--bad)}
+.bars{display:flex;align-items:flex-end;gap:2px;height:10px}
+.bars i{width:3px;background:var(--line);border-radius:1px}
+.bars i:nth-child(1){height:4px}.bars i:nth-child(2){height:7px}.bars i:nth-child(3){height:10px}
+.bars i.on{background:var(--good)}.net.bad .bars i{background:var(--bad);opacity:.5}
 .srcs{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
 .srchead{display:flex;justify-content:space-between;gap:8px;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
 .srcs ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px}
@@ -111,7 +119,8 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 </style>
 </head>
 <body>
-<h1>Seatback Flight Map</h1>
+<div class="top"><h1>Seatback Flight Map</h1>
+  <button type="button" class="net" id="net" title="Tap to re-test download speed"><span class="bars" id="netBars" aria-hidden="true"><i></i><i></i><i></i></span><span id="netT">Checking…</span></button></div>
 
 <form id="form">
   <label class="f-flight" for="flight">Flight<input id="flight" value="AA3101" autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
@@ -979,6 +988,44 @@ CHARTS.forEach(ch=>{
   ch.el.addEventListener("pointerleave",off);ch.el.addEventListener("pointercancel",off);
   ch.el.addEventListener("pointerup",e=>{if(e.pointerType!=="mouse")setTimeout(off,1500);});
 });
+
+/* ---------- connection indicator: type, status, measured download speed ---------- */
+const NET_URL="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2";   // ~150 KB test file
+const net={mbps:null,ok:null,busy:false};
+async function speedTest(){
+  if(net.busy||document.hidden)return;net.busy=true;renderNet();
+  const c=new AbortController(),to=setTimeout(()=>c.abort(),15000);
+  try{
+    const t0=performance.now(),r=await fetch(NET_URL+"?t="+Date.now(),{cache:"no-store",signal:c.signal});
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    let total=0,after=0,t1=0,tl=0;
+    if(r.body&&r.body.getReader){const rd=r.body.getReader();
+      for(;;){const {done,value}=await rd.read();if(done)break;const n=performance.now();total+=value.length;if(!t1)t1=n;else after+=value.length;tl=n;}
+    }else{total=(await r.blob()).size;tl=performance.now();}
+    // time the body only (first chunk to last) when there is enough of it; otherwise the whole request
+    let bytes=after,sec=(tl-t1)/1000;if(!t1||sec<0.03||after<20000){bytes=total;sec=(tl-t0)/1000;}
+    net.mbps=sec>0?bytes*8/sec/1e6:null;net.ok=true;
+  }catch(e){
+    net.ok=false;net.mbps=null;
+    if(navigator.onLine!==false&&LIVE.some(n=>srcs[n]&&srcs[n].state==="ok"&&Date.now()-srcs[n].t<20000))net.ok=true;   // test file blocked, but data is flowing
+  }finally{clearTimeout(to);}
+  net.busy=false;renderNet();
+}
+function renderNet(){
+  const cn=navigator.connection||{},type=cn.type==="wifi"?"Wi-Fi":cn.type==="cellular"?"Cellular":cn.type==="ethernet"?"Wired":"Network";
+  const off=navigator.onLine===false||net.ok===false;
+  let mbps=net.mbps;if(mbps==null&&!off&&cn.downlink)mbps=cn.downlink;
+  const sp=mbps==null?"":" · "+(mbps>=10?Math.round(mbps):mbps.toFixed(1))+" Mbps";
+  const txt=type+" · "+(off?"Offline":net.ok==null?"Checking…":"Online"+sp);
+  if($("netT").textContent!==txt)$("netT").textContent=txt;
+  $("net").className="net"+(off?" bad":"");
+  const lit=off||mbps==null?0:mbps<1?1:mbps<5?2:3;
+  document.querySelectorAll("#netBars i").forEach((e,i)=>e.className=i<lit?"on":"");
+}
+$("net").addEventListener("click",speedTest);
+window.addEventListener("online",()=>{renderNet();speedTest();});
+window.addEventListener("offline",()=>{net.ok=false;net.mbps=null;renderNet();});
+setInterval(speedTest,120000);renderNet();speedTest();
 
 /* ---------- wiring ---------- */
 function readForm(){
