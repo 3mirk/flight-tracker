@@ -720,6 +720,23 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   border:0;background:none;padding:2px;font:17px/1 "VT323",var(--mono);color:#7d6a5c;min-width:0;height:auto}
 .seg.knobrow .k2 .kl[aria-pressed="true"]{color:#ff8a2a;text-shadow:0 0 4px rgba(255,122,36,.9),0 0 10px rgba(255,90,20,.5)}
 .k2 .ktick{position:absolute;left:50%;top:56%;width:2px;height:5px;margin:-2.5px 0 0 -1px;background:#8a8580;border-radius:1px;transform:rotate(var(--a)) translateY(-37px)}
+/* turbulence: the LED bar is always a vertical column on the left, same place and height open or slim */
+.duo #turb{display:grid!important;grid-template-columns:18px minmax(0,1fr);grid-template-rows:auto auto auto 1fr;column-gap:8px;row-gap:6px;align-items:start;align-content:start;padding:7px 8px 8px!important}
+.duo #turb .kpihead{display:contents}
+.duo #turb .kpihead .k{grid-column:1/-1;grid-row:1;font-size:.62rem!important;line-height:16px}
+.duo #turb .kpihead .k::before{content:none!important}
+.duo #turb .hbar{grid-column:1;grid-row:2/5;align-self:start;flex:none!important;width:18px!important;height:150px!important;min-width:0!important;margin:0!important;flex-direction:column-reverse!important;padding:3px!important}
+.duo #turb .kpititle{grid-column:2;grid-row:2;flex-direction:row!important;align-items:baseline!important;margin:0!important}
+.duo #turb .kpilabel{writing-mode:horizontal-tb!important;transform:none!important;max-height:none!important}
+.duo #turb .kpinote{grid-column:2;grid-row:3}
+.duo #turb .kpigrid{grid-column:2;grid-row:4}
+/* slim: title shortens, only the bar remains */
+.duo.dsopen #turb{grid-template-columns:18px 0;column-gap:0;padding:7px 8px 8px!important}
+.duo.dsopen #turb .kpihead .k{font-size:0!important}
+.duo.dsopen #turb .kpihead .k::before{content:"TURB"!important;font-size:.62rem;line-height:16px;letter-spacing:.06em;vertical-align:top}
+.duo #turb .kpihead .k{height:16px;overflow:visible;white-space:nowrap}
+.duo.dsopen #turb .kpititle,.duo.dsopen #turb .kpinote,.duo.dsopen #turb .kpigrid{display:none!important}
+.duo.dsopen{grid-template-columns:minmax(0,1fr) 54px}
 </style>
 </head>
 <body>
