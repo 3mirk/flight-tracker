@@ -601,6 +601,29 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .charts .tile canvas.spark{border:3px solid transparent!important;border-radius:10% / 14%!important;box-sizing:border-box;
   background:linear-gradient(#050100,#050100) padding-box,linear-gradient(165deg,#b4beb7 0%,#8b968f 14%,#5d6762 38%,#3f4743 58%,#66716b 80%,#a1aca5 100%) border-box!important;
   box-shadow:0 1px 0 rgba(255,255,255,.08),0 0 0 1px #000}
+/* chart window: rotary knob with detents */
+.seg.knobrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 10px 4px 12px}
+.kcap-l{display:flex;flex-direction:column;gap:3px;min-width:0}
+.kcap-l .k{font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.kread{font:22px/1 "VT323",var(--mono);color:#ff7a24;text-shadow:0 0 4px rgba(255,122,36,.9),0 0 10px rgba(255,90,20,.5);letter-spacing:.04em}
+.kdial{position:relative;flex:none;width:150px;height:62px}
+.kticks{position:absolute;inset:0;width:100%;height:100%;stroke:#8a8580;stroke-width:1.3;stroke-linecap:round;opacity:.8}
+.seg.knobrow .kl{position:absolute;left:var(--x);top:var(--y);transform:translate(-50%,-50%);flex:none;height:auto;min-width:0;padding:2px 3px;border:0;background:none;
+  font:17px/1 "VT323",var(--mono);color:#7d6a5c;text-shadow:none;letter-spacing:.03em}
+.seg.knobrow .kl[aria-pressed="true"]{color:#ff8a2a;background:none;text-shadow:0 0 4px rgba(255,122,36,.9),0 0 10px rgba(255,90,20,.5)}
+.knob{position:absolute;left:55px;top:20px;width:40px;height:40px;border-radius:50%;touch-action:none;cursor:grab;
+  box-shadow:0 4px 6px rgba(0,0,0,.75),0 1px 1px rgba(0,0,0,.9),0 0 0 2px #0a0a0b,0 0 0 3px #3a3a3c}
+.knob:focus-visible{outline:2px solid #ff7a24;outline-offset:4px}
+.krot{position:absolute;inset:0;border-radius:50%;transition:transform .32s cubic-bezier(.3,1.45,.5,1);
+  background:repeating-conic-gradient(#2c2c2f 0 5deg,#0f0f11 5deg 10deg)}
+.krot::before{content:"";position:absolute;inset:5px;border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,#3c4044 0 38%,transparent 39%),conic-gradient(#6d7378,#c7ccd0,#6d7378,#9ea4a9,#5c6166,#b9bec2,#6d7378);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.35),inset 0 -1px 2px rgba(0,0,0,.6),0 0 0 1px #000}
+.kptr{position:absolute;left:50%;top:4px;width:3px;height:14px;margin-left:-1.5px;border-radius:2px;background:#ff7a24;
+  box-shadow:0 0 4px rgba(255,122,36,.95),0 0 9px rgba(255,90,20,.6)}
+.kglare{position:absolute;inset:0;border-radius:50%;pointer-events:none;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 60% 40% at 35% 25%,rgba(255,255,255,.28),transparent 70%)}
+@media(prefers-reduced-motion:reduce){.krot{transition:none}}
 </style>
 </head>
 <body>
@@ -676,8 +699,18 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <i class="scr s1"></i><i class="scr s2"></i><i class="scr s3"></i><i class="scr s4"></i>
 </section>
 
-<div class="seg" id="win" role="group" aria-label="Chart time window"><span class="k">Charts</span>
-  <button type="button" data-w="all">All</button><button type="button" data-w="60">60 min</button><button type="button" data-w="5">5 min</button><button type="button" data-w="1">1 min</button></div>
+<div class="seg knobrow" id="win" role="group" aria-label="Chart time window">
+  <div class="kcap-l"><span class="k">Chart window</span><span class="kread" id="kRead">ALL</span></div>
+  <div class="kdial">
+    <svg class="kticks" viewBox="0 0 150 62" aria-hidden="true"></svg>
+    <button type="button" class="kl" data-w="all" style="--x:31px;--y:38px">ALL</button>
+    <button type="button" class="kl" data-w="60" style="--x:52px;--y:6px">60</button>
+    <button type="button" class="kl" data-w="5" style="--x:98px;--y:6px">5</button>
+    <button type="button" class="kl" data-w="1" style="--x:119px;--y:38px">1</button>
+    <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Chart time window" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
+      <div class="krot" id="krot"><i class="kptr"></i></div><i class="kglare"></i></div>
+  </div>
+</div>
 <div class="charts">
   <div class="tile chart"><div class="head"><div class="k">Altitude</div><div class="v" id="alt">—</div><div class="s" id="altS"></div></div>
     <canvas class="spark" id="altChart" aria-label="Altitude over time, in feet"></canvas></div>
@@ -2074,7 +2107,26 @@ function sonar(g,cx,cy,r,P){
     tip.hidden=false;const tb=cv.parentNode.getBoundingClientRect();
     tip.style.left=Math.max(4,Math.min(tb.width-tip.offsetWidth-4,b.left-tb.left+best.x-tip.offsetWidth/2))+"px";tip.style.top=Math.max(4,b.top-tb.top+best.y-tip.offsetHeight-8)+"px";};
   cv.style.pointerEvents="auto";cv.addEventListener("pointermove",show);cv.addEventListener("pointerdown",show);cv.addEventListener("pointerleave",()=>{tip.hidden=true;});}
-function winButtons(){document.querySelectorAll("#win button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.w===String(win))));}
+const KDET=[["all",-90,"ALL"],["60",-30,"60 MIN"],["5",30,"5 MIN"],["1",90,"1 MIN"]];
+function winButtons(){document.querySelectorAll("#win button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.w===String(win))));
+  const i=Math.max(0,KDET.findIndex(d=>d[0]===String(win)));$("krot").style.transform="rotate("+KDET[i][1]+"deg)";
+  $("knob").setAttribute("aria-valuenow",String(i));$("knob").setAttribute("aria-valuetext",KDET[i][2]);$("kRead").textContent=KDET[i][2];}
+/* rotary knob: drag to turn (snaps to detents), tap to step, wheel or arrow keys */
+{const knob=$("knob"),pick=i=>{i=(i+KDET.length)%KDET.length;const b=document.querySelector('#win button[data-w="'+KDET[i][0]+'"]');if(b&&b.dataset.w!==String(win))b.click();};
+  const cur=()=>Math.max(0,KDET.findIndex(d=>d[0]===String(win)));let drag=null;
+  // tick ring
+  {const sv=document.querySelector(".kticks");let h="";for(let a=-105;a<=105;a+=15){const r1=a%60===30||a===-90||a===90||a===-30?25:27,r2=30,c=[75,40],
+      p=(r)=>[c[0]+Math.sin(a*Math.PI/180)*r,c[1]-Math.cos(a*Math.PI/180)*r];const[x1,y1]=p(r1),[x2,y2]=p(r2);
+      h+='<line x1="'+x1.toFixed(1)+'" y1="'+y1.toFixed(1)+'" x2="'+x2.toFixed(1)+'" y2="'+y2.toFixed(1)+'"/>';}sv.innerHTML=h;}
+  knob.addEventListener("pointerdown",e=>{e.preventDefault();knob.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,moved:false};});
+  knob.addEventListener("pointermove",e=>{if(!drag)return;if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>4)drag.moved=true;if(!drag.moved)return;
+    const b=knob.getBoundingClientRect(),a=Math.atan2(e.clientX-(b.left+b.width/2),-(e.clientY-(b.top+b.height/2)))*180/Math.PI;
+    let bi=0,bd=999;KDET.forEach((d,i)=>{const dd=Math.abs(a-d[1]);if(dd<bd){bd=dd;bi=i;}});if(bi!==cur())pick(bi);});
+  const end=()=>{if(drag&&!drag.moved)pick(cur()+1);drag=null;};
+  knob.addEventListener("pointerup",end);knob.addEventListener("pointercancel",()=>{drag=null;});
+  knob.addEventListener("wheel",e=>{e.preventDefault();pick(Math.min(KDET.length-1,Math.max(0,cur()+(e.deltaY>0?1:-1))));},{passive:false});
+  knob.addEventListener("keydown",e=>{const k={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1}[e.key];if(k){e.preventDefault();pick(Math.min(KDET.length-1,Math.max(0,cur()+k)));}
+    else if(e.key===" "||e.key==="Enter"){e.preventDefault();pick(cur()+1);}});}
 $("win").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;win=b.dataset.w==="all"?"all":+b.dataset.w;
   try{localStorage.setItem("sfm-win",String(win));}catch(err){}winButtons();drawCharts();});
 winButtons();
