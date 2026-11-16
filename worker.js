@@ -135,6 +135,7 @@ async function api(request, env, u, CORS) {
     return json(await saveFlight(env, request), 200, CORS);
   }
   if (tooMany(request)) return json({ error: "slow-down" }, 429, CORS);
+  if (path === "/api/departures") return json(await departures(env), 200, CORS);
   if (path === "/api/schedule") return json(await schedule(env, (u.searchParams.get("f") || "").toUpperCase().replace(/[^A-Z0-9]/g, "")), 200, CORS);
   if (path === "/api/aircraft") return json(await aircraft(env, (u.searchParams.get("reg") || "").toUpperCase().replace(/[^A-Z0-9-]/g, "")), 200, CORS);
   return json({ error: "unknown" }, 404, CORS);
@@ -171,6 +172,24 @@ async function adb(env, path) {
   if (r.status === 204) return [];
   if (!r.ok) throw new Error("ADB HTTP " + r.status);
   return r.json();
+}
+/* American departures from DFW over the last 6 hours (one paid call, cached 45 min for everyone) */
+async function departures(env) {
+  return cached(env, "dep:DFW", 2700, async () => {
+    const loc = ms => { const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date(ms)).map(x => [x.type, x.value]));
+      return `${p.year}-${p.month}-${p.day}T${p.hour === "24" ? "00" : p.hour}:${p.minute}`; };
+    const now = Date.now();
+    const j = await adb(env, `/flights/airports/iata/DFW/${loc(now - 6 * 3600e3)}/${loc(now)}?withLeg=true&direction=Departure&withCancelled=false&withCodeshared=false&withCargo=false&withPrivate=false&withLocation=false`);
+    const L = (j && j.departures) || [];
+    return { at: now, flights: L.filter(f => f && f.airline && f.airline.iata === "AA").map(f => {
+      const a = f.arrival || {}, ap = a.airport || {}, d = f.departure || {};
+      return { code: String(f.number || "").replace(/\s+/g, ""), status: f.status || "", to: ap.iata || ap.icao || "", toIcao: ap.icao || null,
+        toName: ap.municipalityName || ap.shortName || ap.name || "", country: ap.countryCode || null, toLL: ll(ap),
+        dep: utcMs(d.revisedTime && d.revisedTime.utc) || utcMs(d.scheduledTime && d.scheduledTime.utc), depActual: utcMs(d.runwayTime && d.runwayTime.utc),
+        arr: utcMs(a.revisedTime && a.revisedTime.utc) || utcMs(a.scheduledTime && a.scheduledTime.utc),
+        mi: f.greatCircleDistance && f.greatCircleDistance.mile ? Math.round(f.greatCircleDistance.mile) : null };
+    }) };
+  });
 }
 /* AirLabs */
 async function airlabs(env, endpoint, params) {

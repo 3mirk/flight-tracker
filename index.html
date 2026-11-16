@@ -489,13 +489,12 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .duo #turb .kpinote span{-webkit-line-clamp:3}
 /* turbulence, slim strip */
 .duo.dsopen #turb{cursor:pointer;padding:7px 4px;align-items:center;gap:6px}
-.duo.dsopen #turb .kpinote,.duo.dsopen #turb .kpigrid{display:none}
 .duo.dsopen #turb .kpihead{flex-direction:column;gap:5px}
 .duo.dsopen #turb .kpihead .k{font-size:0}
 .duo.dsopen #turb .kpihead .k .ref{font-size:.6rem}
 .duo.dsopen #turb .kpihead .k::before{content:"TURB";font-size:.55rem;letter-spacing:.06em}
 .duo.dsopen #turb .hbar{flex:none;width:16px;height:118px;min-width:0;margin:0;flex-direction:column-reverse;padding:3px}
-.duo.dsopen #turb .kpititle{flex-direction:column;align-items:center;gap:4px;margin:0}
+
 .duo.dsopen #turb .kpilabel{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.72rem;max-height:120px}
 .duo.dsopen #turb .kpifor{font-size:.62rem}
 /* collapsed sources: thin 2 x 6 column of lamp + button, like the expanded list */
@@ -931,7 +930,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16b</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16c</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -2800,6 +2799,15 @@ function hideSug(){$("fsug").hidden=true;sugIdx=-1;}
 let dfwPicks=[];const DFW=[32.8998,-97.0403];
 const inNA=(la,lo)=>la>14&&la<72&&lo>-170&&lo<-50;
 async function findDfwFlights(){
+  // 1) today's DFW departure board via the relay (AeroDataBox): flights that left and haven't landed yet
+  try{if(relayBase()){const j=await relayApi("/api/departures");const now=Date.now(),NA=["US","CA","MX","BS","JM","DO","PR","CU","BZ","GT","HN","SV","NI","CR","PA","AW","CW","BB","TC","KY","LC","AG","SX","VI"];
+    const L=(j.flights||[]).filter(f=>f.code&&f.to&&f.dep&&f.dep<now-10*60000&&(!f.arr||f.arr>now+15*60000)&&!/arrived|landed|cancel/i.test(f.status)
+        &&(f.country?NA.includes(f.country):true)&&(f.mi||0)>=630)
+      .sort((a,b)=>(b.mi||0)-(a.mi||0)).slice(0,3);
+    if(L.length){for(const f of L){const ll=f.toLL||AIRPORTS[f.to];if(ll)routes[f.code]={o:{c:"DFW",lat:DFW[0],lon:DFW[1],n:"Dallas/Fort Worth"},d:{c:f.to,lat:ll[0],lon:ll[1],n:f.toName||""},t:Date.now(),ok:1};}
+      try{localStorage.setItem("sfm-routes",JSON.stringify(routes));}catch(e){}
+      return L.map(f=>({code:f.code,to:f.to,mi:f.mi}));}}}catch(e){}
+  // 2) fallback: OpenSky's live state vectors + adsb.lol's position-checked routes
   try{
     const j=await getJSON("https://opensky-network.org/api/states/all?lamin=14&lomin=-170&lamax=72&lomax=-50",isOpenSky,"OpenSky");
     const C=(j.states||[]).filter(s=>s&&s[1]&&/^AAL\d{1,4}\s*$/.test(s[1])&&!s[8]&&s[5]!=null&&s[6]!=null)
