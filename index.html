@@ -697,6 +697,17 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .kshine{position:absolute;inset:0;border-radius:50%;pointer-events:none;mix-blend-mode:screen;
   background:radial-gradient(ellipse 34% 20% at 38% 24%,rgba(255,255,255,.35),transparent 70%),radial-gradient(ellipse 60% 18% at 50% 84%,rgba(255,255,255,.06),transparent 70%)}
 .seg.knobrow{padding:2px 10px 6px 12px}
+/* phone fit fixes */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.duo .srcs li{height:auto!important;min-height:32px;grid-template-rows:auto auto!important;align-content:center!important;padding:3px 6px 3px 4px!important;overflow:hidden}
+.duo .srcs li .ic{grid-row:1!important}
+.duo .srcs li .led{grid-row:2!important;margin-top:2px!important}
+.duo .srcs li .nm{font-size:11px!important;line-height:14px!important;align-self:end}
+.duo .srcs li .m{font-size:9px!important;line-height:11px!important;align-self:start;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* phase chip: fits its box, readable on the CRT */
+.fr-ph{font-size:19px!important;letter-spacing:.02em!important}
+.fr-ph .phx{white-space:nowrap;padding:0 4px;text-shadow:0 0 3px currentColor!important}
+.ph-idle{background:linear-gradient(#0d0b09,#0d0b09) padding-box,linear-gradient(160deg,#2a2826,#111010 35%,#060606 65%,#1a1917) border-box!important;color:#c9a27a!important}
 </style>
 </head>
 <body>
@@ -715,7 +726,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
         <ul id="fsug" role="listbox" hidden></ul></div>
       <select id="finst" aria-label="Which flight with this number"><option value="live">Live · today</option></select>
     </div>
-    <span class="fr-ph ph-idle" id="frPhase"><span class="phx">Not seen yet</span></span></div>
+    <span class="fr-ph ph-idle" id="frPhase"><span class="phx">Not seen</span></span></div>
   <div class="frow"><div class="fr-dt" id="frDate">—</div>
     <button type="button" id="gps" title="Use your phone's own GPS for position, speed and altitude"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg><span>Enable GPS</span></button></div>
   <div class="frow"><div class="status" id="statusLine" role="button" tabindex="0" title="Tap for data sources"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
@@ -2240,7 +2251,7 @@ CHARTS.forEach(ch=>{
 
 /* ---------- flight phase, from the plane's own reports ---------- */
 const PH={
-  none:["Not seen yet","ph-idle"],gate:["At gate","ph-idle"],taxiOut:["Taxiing","ph-idle"],roll:["Takeoff roll","ph-go"],
+  none:["Not seen","ph-idle"],gate:["At gate","ph-idle"],taxiOut:["Taxiing","ph-idle"],roll:["Takeoff roll","ph-go"],
   climb:["Climbing","ph-go"],cruise:["Cruising","ph-go"],descent:["Descending","ph-go"],approach:["On approach","ph-warn"],
   landed:["Landed","ph-done"],taxiIn:["Landed · taxiing","ph-done"],arrived:["Arrived","ph-done"],lost:["Signal lost","ph-warn"]};
 function wasAirborne(){return hist.alt.some(q=>q[1]>1500);}
@@ -2285,6 +2296,7 @@ function renderFlightRow(){
   let [label,cls]=PH[phase()];const ph=phase();
   if(mode==="planned"&&planned){label="Expected";cls="ph-idle";}
   const chip=$("frPhase");if(chip.textContent!==label)chip.innerHTML='<span class="phx">'+esc(label)+'</span>';chip.className="fr-ph "+cls;
+  {const t=chip.firstChild;if(t){t.style.fontSize="";if(t.scrollWidth>chip.clientWidth-6)t.style.fontSize=Math.max(13,19*(chip.clientWidth-6)/t.scrollWidth)+"px";}}
   const live=ac.legs.find(l=>l.live)||ac.legs.find(l=>Date.now()-l.t1<6*3600000);
   const t0=takeoffT(live);
   // one short line: route, then departure → arrival/ETA, then duration
