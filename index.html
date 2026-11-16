@@ -2549,7 +2549,7 @@ function drawRadar(g,X,Y,w,h,scale,clat,clon,k,lw,lh){
 const TRAF_NM=52,TRAF_FT=8000,TRAF_MAX=40,TRAF_GROUND_MAX=80;
 const TRAF_URLS=[(a,o)=>"https://api.adsb.lol/v2/point/"+a+"/"+o+"/55",(a,o)=>"https://api.airplanes.live/v2/point/"+a+"/"+o+"/55",
   (a,o)=>"https://opendata.adsb.fi/api/v2/lat/"+a+"/lon/"+o+"/dist/55"];
-var trafOn=false;let traf=[],trafBusy=false,trafSel="",trafUrl=0,tfScreen=[];
+var trafOn=false;let trafScaleT=0,traf=[],trafBusy=false,trafSel="",trafUrl=0,tfScreen=[];
 trafOn=true;try{if(localStorage.getItem("sfm-traf2")==="0")trafOn=false;}catch(e){}
 async function fetchTraffic(){
   if(!trafOn||trafBusy||document.hidden||mode==="demo"||!fix||Date.now()-fix.t>6*3600000)return;
@@ -2570,8 +2570,9 @@ async function fetchTraffic(){
         if(!low&&Math.abs(alt-fix.altFt)>TRAF_FT)continue;
         const d=distNm(me,[a.lat,a.lon]);if(d>TRAF_NM)continue;
         list.push({hex:a.hex,cs:(a.flight||"").trim(),type:a.t||"",lat:a.lat,lon:a.lon,alt,gnd,gs:a.gs||0,track:a.track!=null?a.track:a.true_heading,
-          heli:a.category==="A7",d,t:Date.now()-(a.seen_pos||0)*1000});
+          heli:a.category==="A7",d,t:Date.now()-(a.seen_pos||0)*1000,vr:gnd?0:(a.baro_rate!=null?a.baro_rate:a.geom_rate||0)});
       }
+      for(const a of list){const o=traf.find(b=>b.hex===a.hex);if(o&&o.sz!=null)a.sz=o.sz;}
       list.sort((x,y)=>x.d-y.d);traf=list.slice(0,fix.altFt==null||fix.altFt<10000?TRAF_GROUND_MAX:TRAF_MAX);
     }
   }finally{trafBusy=false;}
@@ -2591,18 +2592,25 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
     g.beginPath();g.arc(X(p[1]),Y(p[0]),Math.max(10,TRAF_NM/60*scale),0,7);g.stroke();g.restore();}
   if(scale<TRAF_MIN_SCALE-0.5){if(!p)return;pxText(g,"ZOOM IN FOR TRAFFIC",10,h-26,"rgba(255,138,42,.95)","left","alphabetic",11);return;}
   let sel=null;
+  // size by altitude relative to us: higher = bigger, lower = smaller (never below ~40%), eased so it grows/shrinks smoothly
+  const myAlt=fix&&fix.altFt!=null&&!fix.ground?Math.max(0,fix.altFt+(fix.vsFpm||0)/60*Math.min(60,(Date.now()-fix.t)/1000*(fix.drMul||1))):0;
+  const nowMs=performance.now(),ek=1-Math.exp(-Math.min(.5,(nowMs-(trafScaleT||nowMs))/1000)/.6);trafScaleT=nowMs;
   for(const a of traf){
     const dt=Math.min(30,(Date.now()-a.t)/1000);
+    const altNow=a.gnd?0:Math.max(0,a.alt+(a.vr||0)*Math.min(dt,30)/60);
+    const want=Math.max(.62,Math.min(1.9,(altNow+4000)/(myAlt+4000)));
+    a.sz=a.sz==null?want:a.sz+(want-a.sz)*ek;const sz=a.sz;
     const q=a.gs>40&&a.track!=null?move([a.lat,a.lon],a.track,a.gs*dt/3600):[a.lat,a.lon];
     const x=X(q[1]),y=Y(q[0]);if(x<-10||x>w+10||y<-10||y>h+10)continue;
     tfScreen.push({x,y,a});if(trafSel===a.hex)sel={x,y,a,q};
     g.save();g.translate(x,y);g.rotate((a.track||0)*R);
     g.fillStyle="rgba(7,4,0,.9)";g.strokeStyle=PHA(.85);g.lineWidth=2;
+    g.scale(sz,sz);g.lineWidth=2/sz;
     if(a.heli){
       g.beginPath();g.arc(0,0,3.5,0,7);g.fill();g.stroke();
       g.beginPath();g.moveTo(0,3.5);g.lineTo(0,10);g.moveTo(-7,-7);g.lineTo(7,7);g.moveTo(7,-7);g.lineTo(-7,7);g.stroke();
     }else{
-      g.scale(.55,.55);g.lineWidth=1.8;g.beginPath();
+      g.scale(.55,.55);g.lineWidth=1.8/sz;g.beginPath();
       g.moveTo(0,-13);g.lineTo(3,-4);g.lineTo(13,3);g.lineTo(13,6);g.lineTo(3,3);g.lineTo(2,10);g.lineTo(6,13);g.lineTo(-6,13);
       g.lineTo(-2,10);g.lineTo(-3,3);g.lineTo(-13,6);g.lineTo(-13,3);g.lineTo(-3,-4);g.closePath();g.fill();g.stroke();
     }
@@ -2610,10 +2618,10 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
   }
   if(sel){
     const a=sel.a,mi=p?distNm(p,sel.q)*1.15078:a.d*1.15078;
-    g.strokeStyle=C("--route");g.lineWidth=1.5;g.beginPath();g.arc(sel.x,sel.y,12,0,7);g.stroke();
+    g.strokeStyle=C("--route");g.lineWidth=1.5;g.beginPath();g.arc(sel.x,sel.y,6+7*a.sz,0,7);g.stroke();
     const txt=[a.cs||"No callsign",a.heli?(a.type||"")+" helicopter":a.type,(a.gnd?"on ground":fmt(a.alt)+" ft"),fmt(mi)+" mi away"].filter(Boolean).join(" · ");
     g.font="700 11px "+C("--mono");const tw=g.measureText(txt).width+12;
-    const bx=Math.max(4,Math.min(w-tw-4,sel.x-tw/2)),by=sel.y>44?sel.y-38:sel.y+18;
+    const bx=Math.max(4,Math.min(w-tw-4,sel.x-tw/2)),by=sel.y>44+12*a.sz?sel.y-38-8*(a.sz-1):sel.y+18+8*(a.sz-1);
     g.fillStyle="rgba(7,4,0,.94)";g.strokeStyle=PHA(.7);g.lineWidth=2;g.beginPath();g.rect(bx,by,tw,20);g.fill();g.stroke();
     g.fillStyle=C("--ink");g.textAlign="left";g.textBaseline="middle";g.fillText(txt,bx+6,by+10);
   }else if(!traf.length){pxText(g,srcs.Traffic&&srcs.Traffic.state==="ok"?"NO TRAFFIC NEARBY":"LOOKING FOR TRAFFIC",10,h-26,"rgba(255,138,42,.95)","left","alphabetic",11);}
