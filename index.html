@@ -997,7 +997,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16h</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16i</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -1663,7 +1663,9 @@ function draw(){
     g.fillStyle=LBL(.45);g.textAlign="left";g.fillText(nm,bx,y);}
 
   // winds at the plane's altitude: streaks flow where the air is going, faster = stronger
-  const windPass=g=>{if(wx&&windOn&&scale<SURF_SCALE)try{
+  // the map shows the continent-wide grid (Mexico, US, Canada) when it has it; turbulence keeps using the fine grid along the flight
+  const windPass=g=>{const keepWx=wx;if(wxNA)wx=wxNA;try{windPass0(g);}finally{wx=keepWx;}};
+  const windPass0=g=>{if(wx&&windOn&&scale<SURF_SCALE)try{
     const alt=fix&&fix.altFt!=null&&mode!=="past"?fix.altFt:mode==="planned"?35000:33000;
     g.lineCap="round";
     if(reduced){
@@ -1701,7 +1703,7 @@ function draw(){
       }
     }
     g.fillStyle="rgba(185,220,245,.75)";g.font="700 8px "+C("--mono");g.textAlign="center";g.textBaseline="middle";
-    if(windNums)for(const q of wx.pts){const x=X(q.lon),y=Y(q.lat);if(x<10||x>w-10||y<10||y>h-22||(corr&&!corr.has(q.lat,q.lon)))continue;
+    if(windNums)for(const q of wx.pts){const x=X(q.lon),y=Y(q.lat);if(x<10||x>w-10||y<10||y>h-22)continue;
       const ww=windAt(q.lat,q.lon,alt);if(ww)g.fillText(Math.round(ww.spd*1.15078),x,y);}
     g.font="700 9px "+C("--mono");g.textAlign="left";g.textBaseline="bottom";g.fillStyle=LBL(.85);
     pxText(g,"WINDS "+Math.round(alt/1000)+"K FT · PINK=SHEAR"+(radarShown?" · GREY=STORMS":""),14,h-12,LBL(.75),"left","alphabetic",4);
@@ -1782,7 +1784,7 @@ function draw(){
   if(wc.width!==lw||wc.height!==lh){wc.width=lw;wc.height=lh;}
   wpx.setTransform(1,0,0,1,0,0);wpx.clearRect(0,0,lw,lh);wpx.setTransform(1/PIXL,0,0,1/PIXL,0,0);wpx.lineCap="butt";wpx.lineJoin="miter";
   windPass(wpx);
-  if(corr){wpx.save();wpx.setTransform(1,0,0,1,0,0);wpx.globalCompositeOperation="destination-in";wpx.drawImage(corr.c,0,0);wpx.restore();}
+
   m.setTransform(1,0,0,1,0,0);m.imageSmoothingEnabled=false;m.drawImage(wc,0,0,lw*PIXL*dpr,lh*PIXL*dpr);
   m.globalCompositeOperation="lighter";m.imageSmoothingEnabled=true;m.globalAlpha=.4;m.drawImage(wc,-2*dpr,-2*dpr,lw*PIXL*dpr+4*dpr,lh*PIXL*dpr+4*dpr);
   m.globalAlpha=1;m.globalCompositeOperation="source-over";m.setTransform(dpr,0,0,dpr,0,0);
@@ -1919,6 +1921,24 @@ requestAnimationFrame(frame);
 /* ---------- winds aloft + turbulence estimate (Open-Meteo weather model) ---------- */
 const LEVELS=[[850,4780],[700,9880],[600,13800],[500,18280],[400,23570],[300,30050],[250,33980],[200,38660]]; // hPa, standard altitude ft
 let wx=null,wxBusy=false,wxTried=0;
+/* continent-wide winds for the map: Mexico, US and Canada on a 16 x 11 grid, refreshed hourly, kept between visits */
+let wxNA=null;const NA_LA=[14,70],NA_LO=[-168,-52],NA_NX=16,NA_NY=11;
+try{const c=JSON.parse(localStorage.getItem("sfm-wxna")||"null");if(c&&Date.now()-c.t<3600000)wxNA=c;}catch(e){}
+let wxNABusy=false,wxNATried=0;
+async function fetchWindsNA(){
+  if(wxNABusy||Date.now()-wxNATried<120000||(wxNA&&Date.now()-wxNA.t<3600000&&wxNA.hour===new Date().toISOString().slice(0,13)))return;
+  wxNABusy=true;wxNATried=Date.now();
+  try{const pts=[];for(let j=0;j<NA_NY;j++)for(let i=0;i<NA_NX;i++)pts.push([NA_LA[0]+(NA_LA[1]-NA_LA[0])*j/(NA_NY-1),NA_LO[0]+(NA_LO[1]-NA_LO[0])*i/(NA_NX-1)]);
+    const vars=[];LEVELS.forEach(([hp])=>vars.push("wind_speed_"+hp+"hPa","wind_direction_"+hp+"hPa"));vars.push("cape");
+    const url="https://api.open-meteo.com/v1/forecast?latitude="+pts.map(q=>q[0].toFixed(1)).join(",")+"&longitude="+pts.map(q=>q[1].toFixed(1)).join(",")+
+      "&hourly="+vars.join(",")+"&wind_speed_unit=kn&timezone=GMT&forecast_hours=2&past_hours=1";
+    const j=await getJSON(url,isMeteo,"Weather"),arr=Array.isArray(j)?j:[j],hourNow=new Date().toISOString().slice(0,13);
+    wxNA={t:Date.now(),hour:hourNow,la:NA_LA.slice(),lo:NA_LO.slice(),nx:NA_NX,ny:NA_NY,pts:arr.map((r,k)=>{
+      let i=r.hourly.time.findIndex(x=>x.slice(0,13)===hourNow);if(i<0)i=0;
+      return {lat:pts[k][0],lon:pts[k][1],cape:r.hourly.cape[i]||0,lv:LEVELS.map(([hp,ft])=>({ft,s:r.hourly["wind_speed_"+hp+"hPa"][i],d:r.hourly["wind_direction_"+hp+"hPa"][i]}))};})};
+    try{localStorage.setItem("sfm-wxna",JSON.stringify(wxNA));}catch(e){}
+  }catch(e){}finally{wxNABusy=false;}
+}
 const isMeteo=j=>Array.isArray(j)?j.length&&j[0].hourly:!!(j&&j.hourly);
 /* Where weather is wanted: the route if known, plus everywhere the plane has actually been and is now. */
 function flown(){const H=hist.pos||[],st=Math.max(1,Math.floor(H.length/80)),o=[];
@@ -1956,7 +1976,7 @@ function uv(s,d){return [-s*Math.sin(d*R),-s*Math.cos(d*R)];}   // where the air
 function windAt(lat,lon,altFt){
   if(!wx)return null;
   let best=null,bd=1e9;for(const q of wx.pts){const dd=distNm([lat,lon],[q.lat,q.lon]);if(dd<bd){bd=dd;best=q;}}
-  if(!best||bd>250)return null;
+  if(!best||bd>(wx&&wx===wxNA?420:250))return null;
   const a=Math.max(LEVELS[0][1],Math.min(LEVELS[LEVELS.length-1][1],altFt==null?33000:altFt));
   let k=0;while(k<best.lv.length-2&&best.lv[k+1].ft<a)k++;
   const lo=best.lv[k],hi=best.lv[k+1];if(lo.s==null||hi.s==null)return null;
@@ -3330,7 +3350,7 @@ setInterval(()=>{try{renderFlightRow();}catch(e){}},2000);
 setInterval(drawCharts,250);
 setInterval(renderSrcs,5000);renderSrcs();
 setInterval(renderAircraft,15000);renderAircraft();
-setInterval(()=>{turbulence();if(!wx||Date.now()-wx.t>600000||!wxCovers(now()))fetchWinds();},2000);
+setInterval(()=>{turbulence();if(!wx||Date.now()-wx.t>600000||!wxCovers(now()))fetchWinds();fetchWindsNA();},2000);
 try{$("relay").value=localStorage.getItem("sfm-relay")||"";}catch(e){}
 $("relayForm").addEventListener("submit",e=>{e.preventDefault();
   const v=$("relay").value.trim();
