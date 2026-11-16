@@ -117,6 +117,7 @@ function tooMany(request) {
 async function api(request, env, u, CORS) {
   if (!env.DATA) return json({ error: "no-storage", detail: "KV binding DATA is not set up" }, 503, CORS);
   const path = u.pathname;
+  if (path === "/api/route" && request.method === "GET") return json(await liveRoute(u), 200, CORS);
   if (path === "/api/flights" && request.method === "GET") return json(await listFlights(env, u.searchParams.get("code") || ""), 200, CORS);
   if (path === "/api/flight" && request.method === "GET") {
     const rec = await env.DATA.get("f:" + (u.searchParams.get("id") || ""), "json");
@@ -188,7 +189,24 @@ function fromAdb(list) {
     arrActual: utcMs(f.arrival && (f.arrival.runwayTime || f.arrival.revisedTime) && (f.arrival.runwayTime || f.arrival.revisedTime).utc),
     reg: f.aircraft && f.aircraft.reg || null, hex: f.aircraft && f.aircraft.modeS ? f.aircraft.modeS.toLowerCase() : null,
     model: f.aircraft && f.aircraft.model || null,
+    fromLL: ll(f.departure && f.departure.airport), toLL: ll(f.arrival && f.arrival.airport),
+    fromName: f.departure && f.departure.airport && (f.departure.airport.municipalityName || f.departure.airport.shortName || f.departure.airport.name) || null,
+    toName: f.arrival && f.arrival.airport && (f.arrival.airport.municipalityName || f.arrival.airport.shortName || f.arrival.airport.name) || null,
   })).filter(x => x.dep);
+}
+function ll(a) { const l = a && a.location; return l && typeof l.lat === "number" && typeof l.lon === "number" ? [l.lat, l.lon] : null; }
+
+/* Route for a callsign seen at a position, checked for plausibility (adsb.lol's routeset, which only takes POST). */
+async function liveRoute(u) {
+  const cs = String(u.searchParams.get("cs") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+  const lat = +u.searchParams.get("lat"), lon = +u.searchParams.get("lon");
+  if (!cs || !isFinite(lat) || !isFinite(lon)) return { error: "bad-request" };
+  const r = await fetch("https://api.adsb.lol/api/0/routeset", {
+    method: "POST", headers: { "Content-Type": "application/json", "User-Agent": "personal-flight-tracker-relay" },
+    body: JSON.stringify({ planes: [{ callsign: cs, lat, lng: lon }] }),
+  });
+  if (!r.ok) return { error: "upstream", status: r.status };
+  return { routes: await r.json() };
 }
 function fromAirlabs(list) {
   return (list || []).map(f => ({

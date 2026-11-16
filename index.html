@@ -822,6 +822,7 @@ function apply(p,name){
   if(fix&&p.t<fix.t)return;
   if(!fix||p.t!==fix.t)histAdd(p);
   fix=p;lastSource=name;maybeAutoTrack();
+  if(mode==="live"&&routeCheck.run!==run&&!p.ground)setTimeout(()=>checkRoute(p),0);
   const last=trail[trail.length-1];
   if(!last||Math.abs(last[0]-p.lat)+Math.abs(last[1]-p.lon)>0.02){trail.push([p.lat,p.lon]);if(trail.length>900)trail.shift();}
 }
@@ -886,7 +887,7 @@ function readouts(){
   if(mode==="past"){}
   else if(mode!=="demo"&&lastSource){
     const stale=age>45;
-    status(stale?"search":"live",`${stale?"Last seen":"Live"} · ${lastSource} · ${age<60?age+"s":Math.round(age/60)+"m"} ago`);
+    status(stale?"search":"live",`${stale?"Last seen":"Live"} · ${lastSource} · ${age<60?age+"s":Math.round(age/60)+"m"} ago`+(routeCheck.run===run&&routeCheck.note&&mode==="live"?" · "+routeCheck.note:""));
   }
   set("alt",f.altFt!=null?lcd(Math.max(0,Math.round(f.altFt)),5,"ft"):LCD_BLANK.alt);
   set("altS",f.altFt!=null?"FL"+String(Math.round(f.altFt/100)).padStart(3,"0")+" · "+fmt(f.altFt*0.3048)+" m":"");
@@ -1888,7 +1889,7 @@ try{recents=JSON.parse(localStorage.getItem("sfm-recent")||"[]")||[];}catch(e){}
 routes.AA3101=routes.AA3101||{o:{c:"CLT",lat:35.214,lon:-80.943,n:"Charlotte"},d:{c:"DFW",lat:32.897,lon:-97.038,n:"Dallas-Fort Worth"},t:Date.now()};
 const isRoute=j=>!!(j&&j.response&&j.response.flightroute&&j.response.flightroute.origin);
 async function routeFor(f){
-  const c=routes[f.code];if(c&&Date.now()-c.t<7*86400000)return c;
+  const c=routes[f.code];if(c&&Date.now()-c.t<(c.ok?7:1)*86400000)return c;
   for(const cs of f.cands){
     try{const j=await getJSON("https://api.adsbdb.com/v0/callsign/"+cs,isRoute);
       const r=j.response.flightroute,P=a=>({c:a.iata_code||a.icao_code,icao:a.icao_code,lat:a.latitude,lon:a.longitude,n:a.municipality||a.name||""});
@@ -1902,7 +1903,63 @@ function rememberRecent(code,r){
   recents=[{code,o:r?r.o.c:"",d:r?r.d.c:""}].concat(recents.filter(x=>x.code!==code)).slice(0,8);
   try{localStorage.setItem("sfm-recent",JSON.stringify(recents));}catch(e){}
 }
-let curFlight=null,insts=[];
+let curFlight=null,insts=[],setRouteFn=null,routeCheck={run:-1,state:""};
+/* Route databases keyed by flight number go stale when an airline reuses a number on a new route
+   (e.g. AA2095 listed as PHL→ORD while it actually flies DFW→CZM). Once the plane is seen we check:
+   1) today's schedule (relay), 2) adsb.lol's position-checked route, 3) whether the plane is anywhere near
+   the listed route at all. A route that fails is dropped rather than shown wrong. */
+function routeFits(o,d,p){
+  if(!o||!d||!p)return true;const D=distNm(o,d),s=distNm(o,[p.lat,p.lon])+distNm([p.lat,p.lon],d);
+  return s<=D*1.3+120;
+}
+function saveRoute(code,v){routes[code]=v;try{localStorage.setItem("sfm-routes",JSON.stringify(routes));}catch(e){}}
+function takeRoute(code,v,why){
+  const cur=routes[code];
+  if(cur&&cur.o.c===v.o.c&&cur.d.c===v.d.c){cur.t=Date.now();cur.ok=1;saveRoute(code,cur);return;}
+  saveRoute(code,Object.assign(v,{t:Date.now(),ok:1}));
+  if(curFlight===code&&setRouteFn){setRouteFn(v);rememberRecent(code,v);
+    routeCheck.note="route corrected to "+v.o.c+"→"+v.d.c+" ("+why+")";}
+}
+function schedRouteNow(){
+  const now=Date.now();
+  for(const x of (sched||[])){
+    const a=x.depActual||x.dep,b=x.arrActual||x.arr||a+6*3600000;
+    if(x.from&&x.to&&now>=a-45*60000&&now<=b+30*60000){
+      const L=c=>AIRPORTS[c]||null,fo=x.fromLL||L(x.from),to=x.toLL||L(x.to);
+      if(fo&&to)return {o:{c:x.from,lat:fo[0],lon:fo[1],n:x.fromName||""},d:{c:x.to,lat:to[0],lon:to[1],n:x.toName||""}};}
+  }
+  return null;
+}
+async function liveRouteLookup(p){
+  const cs=(p.callsign||cands[0]||"").trim();if(!cs)return null;
+  const parse=arr=>{
+    const r=(Array.isArray(arr)?arr:[]).find(x=>x&&(x._airports||x.airports));if(!r)return null;
+    const A=(r._airports||r.airports).filter(a=>a&&isFinite(+a.lat)&&isFinite(+a.lon));if(A.length<2)return null;
+    if(r.plausible===false||r.plausible===0)return null;
+    const P=a=>({c:a.iata||a.icao,icao:a.icao,lat:+a.lat,lon:+a.lon,n:a.location||a.name||""});
+    return {o:P(A[0]),d:P(A[A.length-1])};
+  };
+  try{const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),8000);
+    const r=await fetch("https://api.adsb.lol/api/0/routeset",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({planes:[{callsign:cs,lat:p.lat,lng:p.lon}]}),signal:ctl.signal});clearTimeout(to);
+    if(r.ok){const v=parse(await r.json());if(v)return v;}}catch(e){}
+  if(relayBase())try{const j=await relayApi("/api/route?cs="+encodeURIComponent(cs)+"&lat="+p.lat.toFixed(3)+"&lon="+p.lon.toFixed(3));
+    return parse(j.routes);}catch(e){}
+  return null;
+}
+async function checkRoute(p){
+  const id=run,code=curFlight;if(!code||routeCheck.run===id)return;routeCheck={run:id,state:"checking",note:""};
+  const s=schedRouteNow();
+  if(s&&routeFits([s.o.lat,s.o.lon],[s.d.lat,s.d.lon],p)){takeRoute(code,s,"today's schedule");routeCheck.state="ok";return;}
+  const lv=await liveRouteLookup(p);if(id!==run)return;
+  if(lv&&routeFits([lv.o.lat,lv.o.lon],[lv.d.lat,lv.d.lon],p)){takeRoute(code,lv,"matched to the plane's position");routeCheck.state="ok";return;}
+  if(!routeFits(org,dst,p)){
+    const was=($("from").value||"?")+" → "+($("to").value||"?");
+    delete routes[code];try{localStorage.setItem("sfm-routes",JSON.stringify(routes));}catch(e){}
+    if(setRouteFn)setRouteFn(null);routeCheck.state="dropped";
+    routeCheck.note="listed route "+was+" didn't match the plane, hidden";
+  }else routeCheck.state="ok";
+}
 async function chooseFlight(text,quiet){
   const f=normFlight(text);
   if(!f){$("fq").classList.add("bad");status("bad","Enter a flight number like AA3101 or UAL1234.");return;}
@@ -1916,7 +1973,7 @@ async function chooseFlight(text,quiet){
   insts=[];fillInstances();
   // known route right away (cached), else look it up; the map flies to the new airports either way
   let r=routes[f.code]||null;
-  const setRoute=r=>{
+  const setRoute=setRouteFn=r=>{
     if(r){AIRPORTS[r.o.c]=[r.o.lat,r.o.lon];AIRPORTS[r.d.c]=[r.d.lat,r.d.lon];$("from").value=r.o.c;$("to").value=r.d.c;}
     else{$("from").value="";$("to").value="";}
     camAnimate();readForm();view="route";zoom=1;pan=[0,0];autoTrack=true;viewChanged();
@@ -1927,6 +1984,7 @@ async function chooseFlight(text,quiet){
   track();
   if(!r||Date.now()-r.t>7*86400000){
     const id=run;r=await routeFor(f);if(id!==run)return;
+    if(r&&routeCheck.run===id&&routeCheck.state!=="checking"&&fix&&!routeFits([r.o.lat,r.o.lon],[r.d.lat,r.d.lon],fix))r=null;
     if(r)setRoute(r);else status("search","Route for "+f.code+" not found. Still looking for the plane.");
   }
   rememberRecent(f.code,r);
@@ -1939,6 +1997,7 @@ async function loadInstances(f,r){
     fillInstances("loading");
     const [sc,cl]=await Promise.all([loadSchedule(f.code),loadCloudList(f.code)]);
     if(id!==run)return;sched=sc;cloudIdx=cl;fillInstances();
+    {const s2=schedRouteNow();if(s2&&(!fix||routeFits([s2.o.lat,s2.o.lon],[s2.d.lat,s2.d.lon],fix))&&(s2.o.c!==$("from").value||s2.d.c!==$("to").value))takeRoute(f.code,s2,"today's schedule");}
     if(sched&&sched.length){const reg=(sched.find(x=>x.reg)||{}).reg;if(reg)loadAircraftExtra(reg);return;}
   }
   if(!r||!r.o.icao&&!/^[A-Z]{3}$/.test(r.o.c)){fillInstances("none");return;}
