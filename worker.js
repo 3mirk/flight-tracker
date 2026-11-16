@@ -33,7 +33,8 @@ const ALLOWED_HOSTS = [
 const ALLOWED_ORIGINS = ["https://3mirk.github.io"];
 
 const LIMITS = {
-  adbPerDay: 40,        // AeroDataBox calls per day, all users together
+  adbPerDay: 40,
+  depPerDay: 4,         // DFW departure-board refreshes per day (a "Tier 2" AeroDataBox call, so it costs more of the free quota)        // AeroDataBox calls per day, all users together
   airlabsPerDay: 40,    // AirLabs calls per day, all users together
   perUserPer10Min: 20,  // /api requests per visitor (IP) per 10 minutes
   maxFlights: 500,      // saved flights kept
@@ -173,9 +174,10 @@ async function adb(env, path) {
   if (!r.ok) throw new Error("ADB HTTP " + r.status);
   return r.json();
 }
-/* American departures from DFW over the last 6 hours (one paid call, cached 45 min for everyone) */
+/* American departures from DFW over the last 6 hours (one AeroDataBox call, cached 3 h for everyone, at most 4 a day) */
 async function departures(env) {
-  return cached(env, "dep:DFW", 2700, async () => {
+  return cached(env, "dep:DFW", 3 * 3600, async () => {
+    if (!(await takeQuota(env, "dep", LIMITS.depPerDay))) throw new Error("departure-board cap reached");
     const loc = ms => { const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date(ms)).map(x => [x.type, x.value]));
       return `${p.year}-${p.month}-${p.day}T${p.hour === "24" ? "00" : p.hour}:${p.minute}`; };
     const now = Date.now();
