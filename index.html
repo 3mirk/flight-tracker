@@ -559,6 +559,48 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
     radial-gradient(ellipse 45% 10% at 45% 2%,rgba(255,255,255,.07),transparent 80%),
     linear-gradient(180deg,rgba(120,150,140,.05),transparent 55%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Cg fill='none' stroke='%23fff' stroke-linecap='round'%3E%3Cpath d='M40 60c40 8 90 4 130-6' stroke-opacity='.18' stroke-width='.6'/%3E%3Cpath d='M260 40c20 30 30 60 28 90' stroke-opacity='.12' stroke-width='.5'/%3E%3Cpath d='M70 210c50-12 110-10 170 4' stroke-opacity='.1' stroke-width='.5'/%3E%3Cpath d='M300 220l60-26' stroke-opacity='.14' stroke-width='.5'/%3E%3Cpath d='M120 120c8 4 20 6 34 4' stroke-opacity='.16' stroke-width='.4'/%3E%3Cpath d='M20 160c14-6 30-8 44-6' stroke-opacity='.12' stroke-width='.4'/%3E%3Cpath d='M330 90c4 10 6 22 4 34' stroke-opacity='.1' stroke-width='.4'/%3E%3C/g%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 -.5'/%3E%3C/filter%3E%3Crect width='400' height='300' filter='url(%23s)' opacity='.045'/%3E%3C/svg%3E") center/cover no-repeat}
+/* ---- sources, v3: button with its lamp underneath, same 2 x 6 grid and same row pitch open or closed ---- */
+.duo{grid-template-columns:minmax(0,68px) minmax(0,1fr)}
+.duo .srcs{padding:6px 5px!important}
+.duo .srctop{min-height:18px}
+.duo .srcs .srctitle{flex:1 1 0!important;min-width:0;overflow:hidden;white-space:nowrap;line-height:20px!important}
+.duo .srcs .c-open{flex:none}
+.duo .srcs:not([open]) .srcicons{display:grid;grid-template-columns:repeat(2,26px);justify-content:space-between;row-gap:4px;column-gap:0;margin-top:0}
+.duo .srcs:not([open]) .si{display:grid;grid-template-rows:20px 8px;row-gap:2px;justify-items:center;height:30px;padding-top:1px;box-sizing:border-box;gap:2px 0}
+.duo .srcs:not([open]) .si .ic{width:26px;height:20px;grid-row:1}
+.duo .srcs:not([open]) .si .led{grid-row:2;width:8px;height:8px;margin:0}
+.duo .srcs:not([open]) .si .led::after{inset:1.8px}
+.duo .srcs:not([open]) .srctitle::before{content:"SRC"}
+.duo .srcbody{padding-top:6px}
+.duo .srcs ul{gap:4px}
+.duo .srcs ul.x3{margin-top:4px}
+.duo .srcs li{display:grid!important;grid-template-columns:26px minmax(0,1fr);grid-template-rows:20px 8px;column-gap:6px;row-gap:2px;
+  align-items:center;height:30px;box-sizing:border-box;padding:0 6px 0 4px;align-content:start}
+.duo .srcs li .ic{grid-row:1;grid-column:1;width:26px;height:20px;margin-top:0}
+.duo .srcs li .led{grid-row:2;grid-column:1;justify-self:center;width:8px;height:8px}
+.duo .srcs li .led::after{inset:1.8px}
+.duo .srcs li .nm{grid-row:1;grid-column:2;font-size:.64rem;line-height:1}
+.duo .srcs li .m{grid-row:2;grid-column:2;font-size:.5rem;line-height:8px;margin:0}
+/* ---- display hardware: black outer bezel, brushed light-metal inner frame, curved glass (after the reference TV) ---- */
+.mapwrap{border:10px solid transparent!important;padding:6px;border-radius:22px!important;
+  background:linear-gradient(165deg,#b4beb7 0%,#8b968f 14%,#5d6762 38%,#3f4743 58%,#66716b 80%,#a1aca5 100%) padding-box,linear-gradient(160deg,#2a2826 0%,#121110 30%,#070707 60%,#1a1917 100%) border-box!important;
+  box-shadow:0 0 0 1px #000,0 6px 16px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,255,255,.5),inset 0 -1px 0 rgba(0,0,0,.5)!important}
+#map{border-radius:8% / 12%!important;box-shadow:0 0 0 1px rgba(0,0,0,.85)}
+.mapwrap::after{inset:6px!important;border-radius:8% / 12%!important;box-shadow:inset 0 0 26px 4px rgba(0,0,0,.75),inset 0 0 2px 1px rgba(0,0,0,.9)!important}
+.mapwrap::before{inset:6px!important;border-radius:8% / 12%!important;box-shadow:inset 0 0 34px 6px rgba(0,0,0,.3),inset 0 0 90px rgba(0,0,0,.2)!important}
+.mapwrap .glass{inset:6px;border-radius:8% / 12%}
+/* metal frame: sloped sheen and a sharp highlight on the upper-left edge */
+.mapwrap .glass::before{background:
+    radial-gradient(ellipse 22% 16% at 80% 22%,rgba(170,235,220,.11),transparent 70%),
+    radial-gradient(ellipse 10% 26% at 92% 50%,rgba(255,240,220,.10),transparent 70%),
+    radial-gradient(ellipse 12% 22% at 12% 58%,rgba(170,225,235,.07),transparent 70%),
+    radial-gradient(ellipse 30% 9% at 50% 3%,rgba(255,255,255,.08),transparent 80%),
+    linear-gradient(180deg,rgba(120,150,140,.035),rgba(60,80,70,.015) 60%,rgba(0,0,0,0)) !important}
+/* chart screens: black tile bezel, metal frame drawn as the canvas border */
+.charts .tile.chart{background:linear-gradient(#0a0503,#0a0503) padding-box,linear-gradient(160deg,#2a2826 0%,#121110 30%,#070707 60%,#1a1917 100%) border-box!important}
+.charts .tile canvas.spark{border:3px solid transparent!important;border-radius:10% / 14%!important;box-sizing:border-box;
+  background:linear-gradient(#050100,#050100) padding-box,linear-gradient(165deg,#b4beb7 0%,#8b968f 14%,#5d6762 38%,#3f4743 58%,#66716b 80%,#a1aca5 100%) border-box!important;
+  box-shadow:0 1px 0 rgba(255,255,255,.08),0 0 0 1px #000}
 </style>
 </head>
 <body>
