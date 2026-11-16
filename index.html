@@ -1414,6 +1414,7 @@ function draw(){
     m.setTransform(1,0,0,1,0,0);m.imageSmoothingEnabled=false;m.globalAlpha=planeAt.old?.55:1;
     m.drawImage(pc,Math.round((planeAt.x-S/2)*dpr),Math.round((planeAt.y-S/2)*dpr),S*dpr,S*dpr);
     m.globalAlpha=1;m.setTransform(dpr,0,0,dpr,0,0);}
+  crtWarp(m.canvas,CRT_WARP,"#080200");m.setTransform(dpr,0,0,dpr,0,0);
 }
 /* ---------- map gestures: pinch or double-tap to zoom in, two-finger tap to zoom out, drag to move ---------- */
 function geoAt(mx,my){const S=proj.bS*zoom;return [proj.bLat+pan[0]-(my-proj.h/2)/S,proj.bLon+pan[1]+(mx-proj.w/2)/(proj.k*S)];}
@@ -1747,7 +1748,30 @@ function crt(c,opt){
     o.shadowColor="rgba(255,100,20,.9)";o.shadowBlur=6*Math.min(1,B+.3);o.fillText(t,x,y);o.shadowBlur=0;o.fillText(t,x,y);}
   const v=o.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.75);
   v.addColorStop(0,"rgba(0,0,0,0)");v.addColorStop(1,"rgba(0,0,0,.55)");o.fillStyle=v;o.fillRect(0,0,w,h);
+  crtWarp(cv,CRT_WARP,"#050100");o.setTransform(dpr,0,0,dpr,0,0);
   crtTube(o,w,h,CRT_FX);
+}
+/* Slight CRT barrel warp, applied in place to a finished canvas. Each output pixel samples the image a little further
+   from the centre the further it is from the centre (two separable passes of thin strips), so straight lines bow
+   like on curved glass and the corners pull in. k ≈ how much the corners pull in (0.04 = 4%). */
+const CRT_WARP=.045,warpA=document.createElement("canvas"),warpB=document.createElement("canvas");
+function crtWarp(cv,k,bg){
+  const W=cv.width,H=cv.height;if(!W||!H||!k)return;
+  for(const c of [warpA,warpB])if(c.width<W||c.height<H){c.width=Math.max(c.width,W);c.height=Math.max(c.height,H);}
+  const a=warpA.getContext("2d"),b=warpB.getContext("2d"),o=cv.getContext("2d");
+  a.setTransform(1,0,0,1,0,0);a.clearRect(0,0,W,H);a.drawImage(cv,0,0);
+  const band=Math.max(2,Math.round(Math.min(W,H)/90));
+  // pass 1: rows, squeezed horizontally more toward the top and bottom
+  b.setTransform(1,0,0,1,0,0);b.clearRect(0,0,W,H);b.imageSmoothingEnabled=true;
+  for(let y=0;y<H;y+=band){const v=(y+band/2)/H*2-1,f=1+k*v*v,sw=W*f,sx=(W-sw)/2;
+    // source wider than the canvas: draw only the part that exists, into the matching part of the row
+    const s0=Math.max(0,sx),s1=Math.min(W,sx+sw),d0=(s0-sx)/f,d1=(s1-sx)/f;b.drawImage(warpA,s0,y,s1-s0,band,d0,y,d1-d0,band);}
+  // pass 2: columns, squeezed vertically more toward the left and right
+  o.save();o.setTransform(1,0,0,1,0,0);o.globalCompositeOperation="source-over";o.globalAlpha=1;o.filter="none";o.shadowBlur=0;
+  o.fillStyle=bg||"#000";o.fillRect(0,0,W,H);o.imageSmoothingEnabled=true;
+  for(let x=0;x<W;x+=band){const u=(x+band/2)/W*2-1,f=1+k*u*u,sh=H*f,sy=(H-sh)/2;
+    const s0=Math.max(0,sy),s1=Math.min(H,sy+sh),d0=(s0-sy)/f,d1=(s1-sy)/f;o.drawImage(warpB,x,s0,band,s1-s0,x,d0,band,d1-d0);}
+  o.restore();
 }
 /* rounded-tube CRT look at a given intensity (0..1): pillow-shaped screen, darker curved edges, glass glare */
 const CRT_FX=.6;
