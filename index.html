@@ -930,7 +930,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16d</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16e</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -1734,15 +1734,16 @@ function draw(){
     m.globalAlpha=1;m.setTransform(dpr,0,0,dpr,0,0);}
   // waiting plate, drawn over the labels so nothing crosses it
   // purple HUD items with a thin white outline: scale bar (top centre) and the waiting notice (bottom right)
-  const PURP="#b45cff";
+  // cream phosphor HUD items with a thin dark outline: scale bar (top centre) and the waiting notice (bottom right)
+  const CRM="#ffe8cd",OUT="rgba(10,5,2,.95)",GLW="rgba(255,214,170,.55)";
   if(scaleBox){const {cx,y0,px,label}=scaleBox;m.save();m.lineCap="square";
     const bar=()=>{m.beginPath();m.moveTo(cx-px/2,y0);m.lineTo(cx+px/2,y0);m.moveTo(cx-px/2,y0-4);m.lineTo(cx-px/2,y0+4);m.moveTo(cx+px/2,y0-4);m.lineTo(cx+px/2,y0+4);};
-    m.strokeStyle="#fff";m.lineWidth=4;bar();m.stroke();m.strokeStyle=PURP;m.lineWidth=2;m.shadowColor="rgba(180,92,255,.8)";m.shadowBlur=6;bar();m.stroke();m.shadowBlur=0;
-    m.font='18px "VT323",monospace';m.textAlign="center";m.textBaseline="top";m.lineJoin="round";m.strokeStyle="#fff";m.lineWidth=2.4;m.strokeText(label,cx,y0+6);
-    m.fillStyle=PURP;m.shadowColor="rgba(180,92,255,.8)";m.shadowBlur=6;m.fillText(label,cx,y0+6);m.restore();}
+    m.strokeStyle=OUT;m.lineWidth=4.5;bar();m.stroke();m.strokeStyle=CRM;m.lineWidth=2;m.shadowColor=GLW;m.shadowBlur=5;bar();m.stroke();m.shadowBlur=0;
+    m.font='18px "VT323",monospace';m.textAlign="center";m.textBaseline="top";m.lineJoin="round";m.strokeStyle=OUT;m.lineWidth=3;m.strokeText(label,cx,y0+6);
+    m.fillStyle=CRM;m.shadowColor=GLW;m.shadowBlur=5;m.fillText(label,cx,y0+6);m.restore();}
   if(waitBox&&!planeAt&&mode!=="planned"){const t=(waitBox.bl?"▸ ":"")+"WAITING FOR POSITION";m.save();
-    m.font='19px "VT323",monospace';m.textAlign="right";m.textBaseline="alphabetic";m.lineJoin="round";m.strokeStyle="#fff";m.lineWidth=2.6;
-    m.globalAlpha=waitBox.bl?1:.8;m.strokeText(t,w-16,h-16);m.fillStyle=PURP;m.shadowColor="rgba(180,92,255,.85)";m.shadowBlur=7;m.fillText(t,w-16,h-16);m.restore();}
+    m.font='19px "VT323",monospace';m.textAlign="right";m.textBaseline="alphabetic";m.lineJoin="round";m.strokeStyle=OUT;m.lineWidth=3.2;
+    m.globalAlpha=waitBox.bl?1:.8;m.strokeText(t,w-16,h-16);m.fillStyle=CRM;m.shadowColor=GLW;m.shadowBlur=6;m.fillText(t,w-16,h-16);m.restore();}
   waitBox=null;scaleBox=null;
   // note "2" marker, small, bends with the screen
   m.setTransform(dpr,0,0,dpr,0,0);m.save();m.strokeStyle="rgba(255,90,31,.6)";m.lineWidth=1;m.fillStyle="rgba(7,4,0,.75)";
