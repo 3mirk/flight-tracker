@@ -786,7 +786,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 /* ---- map controls as panel hardware ---- */
 .mapbar{flex-wrap:wrap;row-gap:6px;padding:6px 6px 7px!important}
 .mapbar .prog{flex:1 1 100%!important;order:-1}
-.mctl{flex:1 1 100%;display:flex;align-items:flex-end;justify-content:space-between;gap:2px}
+.mctl{flex:1 1 100%;padding:0 2px;box-sizing:border-box;display:flex;align-items:flex-end;justify-content:space-between;gap:2px}
 .tlab{display:block;margin-top:3px;font:700 8px/1 "Arial Narrow","Roboto Condensed",Arial,sans-serif;letter-spacing:.08em;color:#b9b2a8;text-shadow:0 1px 0 #000}
 /* panel lamp (same build as the source lamps) */
 .tlamp{position:relative;display:block;width:9px;height:9px;margin:0 auto 4px;border-radius:50%;
@@ -885,6 +885,25 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .tgl[aria-pressed="false"] .tball{transform:rotateX(128deg) translateZ(2px)}
 .tball{backface-visibility:visible}
 .tbat{clip-path:none!important}
+/* map switch lamps = source lamps */
+.mctl .tlamp{width:10px;height:10px}
+.mctl .tlamp::after{inset:2.2px;animation:none;box-shadow:none;
+  background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.3) 0 9%,transparent 18%),radial-gradient(circle at 55% 62%,#3a2c2a 0,#1a1312 70%,#0b0808 100%)!important}
+.mctl .tlamp.ok::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.95) 0 8%,transparent 16%),radial-gradient(circle at 55% 62%,#f4ff9a 0 14%,#5dff3a 40%,#14b52a 72%,#06501a 100%)!important;
+  box-shadow:0 0 5px 1.5px rgba(80,255,70,.7),0 0 11px 3px rgba(60,255,60,.25);animation:led-act var(--fd,3s) linear var(--dl,0s) infinite}
+.mctl .tlamp.try::after,.mctl .tlamp.miss::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.95) 0 8%,transparent 16%),radial-gradient(circle at 55% 62%,#fff6b0 0 14%,#ffbf2a 40%,#e07800 72%,#6a3200 100%)!important;
+  box-shadow:0 0 5px 1.5px rgba(255,170,30,.75),0 0 11px 3px rgba(255,150,20,.25)}
+.mctl .tlamp.try::after{animation:led-try var(--fq,.6s) steps(1,end) var(--dl,0s) infinite}
+.mctl .tlamp.miss::after{animation:led-hum 3.1s linear var(--dl,0s) infinite}
+.mctl .tlamp.fail::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.9) 0 8%,transparent 16%),radial-gradient(circle at 55% 62%,#ffd84a 0 13%,#ff7a1e 30%,#f2261a 55%,#9a0a04 82%,#4a0300 100%)!important;
+  box-shadow:0 0 5px 1.5px rgba(255,50,30,.7),0 0 11px 3px rgba(255,40,20,.25);animation:led-hum 2.3s linear var(--dl,0s) infinite}
+@media(prefers-reduced-motion:reduce){.mctl .tlamp::after{animation:none!important}}
+/* engraved icon + title */
+.tgl{width:41px!important}
+.mctl .tgl .tlab{font-size:7.5px;letter-spacing:.05em}
+.mctl .tlab svg{width:9px!important;height:9px!important}
+.mctl .tlab{display:flex;align-items:center;justify-content:center;gap:2px;white-space:nowrap}
+.mctl .tlab svg{width:10px;height:10px;fill:none;stroke:#b9b2a8;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 0 #000)}
 </style>
 </head>
 <body>
@@ -948,10 +967,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="mctl">
   <button type="button" class="vsel" id="view" aria-label="View"><span class="vlabs"><b data-k="route">RTE</b><b data-k="track">TRK</b><b data-k="follow">CLS</b></span>
     <span class="vbase"><span class="vknob" id="vKnob"><i class="vptr"></i></span></span><i class="tlamp vlamp" title="Custom zoom/pan: tap to reset"></i><span class="tlab">VIEW</span></button>
-  <button type="button" class="tgl" id="traf" aria-label="Nearby traffic" aria-pressed="false"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tshd"></i><i class="tbat"><i class="tball"></i></i></span><span class="tlab">TRAF</span></button>
-  <button type="button" class="tgl" id="wind" aria-label="Wind streaks" aria-pressed="true"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tshd"></i><i class="tbat"><i class="tball"></i></i></span><span class="tlab">WIND</span></button>
-  <button type="button" class="tgl" id="wnum" aria-label="Wind speeds in mph" aria-pressed="true"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tshd"></i><i class="tbat"><i class="tball"></i></i></span><span class="tlab">MPH</span></button>
-  <button type="button" class="tgl" id="radar" aria-label="Storm radar" aria-pressed="true"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tshd"></i><i class="tbat"><i class="tball"></i></i></span><span class="tlab">STORM</span></button>
+  <button type="button" class="tgl" data-ic="traf" id="traf" aria-label="Nearby traffic" aria-pressed="false"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tshd"></i><i class="tbat"><i class="tball"></i></i></span><span class="tlab">TRAF</span></button>
+  <button type="button" class="tgl" data-ic="wind" id="wind" aria-label="Wind streaks" aria-pressed="true"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tshd"></i><i class="tbat"><i class="tball"></i></i></span><span class="tlab">WIND</span></button>
+  <button type="button" class="tgl" data-ic="wnum" id="wnum" aria-label="Wind speeds in mph" aria-pressed="true"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tshd"></i><i class="tbat"><i class="tball"></i></i></span><span class="tlab">MPH</span></button>
+  <button type="button" class="tgl" data-ic="radar" id="radar" aria-label="Storm radar" aria-pressed="true"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tshd"></i><i class="tbat"><i class="tball"></i></i></span><span class="tlab">STORM</span></button>
   <div class="zctl"><button type="button" class="zstep" id="zout" aria-label="Zoom out">−</button>
     <div class="zknob" id="zKnob" role="slider" tabindex="0" aria-label="Zoom: turn and hold, further for faster" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">
       <div class="kbody"><svg class="ksvg zsvg" id="zRot" viewBox="0 0 100 100" aria-hidden="true"></svg></div><svg class="klight" viewBox="0 0 100 100" aria-hidden="true"><use href="#kLightDefs"/></svg></div>
@@ -1037,7 +1056,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16k</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16l</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -3830,6 +3849,17 @@ readouts();draw();drawCharts();
   K.addEventListener("keydown",e=>{const k={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1}[e.key];if(k){e.preventDefault();setA(k*28,true);(k>0?$("zin"):$("zout")).click();setTimeout(()=>setA(0,true),140);}});
   K.addEventListener("wheel",e=>{e.preventDefault();(e.deltaY<0?$("zin"):$("zout")).click();},{passive:false});
   ["zin","zout"].forEach(id=>$(id).addEventListener("click",()=>{if(d)return;setA(id==="zin"?28:-28,true);setTimeout(()=>setA(0,true),140);}));
+})();
+/* map switches: lamp mirrors the matching data source (same colours and flicker), engraved icon + title under each */
+(function(){
+  const SRC={traf:"Traffic",wind:"Weather",wnum:"Weather",radar:"Radar"};
+  const MPH='<rect x="3" y="6" width="18" height="12" rx="2" stroke-dasharray="2.2 2"/><path d="M7 14v-4l2 2.5 2-2.5v4M13.5 14v-4h1.6a1.3 1.3 0 0 1 0 2.6h-1.6M18 10v4"/>';
+  document.querySelectorAll(".mctl .tgl").forEach(b=>{const id=b.id,lab=b.querySelector(".tlab"),n=SRC[id];
+    const ic=id==="wnum"?MPH:(ICONS[n]||"");lab.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+ic+'</svg>'+lab.textContent;
+    b.querySelector(".tlamp").setAttribute("style",ledVars(n));});
+  const sync=()=>{document.querySelectorAll(".mctl .tgl").forEach(b=>{const on=b.getAttribute("aria-pressed")==="true"&&!b.disabled,st=(srcs[SRC[b.id]]||{}).state||"idle";
+    const L=b.querySelector(".tlamp"),c="tlamp "+(on?st:"off");if(L.className!==c)L.className=c;});};
+  sync();setInterval(sync,500);
 })();
 </script>
 </body>
