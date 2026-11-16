@@ -1907,7 +1907,7 @@ function crt(c,opt){
 /* Slight CRT barrel warp, applied in place to a finished canvas. Each output pixel samples the image a little further
    from the centre the further it is from the centre (two separable passes of thin strips), so straight lines bow
    like on curved glass and the corners pull in. k ≈ how much the corners pull in (0.04 = 4%). */
-let waitBox=null;const CRT_WARP=.08,MAP_WARP=.13,warpA=document.createElement("canvas"),warpB=document.createElement("canvas");
+let waitBox=null;const CRT_WARP=.048,MAP_WARP=.078,warpA=document.createElement("canvas"),warpB=document.createElement("canvas");
 function crtWarp(cv,k,bg){
   const W=cv.width,H=cv.height;if(!W||!H||!k)return;
   for(const c of [warpA,warpB])if(c.width<W||c.height<H){c.width=Math.max(c.width,W);c.height=Math.max(c.height,H);}
