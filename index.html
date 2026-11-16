@@ -755,6 +755,18 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .duo .srcs ul.x3{margin-top:2px!important}
 .duo .srcs li{grid-template-rows:19px 8px!important;row-gap:1px!important;padding:1px 6px 0 4px!important}
 .duo .srcs li .ic{height:19px!important}
+/* dossier pages: stacked in one cell so all tabs share the tallest height; no wrapping that would add rows */
+.acard.dossier{display:grid;grid-template-columns:minmax(0,1fr)}
+.acard.dossier>.dsheet{grid-area:1/1;transform-origin:0 50%;backface-visibility:hidden;will-change:transform}
+.dossier .dsheet[hidden]{display:flex!important;visibility:hidden}
+.dossier .dsub,.dossier .drow,.dossier .drow b,.dossier .dlist li,.dossier .acflights li,.dossier dl.acid dd,.dossier .dfoot span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dossier .drow b{min-width:0}
+.dossier .dnote,.dossier .draw{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;min-height:2.7em}
+.dossier .dlist{min-height:calc(2 * 1.4em)}
+.dossier .dlist.rw{min-height:calc(4 * 1.4em)}
+.dossier .dhead{min-height:46px}
+.dossier .dtitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dossier .dhead>div:first-child{min-width:0}
 </style>
 </head>
 <body>
@@ -3408,9 +3420,22 @@ readouts();draw();drawCharts();
 (function(){
   const box=$("dossier");if(!box)return;
   let tab="ac";const cache={};      // per airport code: {t, osm, metar, om, traf, faa, busy}
-  box.querySelectorAll(".dtab").forEach(b=>b.addEventListener("click",()=>{tab=b.dataset.p;
+  const ORD=["ac","dep","arr"],sid=k=>$("ds"+k[0].toUpperCase()+k.slice(1));
+  // page flip: going forward the top page lifts off to the left; going back the page lands from the left
+  function flip(prev,next){const P=sid(prev),N=sid(next);if(prev===next)return;
+    for(const el of [P,N])el.getAnimations().forEach(a=>a.finish());
+    ORD.forEach(k=>{if(k!==prev&&k!==next)sid(k).hidden=true;});N.hidden=false;
+    if(reduced||!P.animate){P.hidden=true;return;}
+    const fwd=ORD.indexOf(next)>ORD.indexOf(prev),top=fwd?P:N,under=fwd?N:P;top.style.zIndex=3;under.style.zIndex=2;
+    const k0={transform:"perspective(1400px) rotateY(0deg) rotate(-.35deg)",filter:"brightness(1)",boxShadow:"0 1px 3px rgba(0,0,0,.35)"},
+          k1={transform:"perspective(1400px) rotateY(-100deg) rotate(-.35deg)",filter:"brightness(.55)",boxShadow:"18px 8px 26px rgba(0,0,0,.55)"};
+    const a=top.animate(fwd?[k0,k1]:[k1,k0],{duration:560,easing:fwd?"cubic-bezier(.45,.05,.55,.95)":"cubic-bezier(.3,.1,.3,1)",fill:"both"});
+    under.animate([{filter:fwd?"brightness(.75)":"brightness(1)"},{filter:fwd?"brightness(1)":"brightness(.75)"}],{duration:560,easing:"ease-out"});
+    a.onfinish=()=>{P.hidden=true;top.style.zIndex="";under.style.zIndex="";a.cancel();};
+  }
+  box.querySelectorAll(".dtab").forEach(b=>b.addEventListener("click",()=>{const prev=tab;tab=b.dataset.p;
     box.querySelectorAll(".dtab").forEach(x=>{const on=x===b;x.classList.toggle("on",on);x.setAttribute("aria-selected",String(on));});
-    ["ac","dep","arr"].forEach(k=>{$("ds"+k[0].toUpperCase()+k.slice(1)).hidden=k!==tab;});
+    flip(prev,tab);
     if(tab!=="ac")renderApt(tab,true);}));
   function aptOf(which){
     const code=($(which==="dep"?"from":"to").value||"").trim().toUpperCase(),ll=which==="dep"?org:dst;if(!code||!ll)return null;
@@ -3446,7 +3471,7 @@ readouts();draw();drawCharts();
   function renderApt(which,kick){
     const el=$(which==="dep"?"dsDep":"dsArr");if(!el)return;
     const a=aptOf(which);$(which==="dep"?"dTabDep":"dTabArr").textContent=a?a.code:"—";
-    if(which!==tab&&!kick)return;
+
     if(!a){el.innerHTML='<div class="dhead"><div><div class="dtitle">AIRPORT FILE</div><div class="dsub">No '+(which==="dep"?"departure":"arrival")+' airport known for this flight yet.</div></div><div class="dstamp pend">PENDING</div></div>';return;}
     const C=cache[a.code]||{};if(kick)load(a);
     const E=(C.osm&&C.osm.elements)||[],ad=E.find(e=>e.tags&&e.tags.aeroway==="aerodrome")||{},T=ad.tags||{};
@@ -3497,11 +3522,11 @@ readouts();draw();drawCharts();
     else fl='<div class="dnote">'+(relayBase()?"No schedule entry for this flight today, so no gate or terminal on file.":"Gates and terminals need your relay's schedule data.")+'</div>';
     const name=esc(T.name||a.name||a.code);
     el.innerHTML=
-      '<div class="dhead"><div><div class="dtitle">AIRPORT FILE — '+(which==="dep"?"DEPARTURE":"ARRIVAL")+'</div>'+
+      '<div class="dhead"><div><div class="dtitle">'+(which==="dep"?"DEPARTURE":"ARRIVAL")+' FILE</div>'+
       '<div class="dsub">'+esc(a.code)+(a.icao||T.icao?" / "+esc(a.icao||T.icao):"")+' · '+name+(off!=null?' · local '+tm(Date.now(),off):"")+'</div></div>'+
       '<div class="dstamp '+sc+'">'+st+'</div></div>'+
       '<div class="dsec">I. THIS FLIGHT <span>(airport local time)</span></div>'+fl+
-      '<div class="dsec">II. STATUS</div>'+(ev.length?'<ul class="dlist">'+evTxt.map(t=>"<li>"+t+"</li>").join("")+"</ul>":
+      '<div class="dsec">II. STATUS</div>'+(ev.length?'<ul class="dlist">'+evTxt.slice(0,2).map(t=>"<li>"+t+"</li>").join("")+"</ul>":
         '<div class="dnote">'+(C.faa?"FAA reports no delays, stops or closures.":C.faa===null?"FAA status unavailable.":/^K|^P[AH]/.test(a.icao||"K")&&a.lon<-60?"Checking FAA status…":"FAA status covers US airports only.")+'</div>')+
       '<div class="dsec">III. CONDITIONS'+(M?' <span>(METAR)</span>':cur?' <span>(model)</span>':'')+'</div>'+
       row("Category",cat?'<i class="fc '+cat.toLowerCase()+'">'+cat+'</i>':"")+
@@ -3509,7 +3534,7 @@ readouts();draw();drawCharts();
       row("Visibility",visSm||"")+row("Temperature",tempC!=null?Math.round(tempC)+"°C / "+Math.round(tempC*9/5+32)+"°F":"")+
       (M&&M.rawOb?'<div class="draw">'+esc(M.rawOb)+'</div>':"")+
       '<div class="dsec">IV. RUNWAYS <span>(OpenStreetMap)</span></div>'+
-      (RW.length?'<ul class="dlist rw">'+RW.slice(0,8).map(r=>"<li><b>"+esc(r.ref)+"</b> "+Math.round(r.len/100)*100+" ft"+(r.surf?" · "+esc(r.surf):"")+(r.use?' <i class="fav">'+(which==="arr"?"likely landing ":"likely departing ")+esc(r.use)+"</i>":"")+"</li>").join("")+"</ul>"+
+      (RW.length?'<ul class="dlist rw">'+RW.slice(0,4).map(r=>"<li><b>"+esc(r.ref)+"</b> "+Math.round(r.len/100)*100+" ft"+(r.surf?" · "+esc(r.surf):"")+(r.use?' <i class="fav">'+(which==="arr"?"likely landing ":"likely departing ")+esc(r.use)+"</i>":"")+"</li>").join("")+"</ul>"+
         (wspd!=null&&wspd<4?'<div class="dnote">Wind is light, so the runway in use can\'t be guessed from it.</div>':''):'<div class="dnote">'+(C.osm?"No runways mapped nearby.":"Looking up the airfield…")+'</div>')+
       '<div class="dsec">V. FACILITY & ACTIVITY</div>'+
       row("Terminals",terms!=null?terms:"")+row("Gates mapped",gates!=null?gates:"")+row("Aircraft stands mapped",stands!=null?stands:"")+row("Taxiway segments",taxi!=null?taxi:"")+
