@@ -343,6 +343,57 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .apanel .scr{position:absolute;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#e6e9e9,#7f8789 55%,#2a2f31);box-shadow:0 1px 1px rgba(0,0,0,.6)}
 .apanel .scr::after{content:"";position:absolute;left:1px;right:1px;top:4px;height:1.5px;background:rgba(0,0,0,.6);transform:rotate(35deg)}
 .apanel .s1{left:5px;top:5px}.apanel .s2{right:5px;top:5px}.apanel .s3{left:5px;bottom:5px}.apanel .s4{right:5px;bottom:5px}
+/* aircraft card as a paper dossier in a manila folder */
+.acard.dossier{position:relative;padding:22px 8px 8px;margin-top:14px;border:0;border-radius:3px 8px 8px 8px;
+  background:linear-gradient(180deg,#d6b878,#c9a764);box-shadow:0 2px 0 #a8874a,0 8px 18px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.35)}
+.dossier .dtab{position:absolute;left:0;top:-14px;height:20px;padding:3px 14px 0 10px;border-radius:6px 10px 0 0;background:#d6b878;
+  font:700 .7rem/1.3 "Courier Prime","Courier New",Courier,monospace;letter-spacing:.06em;color:#3b2c12;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.dossier .dtab b{font-weight:700;color:#1f170a}
+.dossier .dsheet{position:relative;display:flex;flex-direction:column;gap:9px;padding:12px 12px 10px;border-radius:2px;transform:rotate(-.35deg);
+  background:
+    radial-gradient(140% 90% at 80% 10%,rgba(255,255,255,.35),transparent 60%),
+    radial-gradient(60% 40% at 15% 95%,rgba(150,110,50,.12),transparent 70%),
+    linear-gradient(#f4eedb,#ebe2c7);
+  color:#2a2418;font-family:"Courier Prime","Courier New",Courier,monospace;box-shadow:0 1px 3px rgba(0,0,0,.35),0 0 0 1px rgba(80,60,20,.15)}
+.dossier .dsheet::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:multiply;border-radius:inherit;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .38 0 0 0 0 .25 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+.dossier .dhead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;border-bottom:2px solid #2a2418;padding-bottom:6px}
+.dossier .dtitle{font-weight:700;font-size:1rem;letter-spacing:.14em;color:#1d180f}
+.dossier .dtitle .ref{color:#8a2a1a}
+.dossier .dsub{font-size:.62rem;letter-spacing:.04em;color:#5a4f3a;margin-top:2px}
+.dossier .dstamp{flex:none;transform:rotate(-8deg);margin:2px 2px 0 0;padding:3px 8px 2px;border:2.5px double #b3261e;border-radius:4px;color:#b3261e;
+  font:700 .78rem/1 "Courier Prime","Courier New",monospace;letter-spacing:.14em;opacity:.82;mix-blend-mode:multiply;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='40'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 1.7'/%3E%3C/filter%3E%3Crect width='90' height='40' filter='url(%23n)'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='40'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 -2.2 1.7'/%3E%3C/filter%3E%3Crect width='90' height='40' filter='url(%23n)'/%3E%3C/svg%3E")}
+.dossier .dstamp.air{color:#1e6b2e;border-color:#1e6b2e}.dossier .dstamp.sim{color:#a0601a;border-color:#a0601a}.dossier .dstamp.pend{color:#6a6152;border-color:#6a6152}
+.dossier .acmain{grid-template-columns:minmax(0,46%) 1fr;gap:12px}
+.dossier .dphoto{position:relative;background:#fbf8ef;padding:6px 6px 4px;transform:rotate(1.6deg);box-shadow:0 2px 5px rgba(0,0,0,.35)}
+.dossier .acphoto{border:0;border-radius:0;background:#2b2a27;color:#bdb4a0;font-family:inherit;filter:sepia(.25) contrast(1.05)}
+.dossier .accredit{font-size:.52rem;color:#6a604c;margin-top:3px;line-height:1.2}
+.dossier .clip{position:absolute;z-index:2;top:-9px;left:18px;width:12px;height:30px;border:2px solid #8d9396;border-radius:7px;transform:rotate(-6deg);
+  box-shadow:1px 1px 1px rgba(0,0,0,.3)}
+.dossier .clip::after{content:"";position:absolute;left:2px;top:4px;width:4px;height:20px;border:2px solid #a9afb2;border-radius:5px}
+.dossier dl.acid{margin:0;display:grid;grid-template-columns:1fr;gap:0}
+.dossier dl.acid dt{font-size:.56rem;letter-spacing:.12em;text-transform:uppercase;color:#6a604c;margin-top:5px}
+.dossier dl.acid dt:first-child{margin-top:0}
+.dossier dl.acid dd{margin:0;border-bottom:1px dotted #8a7d62;padding:1px 0 2px;min-height:1.2em;color:#1d180f;font-size:.78rem;line-height:1.3;overflow-wrap:anywhere}
+.dossier .acreg{font:700 1.25rem/1.15 "Courier Prime","Courier New",monospace;letter-spacing:.05em}
+.dossier .kpigrid{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1.5px solid #2a2418}
+.dossier .kpigrid .c{background:transparent;border:0;border-radius:0;padding:5px 7px;border-right:1px solid #2a2418;border-bottom:1px solid #2a2418}
+.dossier .kpigrid .c:nth-child(2n){border-right:0}.dossier .kpigrid .c:nth-last-child(-n+2){border-bottom:0}
+.dossier .kpigrid .k{font-size:.56rem;letter-spacing:.1em;color:#6a604c;text-transform:uppercase}
+.dossier .kpigrid .cv{font:700 1rem/1.2 "Courier Prime","Courier New",monospace;color:#1d180f}
+.dossier .kpigrid .cl{font-size:.58rem;color:#6a604c}
+.dossier .dlog{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:#2a2418;font-weight:700;border-bottom:1px solid #2a2418;padding-bottom:2px}
+.dossier .dlog span{font-weight:400;color:#6a604c;letter-spacing:.04em;text-transform:none}
+.dossier .acflights{font-size:.74rem}
+.dossier .acflights li{border-top:0;border-bottom:1px dotted #8a7d62;padding:2px 0 3px}
+.dossier .acflights span:first-child{color:#5a4f3a}
+.dossier .acflights b{color:#1d180f}
+.dossier .acflights .chip{background:transparent;border:1.5px solid currentColor;border-radius:2px;font-family:inherit;transform:rotate(-3deg)}
+.dossier .acflights .chip.up{color:#1e6b2e}.dossier .acflights .chip.lv{color:#6a604c}
+.dossier .extra{color:#3b3222;font-size:.74rem}.dossier .extra b,.dossier .extra *{color:#1d180f}
+.dossier .dfoot{display:flex;justify-content:space-between;gap:8px;font-size:.55rem;color:#6a604c;border-top:1px solid #8a7d62;padding-top:4px}
+.dossier .dsig{white-space:nowrap;flex:none;font:italic 700 .8rem "Snell Roundhand","Segoe Script","Brush Script MT",cursive;color:#23387a;transform:rotate(-4deg)}
 </style>
 </head>
 <body>
@@ -433,11 +484,15 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 </div>
 
 
-<section class="acard">
-  <div class="kpihead"><span class="k">This aircraft<sup class="ref" data-n="5" role="button" tabindex="0" aria-label="Note 5">5</sup></span></div>
+<section class="acard dossier">
+  <div class="dtab">FILE Nº <b id="dFile">—</b></div>
+  <div class="dsheet">
+  <div class="dhead"><div><div class="dtitle">AIRCRAFT DOSSIER<sup class="ref" data-n="5" role="button" tabindex="0" aria-label="Note 5">5</sup></div>
+    <div class="dsub">Subject: airframe operating this flight · <span id="dDate"></span></div></div>
+    <div class="dstamp" id="dStamp">ON FILE</div></div>
   <div class="acmain">
-    <a class="acphoto" id="acPhotoL" target="_blank" rel="noopener"><img id="acImg" alt="" hidden><span id="acNoImg">No photo</span></a>
-    <div class="acid"><div class="acreg" id="acReg">—</div><div class="s" id="acType"></div><div class="s" id="acOwner"></div><div class="accredit" id="acCredit"></div></div>
+    <div class="dphoto"><i class="clip"></i><a class="acphoto" id="acPhotoL" target="_blank" rel="noopener"><img id="acImg" alt="" hidden><span id="acNoImg">No photo</span></a><div class="accredit" id="acCredit"></div></div>
+    <dl class="acid"><dt>Registration</dt><dd class="acreg" id="acReg">—</dd><dt>Type</dt><dd class="s" id="acType"></dd><dt>Operator</dt><dd class="s" id="acOwner"></dd></dl>
   </div>
   <div class="kpigrid">
     <div class="c"><div class="k">Flights today</div><div class="cv" id="acToday">—</div><div class="cl">from today's track</div></div>
@@ -445,9 +500,11 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
     <div class="c"><div class="k">First flight</div><div class="cv" id="acFirstV">n/a</div><div class="cl" id="acFirstS">needs your relay</div></div>
     <div class="c"><div class="k">Built</div><div class="cv" id="acBuiltV">n/a</div><div class="cl" id="acBuiltS">not in free data</div></div>
   </div>
-  <div class="k">Recent flights (your phone's time)</div>
+  <div class="k dlog">Movement log <span>(your phone's time)</span></div>
   <ol class="acflights" id="acFlights"><li><span>No flight history yet</span></li></ol>
   <div class="extra" id="extra"></div>
+  <div class="dfoot"><span>Compiled from public ADS-B and registry data</span><span class="dsig">— Flight desk</span></div>
+  </div>
 </section>
 
 <details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-15d</span></summary><ol>
@@ -1822,6 +1879,10 @@ function renderAircraft(){
   renderFlightDate();
   const i=ac.info||{},m=ac.meta||{},f=fix||{};
   set("acReg",esc(i.registration||m.registration||f.reg||"—"));
+  {const rg=i.registration||m.registration||f.reg||"";$("dFile").textContent=rg?String(rg).toUpperCase():"PENDING";
+   const d=new Date();$("dDate").textContent=d.toLocaleDateString("en-US",{day:"2-digit",month:"short",year:"numeric"}).toUpperCase();
+   const fl=fix&&mode==="live"&&!fix.ground&&Date.now()-fix.t<300000,dm=mode==="demo";
+   const t=dm?"SIMULATED":fl?"AIRBORNE":rg?"ON FILE":"PENDING";const st=$("dStamp");if(st.textContent!==t){st.textContent=t;st.className="dstamp"+(fl?" air":dm?" sim":rg?"":" pend");}}
   {const rg=i.registration||m.registration||f.reg;if(rg&&relayBase()&&acx.reg!==String(rg).toUpperCase())loadAircraftExtra(rg);}
   const type=i.type?(i.manufacturer&&!i.type.startsWith(i.manufacturer)?i.manufacturer+" ":"")+i.type:[m.manufacturerName,m.model].filter(Boolean).join(" ")||f.type||"";
   set("acType",esc(type)||(ac.hex?(acBusy?"Looking up details…":"Details unavailable"):"Details appear once your flight is found"));
