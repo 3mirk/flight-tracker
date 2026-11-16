@@ -904,6 +904,28 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .mctl .tlab svg{width:9px!important;height:9px!important}
 .mctl .tlab{display:flex;align-items:center;justify-content:center;gap:2px;white-space:nowrap}
 .mctl .tlab svg{width:10px;height:10px;fill:none;stroke:#b9b2a8;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 0 #000)}
+/* stronger curved-glass look: bulge shading, bright curved specular bands, edge refraction rim */
+.mapwrap .glass{box-shadow:inset 0 0 0 1px rgba(255,255,255,.06),inset 0 10px 18px -8px rgba(255,255,255,.08),inset 0 -14px 24px -10px rgba(0,0,0,.6),inset 0 0 40px 8px rgba(0,0,0,.35)}
+.mapwrap .glass::before{background:
+    radial-gradient(ellipse 58% 32% at 30% 9%,rgba(255,255,255,.17),rgba(255,255,255,.05) 45%,transparent 72%),
+    radial-gradient(ellipse 4% 30% at 93% 46%,rgba(255,245,230,.16),transparent 75%),
+    radial-gradient(ellipse 26% 18% at 80% 22%,rgba(170,235,220,.13),transparent 70%),
+    radial-gradient(ellipse 12% 22% at 10% 60%,rgba(170,225,235,.09),transparent 70%),
+    radial-gradient(ellipse 70% 60% at 50% 45%,rgba(255,255,255,.035),transparent 70%),
+    linear-gradient(180deg,rgba(120,150,140,.04),rgba(60,80,70,.015) 60%,rgba(0,0,0,0)) !important}
+/* curved specular streak across the upper glass, like a window reflected in a bulging tube */
+.mapwrap .glass .roll::before{content:"";position:fixed}
+.mapwrap .glass::after{opacity:.24!important}
+.mapwrap .gloss{position:absolute;inset:0;pointer-events:none;border-radius:inherit;overflow:hidden;z-index:3}
+.mapwrap .gloss::before{content:"";position:absolute;left:-10%;right:-10%;top:-62%;height:100%;border-radius:50%;
+  border-bottom:1.5px solid rgba(255,255,255,.08);filter:blur(.6px);
+  background:linear-gradient(180deg,transparent 60%,rgba(255,255,255,.07) 88%,rgba(255,255,255,.02) 100%);mix-blend-mode:screen}
+.mapwrap .gloss::after{content:"";position:absolute;left:6%;top:5%;width:22%;height:9%;border-radius:50%;transform:rotate(-14deg);
+  background:radial-gradient(ellipse,rgba(255,255,255,.22),transparent 70%);filter:blur(2px);mix-blend-mode:screen}
+/* charts: same glass, scaled down */
+.charts .tile canvas.spark+.cgloss,.charts .tile .cgloss{display:none}
+.charts .tile.chart{position:relative}
+.charts .tile .head .scr::before{background:radial-gradient(ellipse 60% 40% at 32% 8%,rgba(255,255,255,.16),transparent 72%),radial-gradient(ellipse 30% 30% at 80% 10%,rgba(170,235,220,.12),transparent 70%),linear-gradient(180deg,rgba(120,150,140,.05),transparent 60%)!important}
 </style>
 </head>
 <body>
@@ -958,7 +980,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <canvas id="map"></canvas>
   <span class="mapref"><sup class="ref" data-n="2" role="button" tabindex="0" aria-label="Note 2">2</sup></span>
   <span class="banner" id="banner" hidden>DEMO · SIMULATED</span>
-  <div class="glass" aria-hidden="true"><i class="roll"></i></div>
+  <div class="glass" aria-hidden="true"><i class="roll"></i><i class="gloss"></i></div>
 </div>
 
 
@@ -1056,7 +1078,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16m</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16n</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -2233,7 +2255,7 @@ function crt(c,opt){
 /* Slight CRT barrel warp, applied in place to a finished canvas. Each output pixel samples the image a little further
    from the centre the further it is from the centre (two separable passes of thin strips), so straight lines bow
    like on curved glass and the corners pull in. k ≈ how much the corners pull in (0.04 = 4%). */
-let waitBox=null,scaleBox=null;const CRT_WARP=.025,MAP_WARP=.035,warpA=document.createElement("canvas"),warpB=document.createElement("canvas");
+let waitBox=null,scaleBox=null;const CRT_WARP=.012,MAP_WARP=.016,warpA=document.createElement("canvas"),warpB=document.createElement("canvas");
 function crtWarp(cv,k,bg){
   const W=cv.width,H=cv.height;if(!W||!H||!k)return;
   for(const c of [warpA,warpB])if(c.width<W||c.height<H){c.width=Math.max(c.width,W);c.height=Math.max(c.height,H);}
@@ -2262,8 +2284,11 @@ function crtTube(o,w,h,I,bg){
   e.addColorStop(0,"rgba(0,0,0,0)");e.addColorStop(1,"rgba(0,0,0,"+(.55*I)+")");o.fillStyle=e;o.fillRect(0,0,w,h);
   // curved glass glare, upper left
   const gl=o.createRadialGradient(w*.3,h*.08,0,w*.3,h*.08,Math.max(w,h)*.55);
-  gl.addColorStop(0,"rgba(255,235,210,"+(.09*I)+")");gl.addColorStop(.5,"rgba(255,235,210,"+(.03*I)+")");gl.addColorStop(1,"rgba(255,235,210,0)");
+  gl.addColorStop(0,"rgba(255,235,210,"+(.2*I)+")");gl.addColorStop(.5,"rgba(255,235,210,"+(.06*I)+")");gl.addColorStop(1,"rgba(255,235,210,0)");
   o.fillStyle=gl;o.beginPath();o.ellipse(w*.42,h*.12,w*.62,h*.42,-.12,0,7);o.fill();
+  // curved reflection band + bright rim along the top of the glass
+  o.strokeStyle="rgba(255,255,255,"+(.10*I)+")";o.lineWidth=1.2;o.beginPath();o.ellipse(w/2,-h*.55,w*.75,h*.95,0,Math.PI*.18,Math.PI*.82);o.stroke();
+  const rim=o.createLinearGradient(0,0,0,h*.18);rim.addColorStop(0,"rgba(255,255,255,"+(.12*I)+")");rim.addColorStop(1,"rgba(255,255,255,0)");o.fillStyle=rim;o.fillRect(0,0,w,h*.18);
   // mask the corners outside the rounded tube
   o.fillStyle=bg||"#0a0503";o.beginPath();o.rect(0,0,w,h);
   o.moveTo(rx,0);o.lineTo(w-rx,0);o.ellipse(w-rx,ry,rx,ry,0,-Math.PI/2,0);o.lineTo(w,h-ry);o.ellipse(w-rx,h-ry,rx,ry,0,0,Math.PI/2);
