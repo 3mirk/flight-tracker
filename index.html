@@ -744,6 +744,17 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .duo.dsopen #turb{grid-template-columns:minmax(0,1fr) 18px!important}
 .duo.dsopen #turb .hbar{align-self:start!important;height:var(--tbh,150px)!important}
 .duo.dsopen #turb .kpihead .k{text-align:left}
+/* expanded sources: fixed 30 px rows (same pitch as the collapsed buttons), name and readout stacked inside */
+.duo .srcs li{height:30px!important;min-height:0!important;grid-template-rows:20px 8px!important;row-gap:2px!important;padding:0 6px 0 4px!important;align-content:start!important}
+.duo .srcs li .ic{grid-row:1!important;align-self:start}
+.duo .srcs li .led{grid-row:2!important;margin-top:0!important}
+.duo .srcs li .nm{grid-row:1/3!important;align-self:start!important;margin-top:2px;font-size:11.5px!important;line-height:14px!important}
+.duo .srcs li .m{grid-row:1/3!important;align-self:end!important;margin-bottom:2px;font-size:9.5px!important;line-height:11px!important}
+.duo .srcs li{height:32px!important;padding:1px 6px 1px 4px!important}
+.duo .srcs ul{gap:2px!important}
+.duo .srcs ul.x3{margin-top:2px!important}
+.duo .srcs li{grid-template-rows:19px 8px!important;row-gap:1px!important;padding:1px 6px 0 4px!important}
+.duo .srcs li .ic{height:19px!important}
 </style>
 </head>
 <body>
