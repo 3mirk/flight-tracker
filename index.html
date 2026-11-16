@@ -2225,10 +2225,14 @@ function winButtons(){document.querySelectorAll("#win button").forEach(b=>b.setA
   knob.addEventListener("click",e=>{const t=e.target.closest(".ks");if(t&&!drag)pick(+t.dataset.i);});
   const ang=e=>{const b=knob.getBoundingClientRect();return Math.atan2(e.clientX-(b.left+b.width/2),-(e.clientY-(b.top+b.height/2)))*180/Math.PI;};
   knob.addEventListener("pointerdown",e=>{e.preventDefault();knob.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,moved:false,a0:ang(e),i0:cur()};});
+  // free rotation while dragging (follows the finger), snaps to the nearest setting on release
+  const setRot=(r,anim)=>{for(const el of [$("krot"),$("kLbl")]){el.style.transition=anim?"":"none";el.style.transform="rotate("+r+"deg)";}};
   knob.addEventListener("pointermove",e=>{if(!drag)return;if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)>4)drag.moved=true;if(!drag.moved)return;
-    let d=ang(e)-drag.a0;d=((d+540)%360)-180;const bi=Math.max(0,Math.min(KDET.length-1,drag.i0+Math.round(d/45)));if(bi!==cur())pick(bi);});
-  const end=e=>{if(drag&&!drag.moved){const t=e&&document.elementFromPoint(e.clientX,e.clientY);const k=t&&t.closest&&t.closest(".ks");pick(k?+k.dataset.i:cur()+1);}drag=null;};
-  knob.addEventListener("pointerup",end);knob.addEventListener("pointercancel",()=>{drag=null;});
+    const a=ang(e);let d=a-(drag.al??drag.a0);d=((d+540)%360)-180;drag.al=a;drag.r=Math.max(-25,Math.min(205,(drag.r??60*drag.i0)+d));setRot(drag.r,false);
+    const bi=Math.max(0,Math.min(KDET.length-1,Math.round(drag.r/60)));if(bi!==drag.live){drag.live=bi;$("kRead").textContent=KDET[bi][2];}});
+  const end=e=>{if(drag&&drag.moved){const bi=drag.live??drag.i0;drag=null;setRot(60*bi,true);if(bi!==cur())pick(bi);else winButtons();return;}
+    if(drag&&!drag.moved){const t=e&&document.elementFromPoint(e.clientX,e.clientY);const k=t&&t.closest&&t.closest(".ks");pick(k?+k.dataset.i:cur()+1);}drag=null;};
+  knob.addEventListener("pointerup",end);knob.addEventListener("pointercancel",()=>{drag=null;winButtons();});
   knob.addEventListener("wheel",e=>{e.preventDefault();pick(Math.min(KDET.length-1,Math.max(0,cur()+(e.deltaY>0?1:-1))));},{passive:false});
   knob.addEventListener("keydown",e=>{const k={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1}[e.key];if(k){e.preventDefault();pick(Math.min(KDET.length-1,Math.max(0,cur()+k)));}
     else if(e.key===" "||e.key==="Enter"){e.preventDefault();pick(cur()+1);}});}
