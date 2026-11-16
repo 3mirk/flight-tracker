@@ -280,6 +280,19 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .acard{padding:10px 12px}
 .notes,.relay{padding:8px 12px}
 .charts .tile.chart{border-color:#3d1e0d}
+/* instruments: charts fill their tile so row neighbours line up; badges top-right */
+.charts .tile.chart canvas.spark{flex:1 1 0;height:0;min-height:104px}
+.charts .tile.chart canvas.dial{flex:1 1 0;height:0;min-height:150px}
+.charts .tile.chart .tr{position:absolute;top:8px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:1px;z-index:1;
+  font:17px/1 "VT323",var(--mono);color:#ff7a24;letter-spacing:.04em;text-shadow:0 0 4px rgba(255,122,36,.9),0 0 10px rgba(255,90,20,.5)}
+.charts .tile.chart .tr .r1,.charts .tile.chart .trs{display:flex;align-items:center;gap:4px}
+#vsS{display:flex;justify-content:space-between;align-items:center;gap:6px;height:1.6em}
+.charts .tile.chart .trs{font:17px/1 "VT323",var(--mono);color:#ff7a24;letter-spacing:.04em;text-shadow:0 0 4px rgba(255,122,36,.9),0 0 10px rgba(255,90,20,.5)}
+.charts .tile.chart .trs b{font-weight:400}
+.charts .tile.chart .trs svg{width:14px;height:14px;fill:currentColor;filter:drop-shadow(0 0 3px rgba(255,100,20,.9));shape-rendering:crispEdges}
+.charts .tile.chart .tr svg{width:16px;height:16px;fill:currentColor;filter:drop-shadow(0 0 3px rgba(255,100,20,.9));image-rendering:pixelated;shape-rendering:crispEdges}
+.charts .tile.chart .tr b{font-weight:400}
+.charts .tile.chart .tr small{font-size:15px;color:#c25a1e}
 </style>
 </head>
 <body>
@@ -350,7 +363,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
     <canvas class="spark" id="spdChart" aria-label="Ground speed over time, in miles per hour"></canvas></div>
   <div class="tile chart"><div class="head"><div class="k">Vertical speed</div><div class="v" id="vs">—</div><div class="s" id="vsS"></div></div>
     <canvas class="spark" id="vsChart" aria-label="Vertical speed over time, in feet per minute; above the center line is climbing"></canvas></div>
-  <div class="tile chart"><div class="head"><div class="k">Heading<sup class="ref" data-n="3" role="button" tabindex="0" aria-label="Note 3">3</sup></div><div class="v" id="hdg">—</div><div class="s" id="hdgS"></div></div>
+  <div class="tile chart"><div class="head"><div class="k">Heading<sup class="ref" data-n="3" role="button" tabindex="0" aria-label="Note 3">3</sup></div><div class="v" id="hdg">—</div><div class="s" id="hdgS"></div></div><div class="tr" id="hdgT" aria-live="polite"></div>
     <canvas class="dial" id="hdgChart" aria-label="Heading history: center is the start of tracking, outer ring is now"></canvas></div>
   <div class="tile chart"><div class="head"><div class="k">Distance to go</div><div class="v" id="dist">—</div><div class="s" id="distS"></div></div>
     <canvas class="spark" id="distChart" aria-label="Distance left to the destination over time, in miles"></canvas></div>
@@ -879,9 +892,10 @@ function readouts(){
   const hd=f.track!=null?((Math.round(f.track)%360)+360)%360:null;
   set("hdg",hd!=null?lcd(String(hd).padStart(3,"0"),3,"°"):LCD_BLANK.hdg);
   set("hdgS",hd!=null?"Tracking "+COMPASS[Math.round(hd/45)%8]:"");
+  set("hdgT",hd!=null?turnBadge():"");
   if(f.vsFpm!=null){const v=Math.round(f.vsFpm/50)*50;
     set("vs",lcd(Math.abs(v),4,"ft/min",v>0?"▲":v<0?"▼":""));
-    set("vsS",v>250?'<span class="chip up">CLIMBING</span>':v<-250?'<span class="chip dn">DESCENDING</span>':'<span class="chip lv">LEVEL</span>');
+    set("vsS","<span>"+(Math.abs(v)*0.00508).toFixed(1)+" m/s</span><span class=\"trs\">"+(v>250?TR_IC.up+"<b>CLIMB</b>":v<-250?TR_IC.dn+"<b>DESCENT</b>":TR_IC.lv+"<b>LEVEL</b>")+"</span>");
   }else{set("vs",LCD_BLANK.vs);set("vsS","");}
   if(dst&&p){
     const d=distNm(p,dst),tot=org?distNm(org,dst):null;
@@ -1432,6 +1446,23 @@ function toGo(){
 }
 function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x))),f=x/p;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p;}
 function niceUp(v,floor){v=Math.max(v,floor);const st=niceStep(v/2);return Math.ceil(v/st)*st;}
+/* top-right badges in the vertical-speed and heading tiles */
+const TR_IC={
+  up:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2l6 7h-4v5H6V9H2z"/></svg>',
+  dn:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 14L2 7h4V2h4v5h4z"/></svg>',
+  lv:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 6h14v4H1z"/></svg>',
+  l:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8l6-6v4h6v4H8v4z"/></svg>',
+  r:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M14 8l-6 6v-4H2V6h6V2z"/></svg>',
+  st:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1l6 7h-4v7H6V8H2z"/></svg>'};
+function turnBadge(){
+  const w=(a,b)=>'<span class="r1">'+a+'</span>'+(b||'');
+  const H=hist.hdg;if(!H||H.length<2)return w(TR_IC.st+"<b>STRAIGHT</b>");
+  const b=H[H.length-1];let a=null;for(let i=H.length-2;i>=0;i--){a=H[i];if(b[0]-a[0]>=20000)break;}
+  const dt=(b[0]-a[0])/1000;if(dt<4)return w(TR_IC.st+"<b>STRAIGHT</b>");
+  const d=((b[1]-a[1]+540)%360)-180,r=d/dt;
+  if(Math.abs(r)<0.3)return w(TR_IC.st+"<b>STRAIGHT</b>");
+  return w(r<0?TR_IC.l+"<b>TURN L</b>":TR_IC.r+"<b>TURN R</b>","<small>"+Math.abs(r).toFixed(1)+"°/s</small>");
+}
 function clock(t){return new Date(t).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"});}
 /* CRT look: graphics go into a half-resolution buffer, then are blown up with hard pixel edges,
    bloomed, and scanlined. Text is queued and drawn crisp on top in the VT323 pixel font with a glow. */
