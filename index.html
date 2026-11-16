@@ -782,6 +782,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .duo #turb .kpihead .k{position:absolute;left:8px;top:7px;z-index:2;grid-column:auto!important}
 .duo #turb .kpititle{margin-top:22px!important}
 .duo #turb .hbar{margin-top:22px!important;grid-row:1/5!important}
+#updBar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99;padding:10px 16px;border-radius:20px;border:1px solid #ff7a24;
+  background:#140a04;color:#ffb070;font:18px/1 "VT323",var(--mono);letter-spacing:.04em;box-shadow:0 0 14px rgba(255,110,30,.45),0 6px 16px rgba(0,0,0,.6)}
 </style>
 </head>
 <body>
@@ -929,7 +931,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16a</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16b</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -3639,6 +3641,13 @@ readouts();draw();drawCharts();
     '<circle cx="19.5" cy="50" r="1.8" fill="#efe6cc"/>'+
     '<path d="M22.5 50H28" stroke="#efe6cc" stroke-width="1.8" stroke-linecap="round"/>';
 })();
+/* new-version check: GitHub Pages lets phones keep the old page for up to 10 min, so look for a newer build and offer a reload */
+(function(){const mine=(/build (\d{4}-\d\d-\d\d[a-z])/.exec(document.documentElement.innerHTML)||[])[1];if(!mine)return;
+  const check=async()=>{try{const r=await fetch(location.pathname+"?v="+Date.now(),{cache:"no-store"});if(!r.ok)return;
+    const t=await r.text(),b=(/build (\d{4}-\d\d-\d\d[a-z])/.exec(t)||[])[1];
+    if(b&&b!==mine&&!document.getElementById("updBar")){const d=document.createElement("button");d.id="updBar";d.type="button";
+      d.textContent="New version ready · tap to update";d.onclick=()=>location.reload();document.body.appendChild(d);}}catch(e){}};
+  setTimeout(check,4000);setInterval(check,120000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)check();});})();
 </script>
 </body>
 </html>
