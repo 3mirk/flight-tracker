@@ -737,6 +737,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .duo #turb .kpihead .k{height:16px;overflow:visible;white-space:nowrap}
 .duo.dsopen #turb .kpititle,.duo.dsopen #turb .kpinote,.duo.dsopen #turb .kpigrid{display:none!important}
 .duo.dsopen{grid-template-columns:minmax(0,1fr) 54px}
+/* bar on the right, running the full height of the turbulence contents */
+.duo #turb{grid-template-columns:minmax(0,1fr) 18px!important}
+.duo #turb .hbar{grid-column:2!important;align-self:stretch!important;height:auto!important;min-height:150px}
+.duo #turb .kpititle,.duo #turb .kpinote,.duo #turb .kpigrid{grid-column:1!important}
+.duo.dsopen #turb{grid-template-columns:minmax(0,1fr) 18px!important}
+.duo.dsopen #turb .hbar{align-self:start!important;height:var(--tbh,150px)!important}
+.duo.dsopen #turb .kpihead .k{text-align:left}
 </style>
 </head>
 <body>
@@ -1097,6 +1104,7 @@ function renderSrcs(){
 /* Animate the data sources box open and closed. */
 function setSrcOpen(want){
   const box=$("srcBox"),body=box.querySelector(".srcbody");
+  if(want&&!$("duo").classList.contains("dsopen"))$("turb").style.setProperty("--tbh",$("tBar").getBoundingClientRect().height+"px");
   if(box._anim){box._anim.cancel();box._anim=null;}
   if(want===box.open&&$("duo").classList.contains("dsopen")===!!want)return;
   // smooth morph of both boxes where the browser supports view transitions
