@@ -392,7 +392,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <div class="extra" id="extra"></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes</summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-15c</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -826,7 +826,7 @@ function apply(p,name){
   if(fix&&p.t<fix.t)return;
   if(!fix||p.t!==fix.t)histAdd(p);
   fix=p;lastSource=name;maybeAutoTrack();
-  if(mode==="live"&&routeCheck.run!==run&&!p.ground)setTimeout(()=>checkRoute(p),0);
+  if(mode==="live"&&routeCheck.run!==run)setTimeout(()=>checkRoute(p),0);
   const last=trail[trail.length-1];
   if(!last||Math.abs(last[0]-p.lat)+Math.abs(last[1]-p.lon)>0.02){trail.push([p.lat,p.lon]);if(trail.length>900)trail.shift();}
 }
@@ -1276,14 +1276,21 @@ requestAnimationFrame(frame);
 const LEVELS=[[850,4780],[700,9880],[600,13800],[500,18280],[400,23570],[300,30050],[250,33980],[200,38660]]; // hPa, standard altitude ft
 let wx=null,wxBusy=false,wxTried=0;
 const isMeteo=j=>Array.isArray(j)?j.length&&j[0].hourly:!!(j&&j.hourly);
+/* Where weather is wanted: the route if known, plus everywhere the plane has actually been and is now. */
+function flown(){const H=hist.pos||[],st=Math.max(1,Math.floor(H.length/80)),o=[];
+  for(let i=0;i<H.length;i+=st)o.push([H[i][1],H[i][2]]);for(const t of trail)o.push(t);return o;}
+function wxCover(){const o=[];if(org)o.push(org);if(dst)o.push(dst);const p=mode==="planned"?null:now();if(p)o.push(p);
+  if(mode==="live"||mode==="past"||mode==="saved")for(const q of flown())o.push(q);return o;}
+function wxCovers(p){return !wx||!p||(p[0]>wx.la[0]+.5&&p[0]<wx.la[1]-.5&&p[1]>wx.lo[0]+.5&&p[1]<wx.lo[1]-.5);}
 async function fetchWinds(){
-  if(wxBusy||!org||!dst)return;
+  if(wxBusy)return;
+  const cover=wxCover();if(!cover.length)return;
   if(Date.now()-wxTried<60000)return;           // at most one attempt a minute
   wxBusy=true;wxTried=Date.now();
   try{
-    const pts=[];const p=now()||org;
-    const la=[Math.min(org[0],dst[0],p[0])-1.5,Math.max(org[0],dst[0],p[0])+1.5];
-    const lo=[Math.min(org[1],dst[1],p[1])-1.5,Math.max(org[1],dst[1],p[1])+1.5];
+    const pts=[],pad=cover.length===1?3:1.5;
+    const la=[Math.min(...cover.map(q=>q[0]))-pad,Math.max(...cover.map(q=>q[0]))+pad];
+    const lo=[Math.min(...cover.map(q=>q[1]))-pad,Math.max(...cover.map(q=>q[1]))+pad];
     const NX=7,NY=5;
     for(let j=0;j<NY;j++)for(let i=0;i<NX;i++)pts.push([la[0]+(la[1]-la[0])*j/(NY-1),lo[0]+(lo[1]-lo[0])*i/(NX-1)]);
     const vars=[];LEVELS.forEach(([hp])=>vars.push("wind_speed_"+hp+"hPa","wind_direction_"+hp+"hPa"));vars.push("cape");
@@ -1927,15 +1934,16 @@ function takeRoute(code,v,why){
   if(curFlight===code&&setRouteFn){setRouteFn(v);rememberRecent(code,v);
     routeCheck.note="route corrected to "+v.o.c+"→"+v.d.c+" ("+why+")";}
 }
+/* The schedule entry that matters now: in the air, else the next one within 12 h, else the last one within 12 h. */
+function schedNow(){
+  const now=Date.now(),L=(sched||[]).filter(x=>x.from&&x.to).map(x=>{const a=x.depActual||x.dep,b=x.arrActual||x.arr||a+6*3600000;return {x,a,b};});
+  return (L.find(q=>now>=q.a-45*60000&&now<=q.b+30*60000)||L.filter(q=>q.a>now&&q.a-now<12*3600000).sort((p,q)=>p.a-q.a)[0]
+    ||L.filter(q=>q.b<now&&now-q.b<12*3600000).sort((p,q)=>q.b-p.b)[0]||{}).x||null;
+}
 function schedRouteNow(){
-  const now=Date.now();
-  for(const x of (sched||[])){
-    const a=x.depActual||x.dep,b=x.arrActual||x.arr||a+6*3600000;
-    if(x.from&&x.to&&now>=a-45*60000&&now<=b+30*60000){
-      const L=c=>AIRPORTS[c]||null,fo=x.fromLL||L(x.from),to=x.toLL||L(x.to);
-      if(fo&&to)return {o:{c:x.from,lat:fo[0],lon:fo[1],n:x.fromName||""},d:{c:x.to,lat:to[0],lon:to[1],n:x.toName||""}};}
-  }
-  return null;
+  const x=schedNow();if(!x)return null;
+  const L=c=>AIRPORTS[c]||null,fo=x.fromLL||L(x.from),to=x.toLL||L(x.to);
+  return fo&&to?{o:{c:x.from,lat:fo[0],lon:fo[1],n:x.fromName||""},d:{c:x.to,lat:to[0],lon:to[1],n:x.toName||""}}:null;
 }
 async function liveRouteLookup(p){
   const cs=(p.callsign||cands[0]||"").trim();if(!cs)return null;
@@ -1955,11 +1963,12 @@ async function liveRouteLookup(p){
   return null;
 }
 async function checkRoute(p){
-  const id=run,code=curFlight;if(!code||routeCheck.run===id)return;routeCheck={run:id,state:"checking",note:""};
+  const id=run,code=curFlight;if(!code||routeCheck.run===id)return;const prevNote=routeCheck.note||"";routeCheck={run:id,state:"checking",note:""};
   const s=schedRouteNow();
   if(s&&routeFits([s.o.lat,s.o.lon],[s.d.lat,s.d.lon],p)){takeRoute(code,s,"today's schedule");routeCheck.state="ok";return;}
   const lv=await liveRouteLookup(p);if(id!==run)return;
   if(lv&&routeFits([lv.o.lat,lv.o.lon],[lv.d.lat,lv.d.lon],p)){takeRoute(code,lv,"matched to the plane's position");routeCheck.state="ok";return;}
+  if(!org||!dst){routeCheck.state="dropped";routeCheck.note=prevNote||"route unknown";return;}
   if(!routeFits(org,dst,p)){
     const was=($("from").value||"?")+" → "+($("to").value||"?");
     delete routes[code];try{localStorage.setItem("sfm-routes",JSON.stringify(routes));}catch(e){}
@@ -2004,7 +2013,13 @@ async function loadInstances(f,r){
     fillInstances("loading");
     const [sc,cl]=await Promise.all([loadSchedule(f.code),loadCloudList(f.code)]);
     if(id!==run)return;sched=sc;cloudIdx=cl;fillInstances();
-    {const s2=schedRouteNow();if(s2&&(!fix||routeFits([s2.o.lat,s2.o.lon],[s2.d.lat,s2.d.lon],fix))&&(s2.o.c!==$("from").value||s2.d.c!==$("to").value))takeRoute(f.code,s2,"today's schedule");}
+    {const x=schedNow(),A=$("from").value,B=$("to").value;
+      if(x&&(x.from!==A||x.to!==B)){const s2=schedRouteNow();
+        if(s2&&(!fix||routeFits([s2.o.lat,s2.o.lon],[s2.d.lat,s2.d.lon],fix)))takeRoute(f.code,s2,"today's schedule");
+        else if(A&&B&&!s2){ // schedule disagrees but has no map position for its airports: don't show the stale one
+          delete routes[f.code];try{localStorage.setItem("sfm-routes",JSON.stringify(routes));}catch(e){}
+          if(setRouteFn)setRouteFn(null);routeCheck={run:id,state:"dropped",note:"schedule says "+x.from+"→"+x.to+", old listing "+A+"→"+B+" hidden"};
+          if(fix)setTimeout(()=>{routeCheck.run=-1;checkRoute(fix);},0);}}}
     if(sched&&sched.length){const reg=(sched.find(x=>x.reg)||{}).reg;if(reg)loadAircraftExtra(reg);return;}
   }
   if(!r||!r.o.icao&&!/^[A-Z]{3}$/.test(r.o.c)){fillInstances("none");return;}
@@ -2287,7 +2302,7 @@ function corridor(X,Y,scale,lw,lh){
   const p=now(),line=[];
   if(org&&dst)for(let i=0;i<=60;i++)line.push(along(org,dst,i/60));
   if(p&&dst)for(let i=0;i<=30;i++)line.push(along(p,dst,i/30));
-  for(const t of trail)line.push(t);
+  for(const t of flown())line.push(t);
   if(p)line.push(p);
   if(!line.length)return null;
   if(corrC.width!==lw||corrC.height!==lh){corrC.width=lw;corrC.height=lh;}
@@ -2296,7 +2311,7 @@ function corridor(X,Y,scale,lw,lh){
   g.filter="blur("+Math.max(3,wpx/PIXL*.25)+"px)";g.strokeStyle="#fff";g.fillStyle="#fff";g.lineCap="round";g.lineJoin="round";g.lineWidth=wpx*2;
   if(org&&dst){g.beginPath();for(let i=0;i<=60;i++){const q=along(org,dst,i/60);i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}g.stroke();}
   if(p&&dst){g.beginPath();for(let i=0;i<=30;i++){const q=along(p,dst,i/30);i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0]));}g.stroke();}
-  if(trail.length>1){g.beginPath();trail.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));g.stroke();}
+  {const F=flown();if(F.length>1){g.beginPath();F.forEach((q,i)=>i?g.lineTo(X(q[1]),Y(q[0])):g.moveTo(X(q[1]),Y(q[0])));g.stroke();}}
   if(p){g.beginPath();g.arc(X(p[1]),Y(p[0]),wpx,0,7);g.fill();}
   g.filter="none";
   const has=(la,lo)=>{for(const q of line)if(distNm([la,lo],q)<CORR_NM)return true;return false;};
@@ -2485,7 +2500,7 @@ setInterval(()=>{try{renderFlightRow();}catch(e){}},2000);
 setInterval(drawCharts,250);
 setInterval(renderSrcs,5000);renderSrcs();
 setInterval(renderAircraft,15000);renderAircraft();
-setInterval(()=>{turbulence();if(!wx||Date.now()-wx.t>600000)fetchWinds();},2000);
+setInterval(()=>{turbulence();if(!wx||Date.now()-wx.t>600000||!wxCovers(now()))fetchWinds();},2000);
 try{$("relay").value=localStorage.getItem("sfm-relay")||"";}catch(e){}
 $("relayForm").addEventListener("submit",e=>{e.preventDefault();
   const v=$("relay").value.trim();
