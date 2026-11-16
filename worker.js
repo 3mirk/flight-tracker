@@ -33,8 +33,8 @@ const ALLOWED_HOSTS = [
 const ALLOWED_ORIGINS = ["https://3mirk.github.io"];
 
 const LIMITS = {
-  adbPerDay: 40,
-  depPerDay: 4,         // DFW departure-board refreshes per day (a "Tier 2" AeroDataBox call, so it costs more of the free quota)        // AeroDataBox calls per day, all users together
+  adbPerDay: 40,        // AeroDataBox calls per day, all users together
+  depPerDay: 4,         // DFW departure-board refreshes per day (a "Tier 2" AeroDataBox call, so it costs more of the free quota)
   airlabsPerDay: 40,    // AirLabs calls per day, all users together
   perUserPer10Min: 20,  // /api requests per visitor (IP) per 10 minutes
   maxFlights: 500,      // saved flights kept
