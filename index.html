@@ -838,6 +838,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .zknob .klight{pointer-events:none;mix-blend-mode:screen}
 .zlab{grid-column:1/-1}
 .zknob:focus-visible{outline:2px solid #ff7a24;outline-offset:3px}
+/* no bounce: firm press, plain release; toggles flip through (lever foreshortens as it passes the middle) */
+.tgl,.vsel,.zstep{transition:transform .12s ease-out!important}
+.mctl .down{transform:translateY(1px)!important;transition:transform .05s ease-out!important}
+.mctl .rel{transform:none!important}
+.vknob{transition:transform .18s cubic-bezier(.5,0,.2,1)!important}
+.tbat{transition:transform .17s cubic-bezier(.75,0,.25,1)!important}
+.tbat::after{transition:transform .17s cubic-bezier(.75,0,.25,1)}
 </style>
 </head>
 <body>
@@ -990,7 +997,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16g</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16h</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -3753,8 +3760,8 @@ readouts();draw();drawCharts();
   const K=$("zKnob");let d=null,raf=0,ang=0,last=0;
   const setA=(a,anim)=>{ang=a;zr.style.transition=anim?"transform .38s cubic-bezier(.3,1.6,.5,1)":"none";zr.style.transform="rotate("+a+"deg)";K.setAttribute("aria-valuenow",(a/60).toFixed(2));};
   const loop=t=>{raf=0;if(!d)return;const dt=Math.min(.05,(t-(last||t))/1000);last=t;
-    const f=ang/60,rate=Math.sign(f)*Math.pow(Math.abs(f),1.6)*1.8;      // up to ~6x per second at full turn
-    if(Math.abs(f)>.06&&proj)zoomAt(proj.w/2,proj.h/2,zoom*Math.exp(rate*dt));raf=requestAnimationFrame(loop);};
+    const f=ang/60,g=Math.max(0,Math.abs(f)-.15)/.85,rate=Math.sign(f)*Math.pow(g,2)*.7;      // gentle: ~2x per second only at full turn
+    if(g>0&&proj)zoomAt(proj.w/2,proj.h/2,zoom*Math.exp(rate*dt));raf=requestAnimationFrame(loop);};
   const angOf=e=>{const b=K.getBoundingClientRect();return Math.atan2(e.clientX-(b.left+b.width/2),-(e.clientY-(b.top+b.height/2)))*180/Math.PI;};
   K.addEventListener("pointerdown",e=>{e.preventDefault();K.setPointerCapture(e.pointerId);d={x:e.clientX,y:e.clientY,a0:angOf(e),moved:false};last=0;});
   K.addEventListener("pointermove",e=>{if(!d)return;if(Math.hypot(e.clientX-d.x,e.clientY-d.y)>4)d.moved=true;if(!d.moved)return;
