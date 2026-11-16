@@ -412,6 +412,9 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .dossier .extra{color:#3b3222;font-size:.74rem}.dossier .extra b,.dossier .extra *{color:#1d180f}
 .dossier .dfoot{display:flex;justify-content:space-between;gap:8px;font-size:.55rem;color:#6a604c;border-top:1px solid #8a7d62;padding-top:4px}
 .dossier .dsig{white-space:nowrap;flex:none;font:italic 700 .8rem "Snell Roundhand","Segoe Script","Brush Script MT",cursive;color:#23387a;transform:rotate(-4deg)}
+.sonartip{position:absolute;z-index:3;pointer-events:none;padding:4px 7px;background:rgba(10,5,2,.92);border:1px solid rgba(255,122,36,.7);border-radius:4px;
+  font:14px/1.05 "VT323",var(--mono);color:#ffb070;max-width:calc(100% - 8px);white-space:normal;text-shadow:0 0 4px rgba(255,110,30,.6);box-shadow:0 0 10px rgba(255,90,20,.3)}
+.sonartip b{font-weight:400;color:#ffd2a0}
 </style>
 </head>
 <body>
@@ -531,7 +534,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-15e</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-15f</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -1635,17 +1638,17 @@ function prep(cv){
   cv._tq=[];const g=cv._b.getContext("2d");g.setTransform(1/CPX,0,0,1/CPX,0,0);g.globalAlpha=1;g.shadowBlur=0;
   return {g,w,h,cv,dpr};
 }
-function crt(c){
-  const {cv,w,h,dpr}=c,o=cv.getContext("2d");
+function crt(c,opt){
+  const {cv,w,h,dpr}=c,o=cv.getContext("2d"),B=opt&&opt.bloom!=null?opt.bloom:1;
   o.setTransform(dpr,0,0,dpr,0,0);o.globalCompositeOperation="source-over";o.globalAlpha=1;o.filter="none";
   o.imageSmoothingEnabled=false;o.drawImage(cv._b,0,0,w,h);
-  o.save();o.globalCompositeOperation="lighter";o.globalAlpha=.55;o.imageSmoothingEnabled=true;o.filter="blur(3px)";o.drawImage(cv._b,0,0,w,h);
-  o.globalAlpha=.25;o.filter="blur(8px)";o.drawImage(cv._b,0,0,w,h);o.restore();
+  if(B>0){o.save();o.globalCompositeOperation="lighter";o.globalAlpha=.55*B;o.imageSmoothingEnabled=true;o.filter="blur("+(3*Math.max(.5,B))+"px)";o.drawImage(cv._b,0,0,w,h);
+  o.globalAlpha=.25*B*B;o.filter="blur(8px)";o.drawImage(cv._b,0,0,w,h);o.restore();}
   o.fillStyle="rgba(0,0,0,.3)";for(let y=1;y<h;y+=3)o.fillRect(0,y,w,1);
   for(const [t,x,y,f,col,al,bl] of cv._tq){
     const m=/(\d+(?:\.\d+)?)px/.exec(f),sz=m?+m[1]:10;
     o.font=Math.round(sz+4)+'px "VT323",monospace';o.textAlign=al;o.textBaseline=bl;o.fillStyle=col;
-    o.shadowColor="rgba(255,100,20,.9)";o.shadowBlur=6;o.fillText(t,x,y);o.shadowBlur=0;o.fillText(t,x,y);}
+    o.shadowColor="rgba(255,100,20,.9)";o.shadowBlur=6*Math.min(1,B+.3);o.fillText(t,x,y);o.shadowBlur=0;o.fillText(t,x,y);}
   const v=o.createRadialGradient(w/2,h/2,Math.min(w,h)*.3,w/2,h/2,Math.max(w,h)*.75);
   v.addColorStop(0,"rgba(0,0,0,0)");v.addColorStop(1,"rgba(0,0,0,.55)");o.fillStyle=v;o.fillRect(0,0,w,h);
 }
@@ -1750,14 +1753,63 @@ function drawDial(){
       g.stroke();}
     g.globalAlpha=1;g.shadowBlur=0;
   }
+  sonar(g,cx,cy,r,P);
   if(fix&&fix.track!=null){
     const[nx,ny]=P(fix.track,r-1);
     g.strokeStyle=SCOPE.dim;g.lineWidth=1;g.setLineDash([3,3]);g.beginPath();g.moveTo(cx,cy);g.lineTo(nx,ny);g.stroke();g.setLineDash([]);
     g.save();g.translate(nx,ny);g.rotate(fix.track*R);g.fillStyle=SCOPE.trace;
     g.beginPath();g.moveTo(0,-2);g.lineTo(6,10);g.lineTo(-6,10);g.closePath();g.fill();g.restore();
   }
-  crt(c);
+  crt(c,{bloom:.3});
 }
+/* Sonar: a sweep turns once every 4 s; the 4 nearest aircraft light up as it passes and fade after.
+   North-up like the dial; range ring scales to the farthest of the four. Tap a blip for details. */
+const SWEEP_S=4;let sonarHits=[],demoTraf=null;
+function sonarTargets(){
+  const me=now();if(!me)return [];
+  if(mode==="demo"){
+    if(!demoTraf)demoTraf=[["AAL1442","B738",8,40,34000,260],["SWA3381","B737",14,120,36000,95],["DAL905","A321",22,230,33000,70],["N512JB","C68A",30,310,41000,180]]
+      .map(([cs,t,d,b,alt,trk])=>({cs,type:t,d0:d,b0:b,alt,track:trk,t0:Date.now()}));
+    return demoTraf.map(a=>{const k=(Date.now()-a.t0)/1000,b=(a.b0+k*.6)%360,d=a.d0+Math.sin(k/20)*1.5;
+      return {cs:a.cs,type:a.type,alt:a.alt,track:a.track,d,b,gnd:false,gs:430};});
+  }
+  if(!trafOn)return null;
+  return traf.filter(a=>Date.now()-a.t<60000).map(a=>({cs:a.cs||a.hex,type:a.type,alt:a.alt,gnd:a.gnd,track:a.track,gs:a.gs,d:distNm(me,[a.lat,a.lon]),b:bearing(me,[a.lat,a.lon])}))
+    .sort((x,y)=>x.d-y.d).slice(0,4);
+}
+function sonar(g,cx,cy,r,P){
+  const T=sonarTargets(),sw=(performance.now()/1000/SWEEP_S*360)%360;sonarHits=[];
+  // sweep: a bright line with a fading wedge behind it
+  for(let i=0;i<24;i++){const a0=sw-i*2.5,a1=a0-2.5;g.fillStyle="rgba(255,122,36,"+(.16*(1-i/24))+")";
+    g.beginPath();g.moveTo(cx,cy);g.arc(cx,cy,r,(a1-90)*R,(a0-90)*R);g.closePath();g.fill();}
+  const[sx,sy]=P(sw,r);g.strokeStyle="rgba(255,170,90,.9)";g.lineWidth=1.5;g.beginPath();g.moveTo(cx,cy);g.lineTo(sx,sy);g.stroke();
+  const mono=getComputedStyle(document.documentElement).getPropertyValue("--mono");
+  g.font="9px "+mono;g.textAlign="center";g.textBaseline="middle";
+  if(T===null){g.fillStyle=SCOPE.dim;g.fillText("TRAFFIC OFF",cx,cy+r*.78);return;}
+  if(!T.length){g.fillStyle=SCOPE.dim;g.fillText(fix?"NO TRAFFIC":"",cx,cy+r*.78);return;}
+  const nice=[2,5,10,15,20,30,40,60],far=Math.max(...T.map(a=>a.d)),rng=nice.find(n=>n>=far*1.1)||Math.ceil(far/10)*10;
+  for(const a of T){
+    const age=((sw-a.b)%360+360)%360/360*SWEEP_S,glow=Math.exp(-age/1.6);
+    const[x,y]=P(a.b,r*Math.min(.97,a.d/rng));
+    g.fillStyle="rgba(255,190,120,"+(.25+.75*glow)+")";g.beginPath();g.arc(x,y,2.2+2.2*glow,0,7);g.fill();
+    if(glow>.15){g.strokeStyle="rgba(255,150,70,"+(glow*.6)+")";g.lineWidth=1;g.beginPath();g.arc(x,y,4+8*(1-glow),0,7);g.stroke();}
+    sonarHits.push({x,y,a});
+  }
+  g.fillStyle=SCOPE.dim;g.fillText("RNG "+rng+" NM",cx,cy+r*.78);
+}
+/* keep the sweep turning while the dial is on screen */
+{let vis=true,last=0;const cv=$("hdgChart"),tip=document.createElement("div");tip.className="sonartip";tip.hidden=true;cv.parentNode.appendChild(tip);
+  try{new IntersectionObserver(es=>{vis=es.some(e=>e.isIntersecting);},{rootMargin:"60px"}).observe(cv);}catch(e){}
+  const loop=t=>{requestAnimationFrame(loop);if(!vis||document.hidden||t-last<66)return;last=t;drawDial();};requestAnimationFrame(loop);
+  const show=e=>{const b=cv.getBoundingClientRect(),mx=e.clientX-b.left,my=e.clientY-b.top;let best=null,bd=22;
+    for(const h of sonarHits){const d=Math.hypot(h.x-mx,h.y-my);if(d<bd){bd=d;best=h;}}
+    if(!best){tip.hidden=true;return;}
+    const a=best.a,dAlt=fix&&fix.altFt!=null&&!a.gnd?Math.round((a.alt-fix.altFt)/100)*100:null;
+    tip.innerHTML="<b>"+esc(a.cs||"?")+"</b>"+(a.type?" · "+esc(a.type):"")+"<br>"+a.d.toFixed(1)+" nm "+COMPASS[Math.round(a.b/45)%8]+
+      "<br>"+(a.gnd?"on the ground":fmt(a.alt)+" ft"+(dAlt!=null?" ("+(dAlt>0?"+":"")+fmt(dAlt)+")":""))+(a.gs?" · "+fmt(a.gs*1.15078)+" mph":"");
+    tip.hidden=false;const tb=cv.parentNode.getBoundingClientRect();
+    tip.style.left=Math.max(4,Math.min(tb.width-tip.offsetWidth-4,b.left-tb.left+best.x-tip.offsetWidth/2))+"px";tip.style.top=Math.max(4,b.top-tb.top+best.y-tip.offsetHeight-8)+"px";};
+  cv.style.pointerEvents="auto";cv.addEventListener("pointermove",show);cv.addEventListener("pointerdown",show);cv.addEventListener("pointerleave",()=>{tip.hidden=true;});}
 function winButtons(){document.querySelectorAll("#win button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.w===String(win))));}
 $("win").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;win=b.dataset.w==="all"?"all":+b.dataset.w;
   try{localStorage.setItem("sfm-win",String(win));}catch(err){}winButtons();drawCharts();});
