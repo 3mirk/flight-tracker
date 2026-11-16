@@ -518,6 +518,13 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 #srcBox{view-transition-name:dsbox}#turb{view-transition-name:turbbox}
 ::view-transition-group(dsbox),::view-transition-group(turbbox){animation-duration:.32s;animation-timing-function:cubic-bezier(.2,.7,.2,1)}
 ::view-transition-old(dsbox),::view-transition-new(dsbox),::view-transition-old(turbbox),::view-transition-new(turbbox){animation-duration:.32s;height:100%;object-fit:none;object-position:left top;overflow:clip}
+/* sources toggle lives in the title row and points sideways: → to widen, ← to shrink back */
+.duo .srcs .c-open{display:flex;order:1;transform:rotate(90deg)}
+.duo .srcs:not([open]) .c-open{transform:rotate(-90deg)}
+.duo .srcs .srctitle{order:0}
+.duo .srcs .srcicons{order:2}
+.duo .srcs:not([open]) .srcbot{display:none}
+.duo .srcs .chev svg{transition:none}
 </style>
 </head>
 <body>
