@@ -297,16 +297,6 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .charts .tile.chart .tr b{font-weight:400}
 .charts .tile.chart .tr small{font-size:15px;color:#c25a1e}
 /* map + vertical control strip on its left edge */
-.maprow{display:flex;align-items:stretch;gap:0;min-width:0}
-.maprow .mapwrap{flex:1 1 auto;min-width:0;border-top-left-radius:0;border-bottom-left-radius:0;border-left-width:0}
-.maprow .mapwrap::after{border-top-left-radius:0;border-bottom-left-radius:0}
-.maprow .mapbar{order:-1;flex:none;flex-direction:column;justify-content:flex-start;width:44px;padding:8px 5px;gap:4px;margin:0;
-  border:8px solid #17110e;border-right:0;border-radius:22px 0 0 22px;background:#0d0d0e;box-shadow:inset -1px 0 0 #2a2a2a}
-.maprow .mapbar .mb{width:34px;height:32px;flex:none}
-.maprow .mapbar .mstat{flex:1 1 auto;min-height:56px;width:34px;height:auto;padding:6px 0;justify-content:flex-end;flex-direction:column;
-  writing-mode:vertical-rl;transform:rotate(180deg);font-size:18px;gap:6px;align-items:center}
-.maprow .mapbar .mstat i{order:-1}
-.maprow .mapbar{box-sizing:border-box}
 /* badge in the VS / heading tiles: orange plate, black text, phosphor glow */
 .charts .tile.chart .trs,.charts .tile.chart .tr .r1{background:#ff7a24;color:#140800;padding:2px 6px 1px 4px;border-radius:3px;text-shadow:none;
   box-shadow:0 0 6px rgba(255,110,30,.75),0 0 14px rgba(255,80,10,.35),inset 0 -2px 0 rgba(0,0,0,.18);gap:4px;line-height:1}
@@ -315,6 +305,17 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .charts .tile.chart .tr{text-shadow:none}
 .charts .tile.chart:has(#vsT) .head .k{max-width:calc(100% - 62px);letter-spacing:0}
 .charts .tile.chart .tr .r1 b{font-size:15px}.charts .tile.chart .tr .r1{padding:1px 4px 1px 3px}.charts .tile.chart .tr{top:6px;right:8px}
+/* one row under the map: status dot + route progress, then the map buttons */
+.mapbar .prog{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:5px;height:32px;padding:0 8px;background:#0a0503;border:1px solid #3d1e0d;border-radius:5px;
+  font:19px/1 "VT323",var(--mono);color:#ff7a24;text-shadow:0 0 4px rgba(255,122,36,.8)}
+.mapbar .prog .bar{flex:1 1 auto;min-width:16px}
+.mapbar .prog .mstat{flex:none;width:auto;height:auto;padding:0;border:0;background:none;writing-mode:horizontal-tb;transform:none}
+.mapbar .prog .mstat i{width:7px;height:7px}
+.mapbar .mb{width:29px}
+.mapbar .prog .mstat .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.mapbar .prog .mstat i{width:8px;height:8px;margin-right:2px}
+@media(max-width:380px){.mapbar .mb{width:27px}.mapbar{gap:2px}.mapbar .prog{padding:0 6px;font-size:17px;gap:4px}}
+@media(max-width:350px){.mapbar .prog #pFrom,.mapbar .prog #pTo{display:none}}
 </style>
 </head>
 <body>
@@ -358,14 +359,15 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   </div>
 </section>
 
-<div class="maprow">
 <div class="mapwrap">
   <canvas id="map"></canvas>
   <span class="mapref"><sup class="ref" data-n="2" role="button" tabindex="0" aria-label="Note 2">2</sup></span>
   <span class="banner" id="banner" hidden>DEMO · SIMULATED</span>
 </div>
-<div class="mapbar" role="toolbar" aria-label="Map controls" aria-orientation="vertical">
-  <span class="mstat" id="mStat"><i></i><span>Offline</span></span>
+
+
+<div class="mapbar" role="toolbar" aria-label="Map controls">
+  <div class="prog" title="Route progress"><span class="mstat" id="mStat" role="status"><i></i><span class="sr">Offline</span></span><span id="pFrom">CLT</span><div class="bar"><i id="pBar"></i></div><span id="pTo">DFW</span></div>
   <button type="button" class="mb" id="view" aria-label="View"><svg viewBox="0 0 24 24" aria-hidden="true"></svg></button>
   <button type="button" class="mb" id="traf" aria-label="Nearby traffic" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/><circle cx="16.5" cy="15" r="1" fill="currentColor"/><circle cx="8" cy="8.5" r="1" fill="currentColor"/></svg></button>
   <button type="button" class="mb" id="wind" aria-label="Wind streaks" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h8"/></svg></button>
@@ -374,9 +376,6 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <button type="button" class="mb" id="zin" aria-label="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   <button type="button" class="mb" id="zout" aria-label="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
 </div>
-</div>
-
-<div class="prog"><span id="pFrom">CLT</span><div class="bar"><i id="pBar"></i></div><span id="pTo">DFW</span></div>
 
 <div class="seg" id="win" role="group" aria-label="Chart time window"><span class="k">Charts</span>
   <button type="button" data-w="all">All</button><button type="button" data-w="60">60 min</button><button type="button" data-w="5">5 min</button><button type="button" data-w="1">1 min</button></div>
@@ -1205,7 +1204,7 @@ function fitMap(){
   if(!wrap||!ch)return;
   const top=wrap.getBoundingClientRect().top+scrollY,gap=ch.getBoundingClientRect().top-wrap.getBoundingClientRect().bottom;
   const want=Math.round(vh-top-gap-48);     // 48 px of the chart tiles show below the fold
-  const hgt=Math.max(340,Math.min(560,want));
+  const hgt=Math.max(230,Math.min(520,want));
   if(Math.abs(cv.clientHeight-hgt)>2){cv.style.height=hgt+"px";cv.style.maxHeight="none";cv.style.aspectRatio="auto";draw();}
 }
 addEventListener("resize",fitMap);if(window.visualViewport)visualViewport.addEventListener("resize",fitMap);
