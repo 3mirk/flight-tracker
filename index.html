@@ -525,6 +525,40 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .duo .srcs .srcicons{order:2}
 .duo .srcs:not([open]) .srcbot{display:none}
 .duo .srcs .chev svg{transition:none}
+/* ---- CRT glass and bezel ---- */
+/* moulded plastic bezel with a sloped inner lip */
+.mapwrap{border:11px solid transparent;border-radius:24px;
+  background:linear-gradient(#080200,#080200) padding-box,
+    linear-gradient(160deg,#5b5650 0%,#3a3632 18%,#1d1b19 55%,#2c2925 80%,#47423c 100%) border-box;
+  box-shadow:0 0 0 1px #000,0 6px 16px rgba(0,0,0,.7),inset 0 0 0 1px rgba(0,0,0,.9),inset 0 0 0 3px rgba(255,255,255,.05),inset 0 0 18px rgba(0,0,0,.9)}
+.mapwrap::before{box-shadow:0 0 0 40px #0b0907,inset 0 0 0 1px rgba(255,140,60,.07),inset 0 0 34px 6px rgba(0,0,0,.33),inset 0 0 90px rgba(0,0,0,.2)}
+/* glass: dark green-grey tint, room reflections, a bright curved edge, shadow mask dots, scratches, slow roll bar, tiny flicker */
+.glass{position:absolute;inset:0;pointer-events:none;border-radius:7% / 11%;overflow:hidden}
+#map{animation:crt-flicker 5.3s steps(1,end) infinite}
+.glass::before{content:"";position:absolute;inset:0;mix-blend-mode:screen;
+  background:
+    radial-gradient(ellipse 22% 16% at 80% 22%,rgba(170,235,220,.11),transparent 70%),
+    radial-gradient(ellipse 12% 22% at 12% 58%,rgba(170,225,235,.07),transparent 70%),
+    radial-gradient(ellipse 30% 9% at 50% 3%,rgba(255,255,255,.08),transparent 80%),
+    linear-gradient(180deg,rgba(120,150,140,.035),rgba(60,80,70,.015) 60%,rgba(0,0,0,0)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Cg fill='none' stroke='%23fff' stroke-linecap='round'%3E%3Cpath d='M40 60c40 8 90 4 130-6' stroke-opacity='.18' stroke-width='.6'/%3E%3Cpath d='M260 40c20 30 30 60 28 90' stroke-opacity='.12' stroke-width='.5'/%3E%3Cpath d='M70 210c50-12 110-10 170 4' stroke-opacity='.1' stroke-width='.5'/%3E%3Cpath d='M300 220l60-26' stroke-opacity='.14' stroke-width='.5'/%3E%3Cpath d='M120 120c8 4 20 6 34 4' stroke-opacity='.16' stroke-width='.4'/%3E%3Cpath d='M20 160c14-6 30-8 44-6' stroke-opacity='.12' stroke-width='.4'/%3E%3Cpath d='M330 90c4 10 6 22 4 34' stroke-opacity='.1' stroke-width='.4'/%3E%3C/g%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 -.5'/%3E%3C/filter%3E%3Crect width='400' height='300' filter='url(%23s)' opacity='.045'/%3E%3C/svg%3E") center/cover no-repeat}
+.glass::after{content:"";position:absolute;inset:0;opacity:.3;mix-blend-mode:multiply;
+  background:radial-gradient(circle at 50% 50%,rgba(255,255,255,1) 0 48%,rgba(0,0,0,.45) 70%) 0 0/3px 3px}
+.glass .roll{position:absolute;left:0;right:0;top:-30%;height:30%;
+  background:linear-gradient(180deg,transparent,rgba(255,170,110,.035) 45%,rgba(255,190,140,.06) 50%,rgba(255,170,110,.035) 55%,transparent);
+  animation:crt-roll 9s linear infinite}
+@keyframes crt-roll{to{transform:translateY(440%)}}
+@keyframes crt-flicker{0%,100%{opacity:1}47%{opacity:.9}48%{opacity:1}83%{opacity:.95}84%{opacity:1}}
+@media(prefers-reduced-motion:reduce){#map,.glass .roll{animation:none}}
+/* chart screens: same glass treatment, lighter */
+.charts .tile.chart{border:5px solid transparent;
+  background:linear-gradient(#0a0503,#0a0503) padding-box,linear-gradient(160deg,#4a4540,#24211e 45%,#151311 70%,#38342f) border-box}
+.charts .tile.chart::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;mix-blend-mode:screen;
+  background:
+    radial-gradient(ellipse 30% 18% at 82% 14%,rgba(170,235,220,.09),transparent 70%),
+    radial-gradient(ellipse 45% 10% at 45% 2%,rgba(255,255,255,.07),transparent 80%),
+    linear-gradient(180deg,rgba(120,150,140,.05),transparent 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300' viewBox='0 0 400 300'%3E%3Cg fill='none' stroke='%23fff' stroke-linecap='round'%3E%3Cpath d='M40 60c40 8 90 4 130-6' stroke-opacity='.18' stroke-width='.6'/%3E%3Cpath d='M260 40c20 30 30 60 28 90' stroke-opacity='.12' stroke-width='.5'/%3E%3Cpath d='M70 210c50-12 110-10 170 4' stroke-opacity='.1' stroke-width='.5'/%3E%3Cpath d='M300 220l60-26' stroke-opacity='.14' stroke-width='.5'/%3E%3Cpath d='M120 120c8 4 20 6 34 4' stroke-opacity='.16' stroke-width='.4'/%3E%3Cpath d='M20 160c14-6 30-8 44-6' stroke-opacity='.12' stroke-width='.4'/%3E%3Cpath d='M330 90c4 10 6 22 4 34' stroke-opacity='.1' stroke-width='.4'/%3E%3C/g%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.012' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 -.5'/%3E%3C/filter%3E%3Crect width='400' height='300' filter='url(%23s)' opacity='.045'/%3E%3C/svg%3E") center/cover no-repeat}
 </style>
 </head>
 <body>
@@ -574,6 +608,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <canvas id="map"></canvas>
   <span class="mapref"><sup class="ref" data-n="2" role="button" tabindex="0" aria-label="Note 2">2</sup></span>
   <span class="banner" id="banner" hidden>DEMO · SIMULATED</span>
+  <div class="glass" aria-hidden="true"><i class="roll"></i></div>
 </div>
 
 
