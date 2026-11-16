@@ -930,7 +930,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16c</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16d</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -2798,7 +2798,35 @@ function hideSug(){$("fsug").hidden=true;sugIdx=-1;}
 /* live American departures from DFW, found from OpenSky's state vectors + adsb.lol's position-checked routes */
 let dfwPicks=[];const DFW=[32.8998,-97.0403];
 const inNA=(la,lo)=>la>14&&la<72&&lo>-170&&lo<-50;
+async function routesetAny(planes){
+  const body=JSON.stringify({planes});
+  try{const r=await fetch("https://api.adsb.lol/api/0/routeset",{method:"POST",headers:{"Content-Type":"application/json"},body});if(r.ok)return await r.json();}catch(e){}
+  if(relayBase())try{const r=await fetch(relayBase()+"/api/routeset",{method:"POST",headers:{"Content-Type":"application/json"},body});if(r.ok)return await r.json();}catch(e){}
+  return null;
+}
+function pickFromRouteset(R){
+  const out=[];
+  for(const x of (Array.isArray(R)?R:[])){
+    const A=(x&&(x._airports||x.airports)||[]).filter(a=>a&&isFinite(+a.lat)&&isFinite(+a.lon));if(A.length<2||x.plausible===false||x.plausible===0)continue;
+    const o=A[0],d=A[A.length-1];if((o.iata||"")!=="DFW"&&(o.icao||"")!=="KDFW")continue;if(!inNA(+d.lat,+d.lon))continue;
+    const len=distNm([+o.lat,+o.lon],[+d.lat,+d.lon]);if(len<550)continue;
+    const cs=String(x.callsign||"").trim(),code="AA"+cs.replace(/^AAL/,"");
+    routes[code]={o:{c:"DFW",lat:+o.lat,lon:+o.lon,n:o.location||""},d:{c:d.iata||d.icao,lat:+d.lat,lon:+d.lon,n:d.location||""},t:Date.now(),ok:1};
+    out.push({code,to:d.iata||d.icao,mi:Math.round(len*1.15078)});}
+  try{localStorage.setItem("sfm-routes",JSON.stringify(routes));}catch(e){}
+  return out.sort((a,b)=>b.mi-a.mi).slice(0,3);
+}
 async function findDfwFlights(){
+  // 0) free, generic: who's flying near DFW right now (the same live sources the tracker uses), keep American flights
+  //    that are climbing out / heading away, then ask adsb.lol where each is going
+  try{const urls=[`https://api.adsb.lol/v2/point/${DFW[0]}/${DFW[1]}/250`,`https://api.airplanes.live/v2/point/${DFW[0]}/${DFW[1]}/250`,
+      `https://opendata.adsb.fi/api/v2/lat/${DFW[0]}/lon/${DFW[1]}/dist/250`];
+    let ac=null;for(const u of urls){try{const j=await getJSON(u,isReadsb);ac=j.ac||j.aircraft;if(ac&&ac.length)break;}catch(e){}}
+    const C=(ac||[]).filter(a=>a&&/^AAL\d{1,4}$/.test(String(a.flight||"").trim())&&typeof a.alt_baro==="number"&&a.alt_baro>6000&&a.lat!=null&&a.lon!=null)
+      .map(a=>({cs:String(a.flight).trim(),lat:+a.lat,lon:+a.lon,d:distNm(DFW,[+a.lat,+a.lon]),away:a.track==null?true:Math.abs(((a.track-bearing(DFW,[+a.lat,+a.lon]))%360+540)%360-180)<75}))
+      .filter(c=>c.d>20&&c.away).slice(0,90);
+    if(C.length){const L=pickFromRouteset(await routesetAny(C.map(c=>({callsign:c.cs,lat:+c.lat.toFixed(3),lng:+c.lon.toFixed(3)}))));if(L.length)return L;}
+  }catch(e){}
   // 1) today's DFW departure board via the relay (AeroDataBox): flights that left and haven't landed yet
   try{if(relayBase()){const j=await relayApi("/api/departures");const now=Date.now(),NA=["US","CA","MX","BS","JM","DO","PR","CU","BZ","GT","HN","SV","NI","CR","PA","AW","CW","BB","TC","KY","LC","AG","SX","VI"];
     const L=(j.flights||[]).filter(f=>f.code&&f.to&&f.dep&&f.dep<now-10*60000&&(!f.arr||f.arr>now+15*60000)&&!/arrived|landed|cancel/i.test(f.status)
@@ -2813,19 +2841,7 @@ async function findDfwFlights(){
     const C=(j.states||[]).filter(s=>s&&s[1]&&/^AAL\d{1,4}\s*$/.test(s[1])&&!s[8]&&s[5]!=null&&s[6]!=null)
       .map(s=>({cs:s[1].trim(),lat:s[6],lon:s[5],d:distNm(DFW,[s[6],s[5]])})).filter(c=>c.d>80).sort((a,b)=>b.d-a.d).slice(0,90);
     if(!C.length)return [];
-    const body=JSON.stringify({planes:C.map(c=>({callsign:c.cs,lat:+c.lat.toFixed(3),lng:+c.lon.toFixed(3)}))});let R=null;
-    try{const r=await fetch("https://api.adsb.lol/api/0/routeset",{method:"POST",headers:{"Content-Type":"application/json"},body});if(r.ok)R=await r.json();}catch(e){}
-    if(!R&&relayBase())try{const r=await fetch(relayBase().replace(/\/$/,"")+"/api/routeset",{method:"POST",headers:{"Content-Type":"application/json"},body});if(r.ok)R=await r.json();}catch(e){}
-    if(!R)return [];const out=[];
-    for(const x of (Array.isArray(R)?R:[])){
-      const A=(x&&(x._airports||x.airports)||[]).filter(a=>a&&isFinite(+a.lat)&&isFinite(+a.lon));if(A.length<2||x.plausible===false||x.plausible===0)continue;
-      const o=A[0],d=A[A.length-1];if((o.iata||"")!=="DFW"&&(o.icao||"")!=="KDFW")continue;if(!inNA(+d.lat,+d.lon))continue;
-      const len=distNm([+o.lat,+o.lon],[+d.lat,+d.lon]);if(len<550)continue;
-      const cs=String(x.callsign||"").trim(),code="AA"+cs.replace(/^AAL/,"");
-      const v={o:{c:"DFW",lat:+o.lat,lon:+o.lon,n:o.location||""},d:{c:d.iata||d.icao,lat:+d.lat,lon:+d.lon,n:d.location||""}};
-      routes[code]=Object.assign(v,{t:Date.now(),ok:1});out.push({code,to:v.d.c,mi:Math.round(len*1.15078)});}
-    try{localStorage.setItem("sfm-routes",JSON.stringify(routes));}catch(e){}
-    return out.sort((a,b)=>b.mi-a.mi).slice(0,3);
+    return pickFromRouteset(await routesetAny(C.map(c=>({callsign:c.cs,lat:+c.lat.toFixed(3),lng:+c.lon.toFixed(3)}))));
   }catch(e){return [];}
 }
 function buildSugIfOpen(){if(document.activeElement===$("fq"))buildSug();}
@@ -3256,10 +3272,13 @@ window.addEventListener("resize",()=>{draw();drawCharts();});
 readouts();draw();drawCharts();
 {let start="AA3101";try{start=localStorage.getItem("sfm-cur")||start;}catch(e){}
  const h=location.hash.slice(1),fromLink=!!(h&&normFlight(h));if(fromLink)start=h;
- chooseFlight(start,"init");
- // default: an American flight airborne right now out of DFW, staying in North America, preferring long ones
- findDfwFlights().then(L=>{if(!L.length)return;dfwPicks=L;buildSugIfOpen();
-   const typed=document.activeElement===$("fq");if(!fromLink&&!typed&&L[0].code!==curFlight)chooseFlight(L[0].code,"init");});}
+ // a shared link opens that flight; otherwise look around DFW first and open a live, long American departure,
+ // falling back to the last flight viewed only if nothing turns up
+ const find=Promise.race([findDfwFlights(),new Promise(r=>setTimeout(()=>r([]),15000))]);
+ if(fromLink){chooseFlight(start,"init");find.then(L=>{dfwPicks=L;buildSugIfOpen();});}
+ else{$("fq").value="";$("msg").textContent="Looking for a live flight out of DFW…";
+   find.then(L=>{dfwPicks=L;const typed=document.activeElement===$("fq")&&$("fq").value;
+     if(!typed)chooseFlight(L.length?L[0].code:start,"init");buildSugIfOpen();});}}
 /* ---------- analog instrument panel (Su-24M flavour): airspeed, altimeter, attitude (estimated), HSI ---------- */
 (function(){
   const cells={spd:$("gSpd"),alt:$("gAlt"),adi:$("gAdi"),hsi:$("gHsi")};
