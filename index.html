@@ -2581,7 +2581,7 @@ function drawTraffic(g,X,Y,w,h,scale,p,C){
   if(!trafOn||mode==="past"||mode==="planned")return;
   g.font="10px "+C("--sans");g.textAlign="left";g.textBaseline="bottom";
   if(scale<TRAF_MIN_SCALE-0.5){if(!p)return;pxText(g,"ZOOM IN FOR TRAFFIC",10,h-26,"rgba(255,138,42,.95)","left","alphabetic",11);return;}
-  if(p){g.setLineDash([2.2,5.5]);g.strokeStyle=PHA(.385);g.lineWidth=1.1;g.beginPath();g.arc(X(p[1]),Y(p[0]),TRAF_NM/60*scale,0,7);g.stroke();g.setLineDash([]);}
+  if(p){g.setLineDash([2.53,6.33]);g.strokeStyle=PHA(.443);g.lineWidth=1.27;g.beginPath();g.arc(X(p[1]),Y(p[0]),TRAF_NM/60*scale,0,7);g.stroke();g.setLineDash([]);}
   let sel=null;
   for(const a of traf){
     const dt=Math.min(30,(Date.now()-a.t)/1000);
