@@ -646,6 +646,33 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .fr-ph::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
   background:radial-gradient(ellipse 40% 30% at 75% 10%,rgba(200,255,235,.14),transparent 70%),radial-gradient(ellipse 70% 18% at 40% 0%,rgba(255,255,255,.10),transparent 80%)}
 .fr-ph .phx{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;filter:url(#crtBulge)}
+/* instrument tiles: shiny black metal faceplate, engraved title, readout on its own small CRT, chart on a CRT below */
+.charts .tile.chart{border:5px solid transparent!important;
+  background:
+    linear-gradient(118deg,transparent 30%,rgba(255,255,255,.07) 42%,rgba(255,255,255,.015) 50%,transparent 58%) padding-box,
+    repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px) padding-box,
+    linear-gradient(165deg,#2b2c30 0%,#121316 38%,#1c1d21 55%,#08090a 100%) padding-box,
+    linear-gradient(160deg,#3a3936,#141312 35%,#060606 65%,#232220) border-box!important;
+  box-shadow:0 0 0 1px #000,0 4px 10px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 rgba(0,0,0,.8)!important}
+.charts .tile.chart::before,.charts .tile.chart::after{display:none}
+.charts .tile.chart .head .k{color:#0c0c0e!important;text-shadow:0 1px 0 rgba(255,255,255,.22),0 -1px 0 rgba(0,0,0,.9)!important;font-weight:800;letter-spacing:.1em}
+.charts .tile .head .scr{position:relative;overflow:hidden;margin-top:4px;padding:5px 5px 4px 6px;border:3px solid transparent;border-radius:8px / 11px;
+  background:linear-gradient(#0a0503,#0a0503) padding-box,linear-gradient(160deg,#2a2826,#111010 35%,#060606 65%,#1a1917) border-box;
+  box-shadow:0 0 0 1px #000,0 1px 0 rgba(255,255,255,.08),inset 0 0 12px rgba(0,0,0,.9)}
+.charts .tile .head .scr>*{filter:url(#crtBulge)}
+.charts .tile .head .scr .v{margin-top:0}
+.charts .tile .head .scr::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 40% 30% at 78% 8%,rgba(170,235,220,.10),transparent 70%),radial-gradient(ellipse 70% 16% at 40% 0%,rgba(255,255,255,.07),transparent 80%),linear-gradient(180deg,rgba(120,150,140,.05),transparent 60%)}
+.charts .tile .head .scr::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.28) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.5) 100%)}
+/* heading: same faceplate; compass on its own bezelled CRT below the readout */
+.charts .tile.chart canvas.dial{position:relative!important;inset:auto!important;flex:1 1 0!important;width:100%!important;height:0!important;min-height:150px!important;margin-top:6px!important;
+  z-index:0;border:3px solid transparent!important;border-radius:10% / 12%!important;box-sizing:border-box;
+  background:linear-gradient(#050100,#050100) padding-box,linear-gradient(165deg,#b4beb7 0%,#8b968f 14%,#5d6762 38%,#3f4743 58%,#66716b 80%,#a1aca5 100%) border-box!important;box-shadow:0 1px 0 rgba(255,255,255,.08),0 0 0 1px #000}
+.charts .tile.chart:has(canvas.dial){min-height:0!important}
+.charts .tile.chart:has(canvas.dial) .head{pointer-events:auto}
+.charts .tile .head .scr .lcd{font-size:1.18rem}
+.charts .tile .head .scr .v small{font-size:.58rem}
 </style>
 </head>
 <body>
@@ -739,17 +766,17 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   </div>
 </div>
 <div class="charts">
-  <div class="tile chart"><div class="head"><div class="k">Altitude</div><div class="v" id="alt">—</div><div class="s" id="altS"></div></div>
+  <div class="tile chart"><div class="head"><div class="k">Altitude</div><div class="scr"><div class="v" id="alt">—</div><div class="s" id="altS"></div></div></div>
     <canvas class="spark" id="altChart" aria-label="Altitude over time, in feet"></canvas></div>
-  <div class="tile chart"><div class="head"><div class="k">Ground speed</div><div class="v" id="spd">—</div><div class="s" id="spdS"></div></div>
+  <div class="tile chart"><div class="head"><div class="k">Ground speed</div><div class="scr"><div class="v" id="spd">—</div><div class="s" id="spdS"></div></div></div>
     <canvas class="spark" id="spdChart" aria-label="Ground speed over time, in miles per hour"></canvas></div>
-  <div class="tile chart"><div class="head"><div class="k">Vert speed</div><div class="v" id="vs">—</div><div class="s" id="vsS"></div></div><div class="tr" id="vsT" aria-live="polite"></div>
+  <div class="tile chart"><div class="head"><div class="k">Vert speed</div><div class="scr"><div class="v" id="vs">—</div><div class="s" id="vsS"></div></div></div><div class="tr" id="vsT" aria-live="polite"></div>
     <canvas class="spark" id="vsChart" aria-label="Vertical speed over time, in feet per minute; above the center line is climbing"></canvas></div>
-  <div class="tile chart"><div class="head"><div class="k">Heading<sup class="ref" data-n="3" role="button" tabindex="0" aria-label="Note 3">3</sup></div><div class="v" id="hdg">—</div><div class="s" id="hdgS"></div></div><div class="tr" id="hdgT" aria-live="polite"></div>
+  <div class="tile chart"><div class="head"><div class="k">Heading<sup class="ref" data-n="3" role="button" tabindex="0" aria-label="Note 3">3</sup></div><div class="scr"><div class="v" id="hdg">—</div><div class="s" id="hdgS"></div></div></div><div class="tr" id="hdgT" aria-live="polite"></div>
     <canvas class="dial" id="hdgChart" aria-label="Heading history: center is the start of tracking, outer ring is now"></canvas></div>
-  <div class="tile chart"><div class="head"><div class="k">Distance to go</div><div class="v" id="dist">—</div><div class="s" id="distS"></div></div>
+  <div class="tile chart"><div class="head"><div class="k">Distance to go</div><div class="scr"><div class="v" id="dist">—</div><div class="s" id="distS"></div></div></div>
     <canvas class="spark" id="distChart" aria-label="Distance left to the destination over time, in miles"></canvas></div>
-  <div class="tile chart"><div class="head"><div class="k">Time to go<sup class="ref" data-n="4" role="button" tabindex="0" aria-label="Note 4">4</sup></div><div class="v" id="eta">—</div><div class="s" id="etaS"></div></div>
+  <div class="tile chart"><div class="head"><div class="k">Time to go<sup class="ref" data-n="4" role="button" tabindex="0" aria-label="Note 4">4</sup></div><div class="scr"><div class="v" id="eta">—</div><div class="s" id="etaS"></div></div></div>
     <canvas class="spark" id="etaChart" aria-label="Estimated time left over time, in minutes"></canvas></div>
 </div>
 
