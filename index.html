@@ -344,11 +344,29 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .apanel .scr::after{content:"";position:absolute;left:1px;right:1px;top:4px;height:1.5px;background:rgba(0,0,0,.6);transform:rotate(35deg)}
 .apanel .s1{left:5px;top:5px}.apanel .s2{right:5px;top:5px}.apanel .s3{left:5px;bottom:5px}.apanel .s4{right:5px;bottom:5px}
 /* aircraft card as a paper dossier in a manila folder */
-.acard.dossier{position:relative;padding:22px 8px 8px;margin-top:14px;border:0;border-radius:3px 8px 8px 8px;
+.acard.dossier{position:relative;padding:12px 8px 8px;margin-top:22px;border:0;border-radius:3px 8px 8px 8px;
   background:linear-gradient(180deg,#d6b878,#c9a764);box-shadow:0 2px 0 #a8874a,0 8px 18px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.35)}
-.dossier .dtab{position:absolute;left:0;top:-14px;height:20px;padding:3px 14px 0 10px;border-radius:6px 10px 0 0;background:#d6b878;
-  font:700 .7rem/1.3 "Courier Prime","Courier New",Courier,monospace;letter-spacing:.06em;color:#3b2c12;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}
+.dossier .dtabs{position:absolute;left:0;right:8px;top:-17px;display:flex;gap:3px;align-items:flex-end}
+.dossier .dtab{height:22px;padding:3px 10px 0 9px;border:0;border-radius:6px 10px 0 0;background:#b4955a;color:#4a3a1c;
+  font:700 .66rem/1.3 "Courier Prime","Courier New",Courier,monospace;letter-spacing:.05em;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),inset 0 -3px 4px rgba(0,0,0,.12);
+  white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.dossier .dtab.on{background:#d6b878;color:#3b2c12;height:24px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35);z-index:1}
 .dossier .dtab b{font-weight:700;color:#1f170a}
+.dossier .dsheet[hidden]{display:none}
+.dossier .dsec{font-size:.62rem;letter-spacing:.12em;font-weight:700;color:#2a2418;border-bottom:1px solid #2a2418;padding-bottom:2px;margin-top:4px}
+.dossier .dsec span{font-weight:400;letter-spacing:.03em;color:#6a604c}
+.dossier .drow{display:flex;align-items:baseline;gap:6px;font-size:.74rem;line-height:1.35}
+.dossier .drow span{flex:none;color:#5a4f3a}
+.dossier .drow::after{content:"";order:1;flex:1 1 auto;border-bottom:1px dotted #8a7d62;transform:translateY(-3px);min-width:10px}
+.dossier .drow b{order:2;color:#1d180f;text-align:right;overflow-wrap:anywhere}
+.dossier .dnote{font-size:.62rem;color:#6a604c;line-height:1.35}
+.dossier .draw{font-size:.62rem;background:rgba(80,60,20,.07);border-left:2px solid #8a7d62;padding:3px 6px;color:#2a2418;overflow-wrap:anywhere}
+.dossier .dlist{margin:0;padding-left:16px;font-size:.72rem;line-height:1.4}
+.dossier .dlist.rw{list-style:square}
+.dossier .fav{font-style:normal;font-size:.6rem;border:1.5px solid #1e6b2e;color:#1e6b2e;padding:0 3px;border-radius:2px;margin-left:3px;white-space:nowrap}
+.dossier .fc{font-style:normal;font-weight:700;padding:0 4px;border:1.5px solid currentColor;border-radius:2px}
+.dossier .fc.vfr{color:#1e6b2e}.dossier .fc.mvfr{color:#1f4fa0}.dossier .fc.ifr{color:#b3261e}.dossier .fc.lifr{color:#8a1f7a}
+.dossier .dstamp.red{color:#b3261e;border-color:#b3261e}.dossier .dstamp.blue{color:#1f4fa0;border-color:#1f4fa0}
 .dossier .dsheet{position:relative;display:flex;flex-direction:column;gap:9px;padding:12px 12px 10px;border-radius:2px;transform:rotate(-.35deg);
   background:
     radial-gradient(140% 90% at 80% 10%,rgba(255,255,255,.35),transparent 60%),
@@ -484,9 +502,13 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 </div>
 
 
-<section class="acard dossier">
-  <div class="dtab">FILE Nº <b id="dFile">—</b></div>
-  <div class="dsheet">
+<section class="acard dossier" id="dossier">
+  <div class="dtabs" role="tablist">
+    <button type="button" role="tab" class="dtab on" data-p="ac" aria-selected="true">AIRCRAFT <b id="dFile">—</b></button>
+    <button type="button" role="tab" class="dtab" data-p="dep" aria-selected="false">DEP <b id="dTabDep">—</b></button>
+    <button type="button" role="tab" class="dtab" data-p="arr" aria-selected="false">ARR <b id="dTabArr">—</b></button>
+  </div>
+  <div class="dsheet" id="dsAc">
   <div class="dhead"><div><div class="dtitle">AIRCRAFT DOSSIER<sup class="ref" data-n="5" role="button" tabindex="0" aria-label="Note 5">5</sup></div>
     <div class="dsub">Subject: airframe operating this flight · <span id="dDate"></span></div></div>
     <div class="dstamp" id="dStamp">ON FILE</div></div>
@@ -505,9 +527,11 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <div class="extra" id="extra"></div>
   <div class="dfoot"><span>Compiled from public ADS-B and registry data</span><span class="dsig">— Flight desk</span></div>
   </div>
+  <div class="dsheet" id="dsDep" hidden></div>
+  <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-15d</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-15e</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -2109,7 +2133,7 @@ async function chooseFlight(text,quiet){
   insts=[];fillInstances();
   // known route right away (cached), else look it up; the map flies to the new airports either way
   let r=routes[f.code]||null;
-  const setRoute=setRouteFn=r=>{
+  const setRoute=setRouteFn=r=>{setTimeout(()=>window.renderAptTabs&&renderAptTabs(),50);
     if(r){AIRPORTS[r.o.c]=[r.o.lat,r.o.lon];AIRPORTS[r.d.c]=[r.d.lat,r.d.lon];$("from").value=r.o.c;$("to").value=r.d.c;}
     else{$("from").value="";$("to").value="";}
     camAnimate();readForm();view="route";zoom=1;pan=[0,0];autoTrack=true;viewChanged();
@@ -2841,6 +2865,125 @@ readouts();draw();drawCharts();
   document.addEventListener("visibilitychange",kick);addEventListener("resize",()=>{for(const k in cells)cells[k]._static=null;kick();});
   if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{for(const k in cells)cells[k]._static=null;});
   kick();
+})();
+/* ---------- dossier tabs 2 & 3: departure and arrival airport files ---------- */
+(function(){
+  const box=$("dossier");if(!box)return;
+  let tab="ac";const cache={};      // per airport code: {t, osm, metar, om, traf, faa, busy}
+  box.querySelectorAll(".dtab").forEach(b=>b.addEventListener("click",()=>{tab=b.dataset.p;
+    box.querySelectorAll(".dtab").forEach(x=>{const on=x===b;x.classList.toggle("on",on);x.setAttribute("aria-selected",String(on));});
+    ["ac","dep","arr"].forEach(k=>{$("ds"+k[0].toUpperCase()+k.slice(1)).hidden=k!==tab;});
+    if(tab!=="ac")renderApt(tab,true);}));
+  function aptOf(which){
+    const code=($(which==="dep"?"from":"to").value||"").trim().toUpperCase(),ll=which==="dep"?org:dst;if(!code||!ll)return null;
+    const r=curFlight&&routes[curFlight],side=r&&(which==="dep"?r.o:r.d),x=typeof schedNow==="function"?schedNow():null;
+    const sx=x&&(which==="dep"?x.from:x.to)===code?x:null;
+    return {code,lat:ll[0],lon:ll[1],icao:(side&&side.c===code&&side.icao)||(sx&&(which==="dep"?sx.fromIcao:sx.toIcao))||(/^[A-Z]{3}$/.test(code)&&ll[1]<-60&&ll[0]>24?"K"+code:""),
+      name:(side&&side.c===code&&side.n)||(sx&&(which==="dep"?sx.fromName:sx.toName))||"",x:sx};
+  }
+  const hd=(a,b)=>Math.abs(((a-b)%360+540)%360-180);
+  async function load(a){
+    const C=cache[a.code]||(cache[a.code]={t:0});if(C.busy||Date.now()-C.t<8*60000)return C;C.busy=true;C.t=Date.now();
+    const q="[out:json][timeout:25];nwr(around:5000,"+a.lat+","+a.lon+")[aeroway=aerodrome];out tags center 3;"+
+      "way(around:7000,"+a.lat+","+a.lon+")[aeroway=runway];out tags geom;"+
+      ["node(around:7000,LL)[aeroway=gate];","nwr(around:7000,LL)[aeroway=parking_position];","nwr(around:7000,LL)[aeroway=terminal];","way(around:7000,LL)[aeroway=taxiway];"]
+        .map(s=>s.replace("LL",a.lat+","+a.lon)+"out count;").join("");
+    const jobs=[
+      (async()=>{for(const h of OVERPASS){try{C.osm=await getJSON(h+"?data="+encodeURIComponent(q),isOverpass,"Airport map");break;}catch(e){}}})(),
+      (async()=>{try{C.om=await getJSON("https://api.open-meteo.com/v1/forecast?latitude="+a.lat.toFixed(3)+"&longitude="+a.lon.toFixed(3)+
+        "&current=temperature_2m,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility,weather_code,cloud_cover&timezone=auto&wind_speed_unit=kn",j=>j&&j.current);}catch(e){}})(),
+      (async()=>{try{const j=await getJSON("https://api.adsb.lol/v2/point/"+a.lat.toFixed(3)+"/"+a.lon.toFixed(3)+"/6",isReadsb);C.traf=j.ac||j.aircraft||[];}catch(e){C.traf=null;}})(),
+    ];
+    if(/^K[A-Z]{3}$|^P[AH][A-Z]{2}$/.test(a.icao)||(!a.icao&&/^[A-Z]{3}$/.test(a.code)&&a.lon<-60&&a.lat>18))
+      jobs.push((async()=>{try{C.faa=await relayApi("/api/faa?code="+a.code);}catch(e){C.faa=null;}})());
+    const metar=async icao=>{try{const j=await getJSON("https://aviationweather.gov/api/data/metar?ids="+icao+"&format=json",j=>Array.isArray(j));C.metar=j[0]||null;}catch(e){}};
+    if(a.icao)jobs.push(metar(a.icao));
+    await Promise.all(jobs.map(p=>p.then(()=>renderApt(tab,false))));
+    if(!a.icao&&!C.metar){const ad=(C.osm&&C.osm.elements||[]).find(e=>e.tags&&e.tags.aeroway==="aerodrome"&&e.tags.icao);if(ad){a.icao=ad.tags.icao;await metar(ad.tags.icao);}}
+    C.busy=false;renderApt(tab,false);return C;
+  }
+  const row=(k,v)=>'<div class="drow"><span>'+k+'</span><b>'+(v==null||v===""?"—":v)+'</b></div>';
+  const tm=(ms,off)=>{if(!ms)return "—";const d=new Date(ms+(off!=null?off*1000:0)),h=off!=null?d.getUTCHours():d.getHours(),m=off!=null?d.getUTCMinutes():d.getMinutes();
+    return String(h%12||12).padStart(2,"0")+":"+String(m).padStart(2,"0")+(h<12?" am":" pm");};
+  function renderApt(which,kick){
+    const el=$(which==="dep"?"dsDep":"dsArr");if(!el)return;
+    const a=aptOf(which);$(which==="dep"?"dTabDep":"dTabArr").textContent=a?a.code:"—";
+    if(which!==tab&&!kick)return;
+    if(!a){el.innerHTML='<div class="dhead"><div><div class="dtitle">AIRPORT FILE</div><div class="dsub">No '+(which==="dep"?"departure":"arrival")+' airport known for this flight yet.</div></div><div class="dstamp pend">PENDING</div></div>';return;}
+    const C=cache[a.code]||{};if(kick)load(a);
+    const E=(C.osm&&C.osm.elements)||[],ad=E.find(e=>e.tags&&e.tags.aeroway==="aerodrome")||{},T=ad.tags||{};
+    const counts=E.filter(e=>e.type==="count").map(e=>+((e.tags||{}).total||0));
+    const rws=E.filter(e=>e.type==="way"&&e.tags&&e.tags.aeroway==="runway"&&e.geometry&&e.geometry.length>1);
+    const off=C.om&&C.om.utc_offset_seconds;
+    // conditions
+    const M=C.metar,cur=C.om&&C.om.current;
+    const wdir=M&&typeof M.wdir==="number"?M.wdir:cur?cur.wind_direction_10m:null,wspd=M&&M.wspd!=null?M.wspd:cur?Math.round(cur.wind_speed_10m):null,wg=M&&M.wgst?M.wgst:cur&&cur.wind_gusts_10m>(wspd||0)+8?Math.round(cur.wind_gusts_10m):null;
+    const visSm=M&&M.visib!=null?String(M.visib).replace("+","")+" sm":cur&&cur.visibility!=null?(Math.min(10,cur.visibility/1609)).toFixed(cur.visibility>16000?0:1)+" sm":null;
+    const tempC=M&&M.temp!=null?M.temp:cur?cur.temperature_2m:null;
+    const cat=M&&M.fltCat||null;
+    // runways and the end the wind favours
+    const R=rws.map(w=>{const g=w.geometry,a0=g[0],b0=g[g.length-1],len=distNm([a0.lat,a0.lon],[b0.lat,b0.lon])*6076;
+      const brg1=bearing([a0.lat,a0.lon],[b0.lat,b0.lon]);const ref=(w.tags.ref||"").toUpperCase();
+      const ends=ref.split("/").map(s=>s.trim()).filter(Boolean);
+      const e1=ends[0]||"",e2=ends[1]||"";const hdgOf=e=>{const n=parseInt(e,10);return isFinite(n)?n*10:null;};
+      const h1=hdgOf(e1)!=null?hdgOf(e1):brg1,h2=hdgOf(e2)!=null?hdgOf(e2):(brg1+180)%360;
+      let use="",ang=999;if(wdir!=null&&wspd>=4){use=hd(h1,wdir)<hd(h2,wdir)?e1:e2;ang=Math.min(hd(h1,wdir),hd(h2,wdir));}
+      return {ref:ref||"?",len,use,ang,closed:/closed|disused/.test(w.tags["disused"]||w.tags["runway"]||""),surf:w.tags.surface||""};})
+      .filter(r=>r.len>2000).sort((p,q)=>q.len-p.len);
+    const seen=new Set(),RW=R.filter(r=>!seen.has(r.ref)&&seen.add(r.ref));
+    {const best=Math.min(...RW.map(r=>r.ang));RW.forEach(r=>{if(r.ang>best+25||r.ang>70)r.use="";});}   // only the runways best lined up with the wind
+    // activity
+    let onG=null,arr=0,dep=0;if(Array.isArray(C.traf)){onG=0;for(const p of C.traf){const g=p.alt_baro==="ground"||(p.gs!=null&&p.gs<45&&(p.alt_baro==null||p.alt_baro<a.lat*0+2500));
+      if(g)onG++;else if(typeof p.alt_baro==="number"&&p.alt_baro<6000){const vr=p.baro_rate||p.geom_rate||0;if(vr<-250)arr++;else if(vr>250)dep++;}}}
+    const gates=counts[0],stands=counts[1],terms=counts[2],taxi=counts[3],spots=Math.max(gates||0,stands||0);
+    // FAA
+    const ev=(C.faa&&C.faa.events)||[];
+    const evTxt=ev.map(e=>{const t=e.type||"";if(/ground stop/i.test(t))return "GROUND STOP"+(e.End_Time?" until "+esc(e.End_Time):"")+(e.Reason?" — "+esc(e.Reason):"");
+      if(/ground delay/i.test(t))return "Ground delay program: avg "+esc(e.Avg||"?")+(e.Reason?" — "+esc(e.Reason):"");
+      if(/closure/i.test(t))return "Closure: "+esc(e.Reason||"")+(e.Reopen?" (reopens "+esc(e.Reopen)+")":"");
+      return esc(e.dir||"")+" delays "+esc(e.Min||"")+(e.Max?"–"+esc(e.Max):"")+(e.Trend?" · "+esc(e.Trend.toLowerCase()):"")+(e.Reason?" — "+esc(e.Reason):"");});
+    // stamp
+    let st="NORMAL OPS",sc="air";
+    if(ev.some(e=>/ground stop|closure/i.test(e.type||"")))st=ev.some(e=>/closure/i.test(e.type))?"CLOSURE":"GROUND STOP",sc="red";
+    else if(ev.length){st="DELAYS";sc="sim";}
+    else if(cat&&/IFR/.test(cat)){st=cat;sc=cat==="MVFR"?"blue":"red";}
+    else if(!C.t||C.busy&&!C.om)st="COMPILING",sc="pend";
+    // this flight
+    const x=a.x;let fl="";
+    if(x){if(which==="dep"){const best=x.depActual||x.depRevised,dl=best&&x.dep?Math.round((best-x.dep)/60000):null;
+        fl=row("Scheduled",tm(x.dep,off))+row(x.depActual?"Departed":"Estimated",best?tm(best,off):"")+row("Delay",dl==null?"":dl<=2?"on time":dl+" min")+
+          row("Terminal",esc(x.depTerm||""))+row("Gate",esc(x.depGate||""))+(x.depCheckIn?row("Check-in",esc(x.depCheckIn)):"")+(x.depRwy?row("Runway",esc(x.depRwy)):"");}
+      else{const best=x.arrActual||x.arrRevised,dl=best&&x.arr?Math.round((best-x.arr)/60000):null;
+        fl=row("Scheduled",tm(x.arr,off))+row(x.arrActual?"Arrived":"Estimated",best?tm(best,off):"")+row("Delay",dl==null?"":dl<=2?"on time":dl+" min")+
+          row("Terminal",esc(x.arrTerm||""))+row("Gate",esc(x.arrGate||""))+row("Baggage belt",esc(x.arrBelt||""))+(x.arrRwy?row("Runway",esc(x.arrRwy)):"");}}
+    else fl='<div class="dnote">'+(relayBase()?"No schedule entry for this flight today, so no gate or terminal on file.":"Gates and terminals need your relay's schedule data.")+'</div>';
+    const name=esc(T.name||a.name||a.code);
+    el.innerHTML=
+      '<div class="dhead"><div><div class="dtitle">AIRPORT FILE — '+(which==="dep"?"DEPARTURE":"ARRIVAL")+'</div>'+
+      '<div class="dsub">'+esc(a.code)+(a.icao||T.icao?" / "+esc(a.icao||T.icao):"")+' · '+name+(off!=null?' · local '+tm(Date.now(),off):"")+'</div></div>'+
+      '<div class="dstamp '+sc+'">'+st+'</div></div>'+
+      '<div class="dsec">I. THIS FLIGHT <span>(airport local time)</span></div>'+fl+
+      '<div class="dsec">II. STATUS</div>'+(ev.length?'<ul class="dlist">'+evTxt.map(t=>"<li>"+t+"</li>").join("")+"</ul>":
+        '<div class="dnote">'+(C.faa?"FAA reports no delays, stops or closures.":C.faa===null?"FAA status unavailable.":/^K|^P[AH]/.test(a.icao||"K")&&a.lon<-60?"Checking FAA status…":"FAA status covers US airports only.")+'</div>')+
+      '<div class="dsec">III. CONDITIONS'+(M?' <span>(METAR)</span>':cur?' <span>(model)</span>':'')+'</div>'+
+      row("Category",cat?'<i class="fc '+cat.toLowerCase()+'">'+cat+'</i>':"")+
+      row("Wind",wdir!=null&&wspd!=null?(wspd<3?"calm":String(Math.round(wdir)).padStart(3,"0")+"° at "+wspd+" kt"+(wg?" gusting "+wg:"")):"")+
+      row("Visibility",visSm||"")+row("Temperature",tempC!=null?Math.round(tempC)+"°C / "+Math.round(tempC*9/5+32)+"°F":"")+
+      (M&&M.rawOb?'<div class="draw">'+esc(M.rawOb)+'</div>':"")+
+      '<div class="dsec">IV. RUNWAYS <span>(OpenStreetMap)</span></div>'+
+      (RW.length?'<ul class="dlist rw">'+RW.slice(0,8).map(r=>"<li><b>"+esc(r.ref)+"</b> "+Math.round(r.len/100)*100+" ft"+(r.surf?" · "+esc(r.surf):"")+(r.use?' <i class="fav">'+(which==="arr"?"likely landing ":"likely departing ")+esc(r.use)+"</i>":"")+"</li>").join("")+"</ul>"+
+        (wspd!=null&&wspd<4?'<div class="dnote">Wind is light, so the runway in use can\'t be guessed from it.</div>':''):'<div class="dnote">'+(C.osm?"No runways mapped nearby.":"Looking up the airfield…")+'</div>')+
+      '<div class="dsec">V. FACILITY & ACTIVITY</div>'+
+      row("Terminals",terms!=null?terms:"")+row("Gates mapped",gates!=null?gates:"")+row("Aircraft stands mapped",stands!=null?stands:"")+row("Taxiway segments",taxi!=null?taxi:"")+
+      row("Aircraft on the ground now",onG!=null?onG:"")+row("Arriving / departing (≤6 nm)",onG!=null?arr+" / "+dep:"")+
+      row("Open stands (estimate)",onG!=null&&spots?Math.max(0,spots-onG)+" of "+spots:"")+
+      '<div class="dnote">Open stands = mapped gates or stands minus planes seen on the ground with transponders on. A rough guide: parked planes often switch off, and not every stand is mapped.</div>'+
+      '<div class="dfoot"><span>Sources: AeroDataBox, FAA NAS status, NOAA METAR, Open-Meteo, OpenStreetMap, adsb.lol</span><span class="dsig">— Ops desk</span></div>';
+  }
+  // refresh the open airport tab now and then, and keep tab codes current
+  setInterval(()=>{renderApt("dep",false);renderApt("arr",false);if(tab!=="ac"){const a=aptOf(tab);if(a)load(a);}},30000);
+  setTimeout(()=>{renderApt("dep",false);renderApt("arr",false);},1500);
+  window.renderAptTabs=()=>{renderApt("dep",tab==="dep");renderApt("arr",tab==="arr");};
 })();
 </script>
 </body>

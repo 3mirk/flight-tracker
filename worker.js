@@ -21,6 +21,7 @@ const ALLOWED_HOSTS = [
   "opensky-network.org",
   "api.open-meteo.com",
   "api.rainviewer.com",
+  "aviationweather.gov",
   "api.adsbdb.com",
   "api.planespotters.net",
   "overpass-api.de",
@@ -117,6 +118,7 @@ function tooMany(request) {
 async function api(request, env, u, CORS) {
   if (!env.DATA) return json({ error: "no-storage", detail: "KV binding DATA is not set up" }, 503, CORS);
   const path = u.pathname;
+  if (path === "/api/faa" && request.method === "GET") return json(await faaStatus(u.searchParams.get("code") || ""), 200, CORS);
   if (path === "/api/route" && request.method === "GET") return json(await liveRoute(u), 200, CORS);
   if (path === "/api/flights" && request.method === "GET") return json(await listFlights(env, u.searchParams.get("code") || ""), 200, CORS);
   if (path === "/api/flight" && request.method === "GET") {
@@ -190,9 +192,38 @@ function fromAdb(list) {
     reg: f.aircraft && f.aircraft.reg || null, hex: f.aircraft && f.aircraft.modeS ? f.aircraft.modeS.toLowerCase() : null,
     model: f.aircraft && f.aircraft.model || null,
     fromLL: ll(f.departure && f.departure.airport), toLL: ll(f.arrival && f.arrival.airport),
+    fromIcao: f.departure && f.departure.airport && f.departure.airport.icao || null, toIcao: f.arrival && f.arrival.airport && f.arrival.airport.icao || null,
+    depTerm: f.departure && f.departure.terminal || null, depGate: f.departure && f.departure.gate || null, depRwy: f.departure && f.departure.runway || null,
+    depCheckIn: f.departure && f.departure.checkInDesk || null,
+    arrTerm: f.arrival && f.arrival.terminal || null, arrGate: f.arrival && f.arrival.gate || null, arrBelt: f.arrival && f.arrival.baggageBelt || null, arrRwy: f.arrival && f.arrival.runway || null,
+    depRevised: utcMs(f.departure && f.departure.revisedTime && f.departure.revisedTime.utc), arrRevised: utcMs(f.arrival && f.arrival.revisedTime && f.arrival.revisedTime.utc),
     fromName: f.departure && f.departure.airport && (f.departure.airport.municipalityName || f.departure.airport.shortName || f.departure.airport.name) || null,
     toName: f.arrival && f.arrival.airport && (f.arrival.airport.municipalityName || f.arrival.airport.shortName || f.arrival.airport.name) || null,
   })).filter(x => x.dep);
+}
+/* FAA National Airspace System status (US airports): ground stops, ground delay programs, delays, closures. XML -> JSON. */
+async function faaStatus(code) {
+  code = String(code).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+  if (!code) return { error: "bad-request" };
+  const r = await fetch("https://nasstatus.faa.gov/api/airport-status-information", {
+    headers: { "User-Agent": "personal-flight-tracker-relay", "Accept": "application/xml" }, cf: { cacheTtl: 120, cacheEverything: true } });
+  if (!r.ok) return { error: "upstream", status: r.status };
+  const x = await r.text(), out = [];
+  const upd = (/<Update_Time>([^<]*)<\/Update_Time>/.exec(x) || [])[1] || null;
+  for (const blk of x.split("<Delay_type>").slice(1)) {
+    const type = ((/<Name>([^<]*)<\/Name>/.exec(blk) || [])[1] || "").trim();
+    // every record that names an airport: grab its simple <Tag>value</Tag> pairs
+    const recs = blk.split(/<(?=ARPT>)/).slice(1);
+    for (const rec of recs) {
+      const arpt = ((/^ARPT>([^<]*)</.exec(rec) || [])[1] || "").trim().toUpperCase();
+      if (arpt !== code && "K" + arpt !== code && arpt !== "K" + code) continue;
+      const o = { type };
+      for (const m of rec.matchAll(/<([A-Za-z_]+)(?:\s+Type="([^"]*)")?>([^<]+)<\/\1>/g)) o[m[2] ? m[2] + "_" + m[1] : m[1]] = m[3].trim();
+      const ad = /<Arrival_Departure Type="([^"]*)">/.exec(rec); if (ad) o.dir = ad[1];
+      out.push(o);
+    }
+  }
+  return { code, updated: upd, events: out };
 }
 function ll(a) { const l = a && a.location; return l && typeof l.lat === "number" && typeof l.lon === "number" ? [l.lat, l.lon] : null; }
 
