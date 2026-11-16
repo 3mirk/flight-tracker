@@ -767,6 +767,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .dossier .dhead{min-height:46px}
 .dossier .dtitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dossier .dhead>div:first-child{min-width:0}
+/* slide: flex widths interpolate (grid fr/px tracks can't) */
+.duo{display:flex!important;gap:8px;align-items:stretch}
+.duo>#srcBox{flex:none;width:68px;transition:width .42s cubic-bezier(.25,.8,.25,1)}
+.duo>#turb{flex:1 1 0;min-width:54px}
+.duo.dsopen>#srcBox{width:calc(100% - 54px - 8px)}
+#srcBox,#turb{view-transition-name:none!important}
+@media(prefers-reduced-motion:reduce){.duo>#srcBox{transition:none}}
 </style>
 </head>
 <body>
@@ -1126,24 +1133,19 @@ function renderSrcs(){
 }
 /* Animate the data sources box open and closed. */
 function setSrcOpen(want){
-  const box=$("srcBox"),body=box.querySelector(".srcbody");
-  if(want&&!$("duo").classList.contains("dsopen"))$("turb").style.setProperty("--tbh",$("tBar").getBoundingClientRect().height+"px");
-  if(box._anim){box._anim.cancel();box._anim=null;}
-  if(want===box.open&&$("duo").classList.contains("dsopen")===!!want)return;
-  // smooth morph of both boxes where the browser supports view transitions
-  if(!reduced&&document.startViewTransition){
-    document.startViewTransition(()=>{box.open=!!want;$("duo").classList.toggle("dsopen",!!want);});return;}
-  $("duo").classList.toggle("dsopen",!!want);
-  if(want===box.open)return;
-  if(reduced||!body.animate){box.open=want;return;}
+  // the row's two columns slide (CSS grid transition); contents fade out before and in after the slide
+  const box=$("srcBox"),body=box.querySelector(".srcbody"),duo=$("duo"),T=$("turb"),icons=$("srcIcons");want=!!want;
+  if(duo.classList.contains("dsopen")===want&&box.open===want)return;
+  clearTimeout(duo._t);(duo._anims||[]).forEach(a=>a.cancel());duo._anims=[];
+  const fade=(el,from,to,ms,delay)=>{if(!el||reduced||!el.animate)return;duo._anims.push(el.animate([{opacity:from},{opacity:to}],{duration:ms,delay:delay||0,easing:"ease",fill:"backwards"}));};
+  const turbParts=[...T.querySelectorAll(".kpititle,.kpinote,.kpigrid")];
   if(want){
-    box.open=true;const h=body.scrollHeight;
-    box._anim=body.animate([{height:"0px",opacity:0},{height:h+"px",opacity:1}],{duration:220,easing:"cubic-bezier(.2,.7,.2,1)"});
-    box._anim.onfinish=()=>{box._anim=null;};
+    T.style.setProperty("--tbh",$("tBar").getBoundingClientRect().height+"px");
+    turbParts.forEach(e=>fade(e,1,0,120));fade(icons,1,0,120);
+    duo._t=setTimeout(()=>{box.open=true;duo.classList.add("dsopen");fade(body,0,1,260,200);},reduced?0:110);
   }else{
-    const h=body.offsetHeight;
-    box._anim=body.animate([{height:h+"px",opacity:1},{height:"0px",opacity:0}],{duration:180,easing:"ease-in"});
-    box._anim.onfinish=()=>{box._anim=null;box.open=false;};
+    fade(body,1,0,140);
+    duo._t=setTimeout(()=>{box.open=false;duo.classList.remove("dsopen");fade(icons,0,1,240,220);turbParts.forEach(e=>fade(e,0,1,260,260));},reduced?0:130);
   }
 }
 $("srcBox").querySelector("summary").addEventListener("click",e=>{e.preventDefault();setSrcOpen(!$("srcBox").open);});
@@ -3433,6 +3435,12 @@ readouts();draw();drawCharts();
     under.animate([{filter:fwd?"brightness(.75)":"brightness(1)"},{filter:fwd?"brightness(1)":"brightness(.75)"}],{duration:560,easing:"ease-out"});
     a.onfinish=()=>{P.hidden=true;top.style.zIndex="";under.style.zIndex="";a.cancel();};
   }
+  // swipe left/right on the pages to turn them (horizontal swipes only, so page scrolling still works)
+  {let sx=null,sy=null,st=0;
+    box.addEventListener("touchstart",e=>{if(e.touches.length!==1||e.target.closest(".dtab,a,button"))return;sx=e.touches[0].clientX;sy=e.touches[0].clientY;st=Date.now();},{passive:true});
+    box.addEventListener("touchend",e=>{if(sx==null)return;const t=e.changedTouches[0],dx=t.clientX-sx,dy=t.clientY-sy;sx=null;
+      if(Math.abs(dx)<45||Math.abs(dx)<Math.abs(dy)*1.6||Date.now()-st>800)return;
+      const i=ORD.indexOf(tab)+(dx<0?1:-1);if(i<0||i>=ORD.length)return;box.querySelector('.dtab[data-p="'+ORD[i]+'"]').click();},{passive:true});}
   box.querySelectorAll(".dtab").forEach(b=>b.addEventListener("click",()=>{const prev=tab;tab=b.dataset.p;
     box.querySelectorAll(".dtab").forEach(x=>{const on=x===b;x.classList.toggle("on",on);x.setAttribute("aria-selected",String(on));});
     flip(prev,tab);
