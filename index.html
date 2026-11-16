@@ -783,6 +783,61 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .duo #turb .hbar{margin-top:22px!important;grid-row:1/5!important}
 #updBar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99;padding:10px 16px;border-radius:20px;border:1px solid #ff7a24;
   background:#140a04;color:#ffb070;font:18px/1 "VT323",var(--mono);letter-spacing:.04em;box-shadow:0 0 14px rgba(255,110,30,.45),0 6px 16px rgba(0,0,0,.6)}
+/* ---- map controls as panel hardware ---- */
+.mapbar{flex-wrap:wrap;row-gap:6px;padding:6px 6px 7px!important}
+.mapbar .prog{flex:1 1 100%!important;order:-1}
+.mctl{flex:1 1 100%;display:flex;align-items:flex-end;justify-content:space-between;gap:2px}
+.tlab{display:block;margin-top:3px;font:700 8px/1 "Arial Narrow","Roboto Condensed",Arial,sans-serif;letter-spacing:.08em;color:#b9b2a8;text-shadow:0 1px 0 #000}
+/* panel lamp (same build as the source lamps) */
+.tlamp{position:relative;display:block;width:9px;height:9px;margin:0 auto 4px;border-radius:50%;
+  background:radial-gradient(circle at 50% 35%,#3b3b3d 0,#1b1b1c 55%,#060606 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 1px 1.5px rgba(0,0,0,.85)}
+.tlamp::after{content:"";position:absolute;inset:2px;border-radius:50%;background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.3) 0 9%,transparent 18%),radial-gradient(circle at 55% 62%,#2c3a2a,#0b120a);transition:background .15s,box-shadow .15s}
+.tgl[aria-pressed="true"] .tlamp::after,.vsel .tlamp::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.95) 0 8%,transparent 16%),radial-gradient(circle at 55% 62%,#f4ff9a 0 14%,#5dff3a 40%,#14b52a 72%,#06501a 100%);
+  box-shadow:0 0 5px 1.5px rgba(80,255,70,.65),0 0 10px 3px rgba(60,255,60,.2)}
+.vsel:not(.custom) .tlamp::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.3) 0 9%,transparent 18%),radial-gradient(circle at 55% 62%,#3a2c1a,#120b06);box-shadow:none}
+.vsel.custom .tlamp::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.95) 0 8%,transparent 16%),radial-gradient(circle at 55% 62%,#fff6b0 0 14%,#ffbf2a 40%,#e07800 72%,#6a3200 100%);box-shadow:0 0 6px 2px rgba(255,170,30,.7);animation:led-try .9s steps(1,end) infinite}
+/* metal bat toggle switch */
+.tgl,.vsel,.zstep{border:0;background:none;padding:0;margin:0;width:auto;height:auto;color:inherit;display:flex;flex-direction:column;align-items:center;flex:none;transition:transform .22s cubic-bezier(.3,1.7,.5,1)}
+.tgl{width:38px}
+.tplate{position:relative;display:block;width:26px;height:32px;border-radius:3px;
+  background:linear-gradient(160deg,#eef0ee 0%,#b9bdbb 22%,#8c918f 50%,#c9ccca 78%,#f1f2f0 100%);
+  box-shadow:0 0 0 1px #2a2a2a,0 2px 3px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.8),inset 0 -1px 0 rgba(0,0,0,.35)}
+.tplate::before{content:"";position:absolute;left:3px;right:3px;top:4px;bottom:4px;border-radius:2px;border:1px solid rgba(0,0,0,.18);border-top-color:rgba(255,255,255,.5)}
+.tnut{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;
+  background:radial-gradient(circle at 50% 50%,#2b2d2d 0 26%,#9aa09e 30%,#e9ecea 46%,#7d8381 62%,#c8ccca 78%,#5c6260 100%);
+  box-shadow:0 1px 2px rgba(0,0,0,.6),inset 0 0 0 1px rgba(0,0,0,.25)}
+.tbat{position:absolute;left:50%;top:50%;width:7px;height:16px;margin-left:-3.5px;border-radius:4px 4px 3px 3px;transform-origin:50% 100%;
+  background:linear-gradient(90deg,#6f7573 0%,#f4f6f5 35%,#c4c8c6 55%,#7d8381 100%);
+  box-shadow:0 2px 2px rgba(0,0,0,.45);transform:translateY(-100%) scaleY(-1);transition:transform .2s cubic-bezier(.3,1.8,.5,1)}
+.tbat::after{content:"";position:absolute;left:-1px;right:-1px;top:-2px;height:8px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff 0,#d6d9d8 40%,#7a807e 100%)}
+.tgl[aria-pressed="true"] .tbat{transform:translateY(-100%)}
+.tgl[aria-pressed="false"] .tbat{transform:translateY(-100%) scaleY(-1)}
+.tgl:disabled{opacity:.4}
+/* press / release */
+.mctl .down{transform:translateY(1.5px) scale(.95);transition:transform .06s ease-out}
+.mctl .rel{transform:translateY(-.5px) scale(1.02)}
+/* view selector: chicken-head rotary on a plate, three marked positions */
+.vsel{width:58px;position:relative}
+.vlabs{position:relative;display:block;width:58px;height:12px}
+.vlabs b{position:absolute;top:2px;font:700 7px/1 "Arial Narrow",Arial,sans-serif;letter-spacing:.04em;color:#7a746c}
+.vlabs b[data-k="route"]{left:0}.vlabs b[data-k="track"]{left:50%;transform:translateX(-50%);top:0}.vlabs b[data-k="follow"]{right:0}
+.vlabs b.on{color:#ff8a2a;text-shadow:0 0 4px rgba(255,122,36,.8)}
+.vbase{position:relative;display:block;width:34px;height:34px;border-radius:50%;background:radial-gradient(circle,#1d1d1f 0 60%,#0a0a0b 61% 100%);box-shadow:0 0 0 1px #000,0 2px 3px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.12)}
+.vknob{position:absolute;inset:3px;border-radius:50%;transition:transform .3s cubic-bezier(.3,1.6,.5,1);
+  background:radial-gradient(circle at 42% 35%,#3a3a3e 0,#141416 60%,#070708 100%);box-shadow:0 2px 3px rgba(0,0,0,.8),inset 0 1px 1px rgba(255,255,255,.25)}
+.vknob::before{content:"";position:absolute;left:50%;top:-1px;width:10px;height:30px;margin-left:-5px;border-radius:5px 5px 3px 3px;
+  background:linear-gradient(90deg,#0c0c0d,#3a3a3e 45%,#151517);box-shadow:0 2px 3px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.25)}
+.vptr{position:absolute;left:50%;top:1px;width:2px;height:11px;margin-left:-1px;background:#efe6cc;border-radius:1px;z-index:1}
+.vsel .vlamp{position:absolute;right:-2px;bottom:12px;margin:0}
+/* spring-return zoom knob */
+.zctl{position:relative;display:grid;grid-template-columns:14px 46px 14px;grid-template-rows:46px auto;align-items:center;justify-items:center;column-gap:1px}
+.zstep{font:700 15px/1 "Arial Narrow",Arial,sans-serif;color:#d8d2c8;width:14px;height:30px;justify-content:center;text-shadow:0 1px 0 #000}
+.zknob{position:relative;width:46px;height:46px;border-radius:50%;touch-action:none;cursor:grab}
+.zknob .kbody{position:absolute;inset:0;filter:drop-shadow(0 1px 0 #1a1a1c) drop-shadow(0 1px 0 #111113) drop-shadow(0 1px 0 #0c0c0d) drop-shadow(0 3px 4px rgba(0,0,0,.8))}
+.zknob .ksvg,.zknob .klight{position:absolute;inset:0;width:100%;height:100%}
+.zknob .klight{pointer-events:none;mix-blend-mode:screen}
+.zlab{grid-column:1/-1}
+.zknob:focus-visible{outline:2px solid #ff7a24;outline-offset:3px}
 </style>
 </head>
 <body>
@@ -843,13 +898,18 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
 <div class="mapbar" role="toolbar" aria-label="Map controls">
   <div class="prog" title="Route progress"><span class="mstat" id="mStat" role="status"><i></i><span class="sr">Offline</span></span><span id="pFrom">CLT</span><div class="bar"><i id="pBar"></i></div><span id="pTo">DFW</span></div>
-  <button type="button" class="mb" id="view" aria-label="View"><svg viewBox="0 0 24 24" aria-hidden="true"></svg></button>
-  <button type="button" class="mb" id="traf" aria-label="Nearby traffic" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/><circle cx="16.5" cy="15" r="1" fill="currentColor"/><circle cx="8" cy="8.5" r="1" fill="currentColor"/></svg></button>
-  <button type="button" class="mb" id="wind" aria-label="Wind streaks" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h8"/></svg></button>
-  <button type="button" class="mb" id="wnum" aria-label="Wind speeds in mph" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><text x="12" y="15.5" text-anchor="middle" font-size="8.5" font-weight="700" fill="currentColor" stroke="none" font-family="monospace">MPH</text><path d="M3 4h18v16H3z" stroke-dasharray="2 2.5"/></svg></button>
-  <button type="button" class="mb" id="radar" aria-label="Storm radar" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14h10a3.5 3.5 0 0 0 .5-7A5.2 5.2 0 0 0 6.6 7.4 3.4 3.4 0 0 0 7 14z"/><path d="M13 14l-2.5 4h3L11 22"/></svg></button>
-  <button type="button" class="mb" id="zin" aria-label="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-  <button type="button" class="mb" id="zout" aria-label="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+  <div class="mctl">
+  <button type="button" class="vsel" id="view" aria-label="View"><span class="vlabs"><b data-k="route">RTE</b><b data-k="track">TRK</b><b data-k="follow">CLS</b></span>
+    <span class="vbase"><span class="vknob" id="vKnob"><i class="vptr"></i></span></span><i class="tlamp vlamp" title="Custom zoom/pan: tap to reset"></i><span class="tlab">VIEW</span></button>
+  <button type="button" class="tgl" id="traf" aria-label="Nearby traffic" aria-pressed="false"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tbat"></i></span><span class="tlab">TRAF</span></button>
+  <button type="button" class="tgl" id="wind" aria-label="Wind streaks" aria-pressed="true"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tbat"></i></span><span class="tlab">WIND</span></button>
+  <button type="button" class="tgl" id="wnum" aria-label="Wind speeds in mph" aria-pressed="true"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tbat"></i></span><span class="tlab">MPH</span></button>
+  <button type="button" class="tgl" id="radar" aria-label="Storm radar" aria-pressed="true"><i class="tlamp"></i><span class="tplate"><i class="tnut"></i><i class="tbat"></i></span><span class="tlab">STORM</span></button>
+  <div class="zctl"><button type="button" class="zstep" id="zout" aria-label="Zoom out">−</button>
+    <div class="zknob" id="zKnob" role="slider" tabindex="0" aria-label="Zoom: turn and hold, further for faster" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0">
+      <div class="kbody"><svg class="ksvg zsvg" id="zRot" viewBox="0 0 100 100" aria-hidden="true"></svg></div><svg class="klight" viewBox="0 0 100 100" aria-hidden="true"><use href="#kLightDefs"/></svg></div>
+    <button type="button" class="zstep" id="zin" aria-label="Zoom in">+</button><span class="tlab zlab">ZOOM</span></div>
+  </div>
 </div>
 
 <section class="apanel" id="apanel" aria-label="Analog instruments">
@@ -930,7 +990,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16f</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16g</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -1771,7 +1831,9 @@ const VIEW_IC={route:'<circle cx="5" cy="18" r="2"/><circle cx="19" cy="6" r="2"
   reset:'<path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 3.5v4.5h4.5"/>'};
 function viewChanged(){
   const k=isCustom()?"reset":view,b=$("view");
-  if(b.dataset.k!==k){b.dataset.k=k;b.querySelector("svg").innerHTML=VIEW_IC[k];
+  if(b.dataset.k!==k){b.dataset.k=k;const vk=k==="reset"?(b.dataset.v||view):k;b.dataset.v=vk;
+    $("vKnob").style.transform="rotate("+({route:-50,track:0,follow:50}[vk]||0)+"deg)";b.classList.toggle("custom",k==="reset");
+    b.querySelectorAll(".vlabs b").forEach(x=>x.classList.toggle("on",x.dataset.k===vk));
     const t=k==="reset"?"Reset view":"View: "+({route:"whole route",track:"tracking",follow:"close-up"}[k])+" (tap to change)";b.title=t;b.setAttribute("aria-label",t);}
   draw();}
 function zoomAt(mx,my,z){
@@ -3676,6 +3738,36 @@ readouts();draw();drawCharts();
     if(b&&b!==mine&&!document.getElementById("updBar")){const d=document.createElement("button");d.id="updBar";d.type="button";
       d.textContent="New version ready · tap to update";d.onclick=()=>location.reload();document.body.appendChild(d);}}catch(e){}};
   setTimeout(check,4000);setInterval(check,120000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)check();});})();
+/* ---- map control hardware: press/release on every control, spring-return zoom knob ---- */
+(function(){
+  document.querySelectorAll(".mctl .tgl,.mctl .vsel,.mctl .zstep").forEach(b=>{
+    b.addEventListener("pointerdown",()=>{b.classList.add("down");});
+    const up=()=>{if(b.classList.contains("down")){b.classList.remove("down");b.classList.add("rel");setTimeout(()=>b.classList.remove("rel"),260);}};
+    b.addEventListener("pointerup",up);b.addEventListener("pointerleave",up);b.addEventListener("pointercancel",up);});
+  // zoom knob body: same two-tier fluted knob as the chart window
+  const src=document.getElementById("krot"),zr=document.getElementById("zRot");if(src&&zr)zr.innerHTML=src.innerHTML.replace(/id="kb1"/g,'id="zb1"').replace(/id="kb2"/g,'id="zb2"').replace(/url\(#kb1\)/g,"url(#zb1)").replace(/url\(#kb2\)/g,"url(#zb2)")
+    .replace(/<path d="M3\.5 50H15"[^>]*\/>|<circle cx="19\.5"[^>]*\/>|<path d="M22\.5 50H28"[^>]*\/>/g,"")+'<path d="M50 3.5V15" stroke="#efe6cc" stroke-width="2.4" stroke-linecap="round"/><circle cx="50" cy="19.5" r="1.8" fill="#efe6cc"/><path d="M50 22.5V28" stroke="#efe6cc" stroke-width="1.8" stroke-linecap="round"/>';
+  if(zr)zr.querySelectorAll('path[d^="M3.5 50H15"],circle[cx="19.5"],path[d^="M22.5 50H28"]').forEach(e=>e.remove());
+  const lt=document.querySelector(".kdial .klight"),zl=document.querySelector(".zknob .klight");if(lt&&zl)zl.innerHTML=lt.innerHTML.replace(/kgl1/g,"zgl1").replace(/kgl2/g,"zgl2");
+  // spring-return: turn and hold; the further you turn, the faster it zooms. Let go and it springs to centre.
+  const K=$("zKnob");let d=null,raf=0,ang=0,last=0;
+  const setA=(a,anim)=>{ang=a;zr.style.transition=anim?"transform .38s cubic-bezier(.3,1.6,.5,1)":"none";zr.style.transform="rotate("+a+"deg)";K.setAttribute("aria-valuenow",(a/60).toFixed(2));};
+  const loop=t=>{raf=0;if(!d)return;const dt=Math.min(.05,(t-(last||t))/1000);last=t;
+    const f=ang/60,rate=Math.sign(f)*Math.pow(Math.abs(f),1.6)*1.8;      // up to ~6x per second at full turn
+    if(Math.abs(f)>.06&&proj)zoomAt(proj.w/2,proj.h/2,zoom*Math.exp(rate*dt));raf=requestAnimationFrame(loop);};
+  const angOf=e=>{const b=K.getBoundingClientRect();return Math.atan2(e.clientX-(b.left+b.width/2),-(e.clientY-(b.top+b.height/2)))*180/Math.PI;};
+  K.addEventListener("pointerdown",e=>{e.preventDefault();K.setPointerCapture(e.pointerId);d={x:e.clientX,y:e.clientY,a0:angOf(e),moved:false};last=0;});
+  K.addEventListener("pointermove",e=>{if(!d)return;if(Math.hypot(e.clientX-d.x,e.clientY-d.y)>4)d.moved=true;if(!d.moved)return;
+    let a=angOf(e)-d.a0;a=((a+540)%360)-180;setA(Math.max(-60,Math.min(60,a)),false);if(!raf)raf=requestAnimationFrame(loop);});
+  const end=e=>{if(!d)return;const D=d;d=null;
+    if(!D.moved){const b=K.getBoundingClientRect(),dir=e&&e.clientX!=null&&e.clientX<b.left+b.width/2?-1:1;   // tap: one step toward that side
+      setA(dir*28,true);(dir>0?$("zin"):$("zout")).click();setTimeout(()=>setA(0,true),140);return;}
+    setA(0,true);};
+  K.addEventListener("pointerup",end);K.addEventListener("pointercancel",()=>{d=null;setA(0,true);});
+  K.addEventListener("keydown",e=>{const k={ArrowRight:1,ArrowUp:1,ArrowLeft:-1,ArrowDown:-1}[e.key];if(k){e.preventDefault();setA(k*28,true);(k>0?$("zin"):$("zout")).click();setTimeout(()=>setA(0,true),140);}});
+  K.addEventListener("wheel",e=>{e.preventDefault();(e.deltaY<0?$("zin"):$("zout")).click();},{passive:false});
+  ["zin","zout"].forEach(id=>$(id).addEventListener("click",()=>{if(d)return;setA(id==="zin"?28:-28,true);setTimeout(()=>setA(0,true),140);}));
+})();
 </script>
 </body>
 </html>
