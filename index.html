@@ -461,6 +461,40 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .srcs li .ic svg{width:14px;height:14px}
 .srcs li.use .ic{border-color:var(--good)}
 @media(prefers-reduced-motion:reduce){:is(.si,.srcs li) .led,:is(.si,.srcs li) .led::after{animation:none!important}}
+/* sources + turbulence share one row; opening sources slims turbulence down to a vertical strip */
+.duo{display:grid;grid-template-columns:minmax(0,136px) minmax(0,1fr);gap:8px;align-items:stretch;transition:grid-template-columns .28s cubic-bezier(.2,.7,.2,1)}
+.duo.dsopen{grid-template-columns:minmax(0,1fr) 54px}
+.duo>*{min-width:0}
+.duo .srcs{padding:6px 7px}
+.duo .srctop{flex-wrap:wrap;row-gap:4px}
+.duo .srctitle{display:block;flex:1 1 auto;font-size:.6rem;line-height:16px}
+.duo .srcs:not([open]) .srcicons{flex:1 1 100%;grid-template-columns:repeat(4,minmax(0,1fr));row-gap:3px;column-gap:2px}
+.duo .srcbot{margin-top:5px;align-items:flex-end}
+.duo .srcsum{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;font-size:.6rem;line-height:1.3}
+.duo .si .lb{font-size:.5rem}
+/* expanded list rows: lamp | button | name over readout */
+.duo .srcs li{display:grid!important;grid-template-columns:12px 22px minmax(0,1fr);grid-template-rows:auto auto;column-gap:5px;row-gap:0;align-items:center;padding:3px 5px}
+.duo .srcs li .led,.duo .srcs li .ic{grid-row:1/3}
+.duo .srcs li .nm{grid-column:3;font-size:.64rem}
+.duo .srcs li .m{grid-column:3;margin-left:0;font-size:.52rem}
+/* turbulence, normal width */
+.duo #turb{padding:7px 8px;gap:6px}
+.duo #turb .kpigrid{grid-template-columns:1fr 1fr}
+.duo #turb .hbar{flex:1 1 auto;min-width:40px}
+.duo #turb .kpilabel{font-size:.88rem}
+.duo #turb .kpinote{height:auto;min-height:calc(2.8em + 12px);padding:6px 7px;font-size:.64rem}
+.duo #turb .kpinote span{-webkit-line-clamp:3}
+/* turbulence, slim strip */
+.duo.dsopen #turb{cursor:pointer;padding:7px 4px;align-items:center;gap:6px}
+.duo.dsopen #turb .kpinote,.duo.dsopen #turb .kpigrid{display:none}
+.duo.dsopen #turb .kpihead{flex-direction:column;gap:5px}
+.duo.dsopen #turb .kpihead .k{font-size:0}
+.duo.dsopen #turb .kpihead .k .ref{font-size:.6rem}
+.duo.dsopen #turb .kpihead .k::before{content:"TURB";font-size:.55rem;letter-spacing:.06em}
+.duo.dsopen #turb .hbar{flex:none;width:16px;height:118px;min-width:0;margin:0;flex-direction:column-reverse;padding:3px}
+.duo.dsopen #turb .kpititle{flex-direction:column;align-items:center;gap:4px;margin:0}
+.duo.dsopen #turb .kpilabel{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.72rem;max-height:120px}
+.duo.dsopen #turb .kpifor{font-size:.62rem}
 </style>
 </head>
 <body>
@@ -480,6 +514,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <div class="frow"><div class="status" id="statusLine" role="button" tabindex="0" title="Tap for data sources"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
     <button type="button" id="demo" title="Play a simulated flight on this route"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10-6.5z"/></svg><span>Play Demo</span></button></div>
 </div>
+<div class="duo" id="duo">
 <details class="srcs" id="srcBox" aria-label="Data source status">
   <summary>
     <div class="srctop"><span class="srctitle">Data sources<sup class="ref" data-n="7" role="button" tabindex="0" aria-label="Note 7">7</sup></span><div class="srcicons" id="srcIcons"></div><span class="chev c-open" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></span></div>
@@ -503,6 +538,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
     <div class="c" id="c_st"><div class="ct"><div class="k">Steady</div><div class="cv" id="v_st">—</div><div class="cl" id="l_st"><span>ft/min</span><span>waiting</span></div></div><span class="vbar" id="b_st" aria-hidden="true"></span></div>
   </div>
 </section>
+</div>
 
 <div class="mapwrap">
   <canvas id="map"></canvas>
@@ -580,7 +616,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-15g</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-15h</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -786,7 +822,7 @@ function renderSrcs(){
 }
 /* Animate the data sources box open and closed. */
 function setSrcOpen(want){
-  const box=$("srcBox"),body=box.querySelector(".srcbody");
+  const box=$("srcBox"),body=box.querySelector(".srcbody");$("duo").classList.toggle("dsopen",!!want);
   if(box._anim){box._anim.cancel();box._anim=null;}
   if(want===box.open)return;
   if(reduced||!body.animate){box.open=want;return;}
@@ -801,6 +837,8 @@ function setSrcOpen(want){
   }
 }
 $("srcBox").querySelector("summary").addEventListener("click",e=>{e.preventDefault();setSrcOpen(!$("srcBox").open);});
+// tapping the slim turbulence strip (while sources are open) brings the full turbulence box back
+$("turb").addEventListener("click",e=>{if($("duo").classList.contains("dsopen")&&!e.target.closest(".ref")){setSrcOpen(false);}});
 $("statusLine").addEventListener("click",()=>{setSrcOpen(true);$("srcBox").scrollIntoView({block:"nearest"});});
 ["srcList","srcList2"].forEach(id=>{const L=$(id);
 L.addEventListener("click",e=>{const li=e.target.closest("li");if(li){selSrc=selSrc===li.dataset.n?"":li.dataset.n;renderSrcs();}});
