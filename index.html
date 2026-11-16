@@ -415,36 +415,36 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .sonartip b{font-weight:400;color:#ffd2a0}
 /* data-source icons as real push buttons with panel indicator lamps */
 .srcicons{gap:1px;padding-top:0}
-.si .ic{width:26px;height:24px;border:1px solid #070708;border-radius:5px;color:#c9c4bc;
+:is(.si,.srcs li) .ic{width:26px;height:24px;border:1px solid #070708;border-radius:5px;color:#c9c4bc;
   background:linear-gradient(180deg,#45464b 0%,#2c2d31 45%,#1f2023 100%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -2px 1px rgba(0,0,0,.55),inset 1px 0 0 rgba(255,255,255,.06),0 2px 0 #0c0c0d,0 3px 5px rgba(0,0,0,.65);
   transition:transform .08s,box-shadow .08s}
-.si .ic::before{content:"";position:absolute;left:3px;right:3px;top:2px;height:40%;border-radius:3px 3px 6px 6px;pointer-events:none;
+:is(.si,.srcs li) .ic::before{content:"";position:absolute;left:3px;right:3px;top:2px;height:40%;border-radius:3px 3px 6px 6px;pointer-events:none;
   background:linear-gradient(rgba(255,255,255,.14),rgba(255,255,255,0))}
-.si svg{filter:drop-shadow(0 1px 0 rgba(0,0,0,.9));stroke-width:1.7}
-.si.use .ic{transform:translateY(1.5px);background:linear-gradient(180deg,#2a2c2e,#212326);
+:is(.si,.srcs li) svg{filter:drop-shadow(0 1px 0 rgba(0,0,0,.9));stroke-width:1.7}
+:is(.si,.srcs li).use .ic{transform:translateY(1.5px);background:linear-gradient(180deg,#2a2c2e,#212326);
   box-shadow:inset 0 2px 3px rgba(0,0,0,.7),inset 0 0 8px rgba(70,255,110,.18),0 .5px 0 #0c0c0d,0 1px 2px rgba(0,0,0,.6);color:#e9ffe9}
-.si.off .ic{color:#77736d}
-.si.fail .ic{border-color:#070708}
+:is(.si,.srcs li).off .ic{color:#77736d}
+:is(.si,.srcs li).fail .ic{border-color:#070708}
 /* panel indicator lamp above each button: thick black bezel, domed lens, hot core */
-.si .led{position:relative;display:block;flex:none;width:12px;height:12px;border-radius:50%;margin-bottom:2px;border:0;right:auto;top:auto;
+:is(.si,.srcs li) .led{position:relative;display:block;flex:none;width:12px;height:12px;border-radius:50%;margin-bottom:2px;border:0;right:auto;top:auto;
   background:radial-gradient(circle at 50% 35%,#3b3b3d 0,#1b1b1c 55%,#060606 100%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -1px 1px rgba(0,0,0,.8),0 1px 1.5px rgba(0,0,0,.85)}
-.si .led::after{content:"";position:absolute;inset:2.6px;border-radius:50%;
+:is(.si,.srcs li) .led::after{content:"";position:absolute;inset:2.6px;border-radius:50%;
   background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.35) 0 9%,transparent 18%),radial-gradient(circle at 55% 62%,#3a2c2a 0,#1a1312 70%,#0b0808 100%);
   box-shadow:inset 0 0 1.5px rgba(0,0,0,.9)}
-.si.ok .led::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.95) 0 8%,transparent 16%),
+:is(.si,.srcs li).ok .led::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.95) 0 8%,transparent 16%),
   radial-gradient(circle at 55% 62%,#f4ff9a 0 14%,#5dff3a 40%,#14b52a 72%,#06501a 100%);
   box-shadow:inset 0 0 1.5px rgba(0,40,0,.8),0 0 5px 1.5px rgba(80,255,70,.7),0 0 11px 3px rgba(60,255,60,.25);animation:led-act var(--fd) linear var(--dl) infinite}
-.si.try .led::after,.si.miss .led::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.95) 0 8%,transparent 16%),
+:is(.si,.srcs li).try .led::after,:is(.si,.srcs li).miss .led::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.95) 0 8%,transparent 16%),
   radial-gradient(circle at 55% 62%,#fff6b0 0 14%,#ffbf2a 40%,#e07800 72%,#6a3200 100%);
   box-shadow:inset 0 0 1.5px rgba(60,20,0,.8),0 0 5px 1.5px rgba(255,170,30,.75),0 0 11px 3px rgba(255,150,20,.25)}
-.si.try .led::after{animation:led-try var(--fq) steps(1,end) var(--dl) infinite}
-.si.miss .led::after{animation:led-hum 3.1s linear var(--dl) infinite}
-.si.fail .led::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.9) 0 8%,transparent 16%),
+:is(.si,.srcs li).try .led::after{animation:led-try var(--fq) steps(1,end) var(--dl) infinite}
+:is(.si,.srcs li).miss .led::after{animation:led-hum 3.1s linear var(--dl) infinite}
+:is(.si,.srcs li).fail .led::after{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.9) 0 8%,transparent 16%),
   radial-gradient(circle at 55% 62%,#ffd84a 0 13%,#ff7a1e 30%,#f2261a 55%,#9a0a04 82%,#4a0300 100%);
   box-shadow:inset 0 0 1.5px rgba(60,0,0,.8),0 0 5px 1.5px rgba(255,50,30,.7),0 0 11px 3px rgba(255,40,20,.25);animation:led-hum 2.3s linear var(--dl) infinite}
-.si.off .led::after,.si.idle .led::after{animation:none}
+:is(.si,.srcs li).off .led::after,:is(.si,.srcs li).idle .led::after{animation:none}
 .si.off{opacity:.6}
 /* activity: mostly lit with short irregular data blinks */
 @keyframes led-act{0%,7%,9%,31%,33.5%,35%,37%,58%,60%,83%,86%,100%{filter:brightness(1);opacity:1}
@@ -453,7 +453,14 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 @keyframes led-try{0%{opacity:1}22%{opacity:.25}35%{opacity:1}48%{opacity:.2}70%{opacity:1}82%{opacity:.35}}
 /* steady lamp with a faint mains flicker */
 @keyframes led-hum{0%,100%{filter:brightness(1)}41%{filter:brightness(1)}42%{filter:brightness(.7)}43%{filter:brightness(1.05)}77%{filter:brightness(1)}78%{filter:brightness(.82)}79%{filter:brightness(1)}}
-@media(prefers-reduced-motion:reduce){.si .led,.si .led::after{animation:none!important}}
+/* expanded rows: lamp on the left, then the button, name and readout */
+.srcs li .led{margin:0}
+.srcs li .ic{flex:none;width:22px;height:20px;position:relative;display:flex;align-items:center;justify-content:center}
+.srcs li .ic svg{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+.srcs li{gap:4px}
+.srcs li .ic svg{width:14px;height:14px}
+.srcs li.use .ic{border-color:var(--good)}
+@media(prefers-reduced-motion:reduce){:is(.si,.srcs li) .led,:is(.si,.srcs li) .led::after{animation:none!important}}
 </style>
 </head>
 <body>
@@ -719,11 +726,13 @@ function word(n,st){
   return st.state==="ok"?(activeSrc===n?"In use":LIVE.includes(n)?"Ready":"Connected"):st.state==="try"?"Trying…":st.state==="miss"?"No flight":
     st.state==="fail"?((st.text||"").startsWith("Blocked")?"Blocked":(st.text||"").startsWith("Timed")?"Timed out":"Failed"):"Waiting";}
 const EXTRAS=[["Weather","Winds"],["Radar","Storm radar"],["Traffic","Traffic"],["History","History"],["Airport map","Airport"],["Schedule","Schedules"],["Cloud","Cloud saves"],["Relay","Your relay"]];
+function ledVars(n){let hh=0;for(const ch of n)hh=(hh*31+ch.charCodeAt(0))>>>0;   // stable per-source flicker timing
+  return '--fd:'+(2.2+(hh%19)/10).toFixed(1)+'s;--fq:'+(.45+(hh%7)/20).toFixed(2)+'s;--dl:-'+((hh>>3)%40/10).toFixed(1)+'s';}
 function cellHtml(n,label,force){
   const st=srcs[n]||{state:"idle",text:"Not tried yet"},done=st.state!=="idle"&&st.state!=="try";
   const kpi=force||(done?[st.ms!=null?msTxt(st.ms):"",st.t?ago(st.t):""].filter(Boolean).join(" "):st.state==="try"?"trying…":n==="Relay"?"standby":"waiting");
   return '<li class="'+(force?"idle":st.state)+(activeSrc===n?" use":"")+(selSrc===n?" sel":"")+'" data-n="'+n+'" tabindex="0" role="button" aria-label="'+label+": "+(force||word(n,st))+
-    '"><span class="d"></span><span class="nm">'+label+'</span><span class="m">'+kpi+"</span></li>";
+    '" style="'+ledVars(n)+'"><span class="led" aria-hidden="true"></span><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||"")+'</svg></span><span class="nm">'+label+'</span><span class="m">'+kpi+"</span></li>";
 }
 const ICONS={
   "adsb.lol":'<path d="M12 21V11"/><path d="M8.5 21h7"/><circle cx="12" cy="9" r="1.6"/><path d="M8.6 5.6a5 5 0 0 0 0 6.8M15.4 5.6a5 5 0 0 1 0 6.8M6 3.2a8.4 8.4 0 0 0 0 11.6M18 3.2a8.4 8.4 0 0 1 0 11.6"/>',
@@ -744,8 +753,7 @@ function renderIcons(){
   const html=all.map(n=>{
     const off=(n==="Traffic"&&typeof trafOn!=="undefined"&&!trafOn)||(n==="Radar"&&typeof radarOn!=="undefined"&&!radarOn)||(n==="Relay"&&!relayBase()),st=srcs[n]||{state:"idle"};
     const label=(EXTRAS.find(x=>x[0]===n)||[n,SHORT[n]||n])[1];
-    let hh=0;for(const ch of n)hh=(hh*31+ch.charCodeAt(0))>>>0;   // stable per-source flicker timing
-    const fv='--fd:'+(2.2+(hh%19)/10).toFixed(1)+'s;--fq:'+(.45+(hh%7)/20).toFixed(2)+'s;--dl:-'+((hh>>3)%40/10).toFixed(1)+'s';
+    const fv=ledVars(n);
     return '<span class="si '+(off?"off":st.state)+(activeSrc===n?" use":"")+'" style="'+fv+'" title="'+label+": "+(off?(n==="Relay"?"not set":"off"):word(n,st))+'"><span class="led" aria-hidden="true"></span><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true">'+
       ICONS[n]+'</svg></span><span class="lb">'+ICON_LB[n]+"</span></span>";}).join("");
   const el=$("srcIcons");if(el.innerHTML!==html)el.innerHTML=html;
