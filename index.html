@@ -735,7 +735,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .duo.dsopen #turb .kpihead .k{font-size:0!important}
 .duo.dsopen #turb .kpihead .k::before{content:"TURB"!important;font-size:.62rem;line-height:16px;letter-spacing:.06em;vertical-align:top}
 .duo #turb .kpihead .k{height:16px;overflow:visible;white-space:nowrap}
-.duo.dsopen #turb .kpititle,.duo.dsopen #turb .kpinote,.duo.dsopen #turb .kpigrid{display:none!important}
+
 .duo.dsopen{grid-template-columns:minmax(0,1fr) 54px}
 /* bar on the right, running the full height of the turbulence contents */
 .duo #turb{grid-template-columns:minmax(0,1fr) 18px!important}
@@ -774,6 +774,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .duo.dsopen>#srcBox{width:calc(100% - 54px - 8px)}
 #srcBox,#turb{view-transition-name:none!important}
 @media(prefers-reduced-motion:reduce){.duo>#srcBox{transition:none}}
+/* turbulence drawer */
+.duo #turb{position:relative;overflow:hidden;grid-template-columns:var(--tcw,minmax(0,1fr)) 18px!important;justify-content:end}
+.duo.dsopen #turb{grid-template-columns:var(--tcw,0px) 18px!important}
+.duo #turb .kpititle,.duo #turb .kpinote,.duo #turb .kpigrid{transition:opacity .38s ease .04s}
+.duo.dsopen #turb .kpititle,.duo.dsopen #turb .kpinote,.duo.dsopen #turb .kpigrid{opacity:0;pointer-events:none;transition:opacity .3s ease}
+.duo #turb .kpihead .k{position:absolute;left:8px;top:7px;z-index:2;grid-column:auto!important}
+.duo #turb .kpititle{margin-top:22px!important}
+.duo #turb .hbar{margin-top:22px!important;grid-row:1/5!important}
 </style>
 </head>
 <body>
@@ -921,7 +929,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-15h</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16a</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -1138,14 +1146,16 @@ function setSrcOpen(want){
   if(duo.classList.contains("dsopen")===want&&box.open===want)return;
   clearTimeout(duo._t);(duo._anims||[]).forEach(a=>a.cancel());duo._anims=[];
   const fade=(el,from,to,ms,delay)=>{if(!el||reduced||!el.animate)return;duo._anims.push(el.animate([{opacity:from},{opacity:to}],{duration:ms,delay:delay||0,easing:"ease",fill:"backwards"}));};
-  const turbParts=[...T.querySelectorAll(".kpititle,.kpinote,.kpigrid")],texts=()=>[...body.querySelectorAll("li .nm,li .m,.srcx")];
+  const texts=()=>[...body.querySelectorAll("li .nm,li .m,.srcx")];
+  // turbulence contents keep their full-width layout pinned to the right edge, so the sources box slides over them like a drawer
   if(want){
     T.style.setProperty("--tbh",$("tBar").getBoundingClientRect().height+"px");
-    turbParts.forEach(e=>fade(e,1,0,120));
-    duo._t=setTimeout(()=>{box.open=true;duo.classList.add("dsopen");texts().forEach(e=>fade(e,0,1,260,220));},reduced?0:110);
+    T.style.setProperty("--tcw",T.querySelector(".kpinote").getBoundingClientRect().width+"px");
+    clearTimeout(T._t);box.open=true;duo.classList.add("dsopen");texts().forEach(e=>fade(e,0,1,300,180));
   }else{
     texts().forEach(e=>fade(e,1,0,130));
-    duo._t=setTimeout(()=>{box.open=false;duo.classList.remove("dsopen");turbParts.forEach(e=>fade(e,0,1,260,260));},reduced?0:130);
+    duo._t=setTimeout(()=>{box.open=false;duo.classList.remove("dsopen");
+      clearTimeout(T._t);T._t=setTimeout(()=>T.style.removeProperty("--tcw"),460);},reduced?0:130);
   }
 }
 $("srcBox").querySelector("summary").addEventListener("click",e=>{e.preventDefault();setSrcOpen(!$("srcBox").open);});
@@ -2784,6 +2794,31 @@ async function showPast(x){
 /* autocomplete */
 let sugIdx=-1,sugItems=[];
 function hideSug(){$("fsug").hidden=true;sugIdx=-1;}
+/* live American departures from DFW, found from OpenSky's state vectors + adsb.lol's position-checked routes */
+let dfwPicks=[];const DFW=[32.8998,-97.0403];
+const inNA=(la,lo)=>la>14&&la<72&&lo>-170&&lo<-50;
+async function findDfwFlights(){
+  try{
+    const j=await getJSON("https://opensky-network.org/api/states/all?lamin=14&lomin=-170&lamax=72&lomax=-50",isOpenSky,"OpenSky");
+    const C=(j.states||[]).filter(s=>s&&s[1]&&/^AAL\d{1,4}\s*$/.test(s[1])&&!s[8]&&s[5]!=null&&s[6]!=null)
+      .map(s=>({cs:s[1].trim(),lat:s[6],lon:s[5],d:distNm(DFW,[s[6],s[5]])})).filter(c=>c.d>80).sort((a,b)=>b.d-a.d).slice(0,90);
+    if(!C.length)return [];
+    const body=JSON.stringify({planes:C.map(c=>({callsign:c.cs,lat:+c.lat.toFixed(3),lng:+c.lon.toFixed(3)}))});let R=null;
+    try{const r=await fetch("https://api.adsb.lol/api/0/routeset",{method:"POST",headers:{"Content-Type":"application/json"},body});if(r.ok)R=await r.json();}catch(e){}
+    if(!R&&relayBase())try{const r=await fetch(relayBase().replace(/\/$/,"")+"/api/routeset",{method:"POST",headers:{"Content-Type":"application/json"},body});if(r.ok)R=await r.json();}catch(e){}
+    if(!R)return [];const out=[];
+    for(const x of (Array.isArray(R)?R:[])){
+      const A=(x&&(x._airports||x.airports)||[]).filter(a=>a&&isFinite(+a.lat)&&isFinite(+a.lon));if(A.length<2||x.plausible===false||x.plausible===0)continue;
+      const o=A[0],d=A[A.length-1];if((o.iata||"")!=="DFW"&&(o.icao||"")!=="KDFW")continue;if(!inNA(+d.lat,+d.lon))continue;
+      const len=distNm([+o.lat,+o.lon],[+d.lat,+d.lon]);if(len<550)continue;
+      const cs=String(x.callsign||"").trim(),code="AA"+cs.replace(/^AAL/,"");
+      const v={o:{c:"DFW",lat:+o.lat,lon:+o.lon,n:o.location||""},d:{c:d.iata||d.icao,lat:+d.lat,lon:+d.lon,n:d.location||""}};
+      routes[code]=Object.assign(v,{t:Date.now(),ok:1});out.push({code,to:v.d.c,mi:Math.round(len*1.15078)});}
+    try{localStorage.setItem("sfm-routes",JSON.stringify(routes));}catch(e){}
+    return out.sort((a,b)=>b.mi-a.mi).slice(0,3);
+  }catch(e){return [];}
+}
+function buildSugIfOpen(){if(document.activeElement===$("fq"))buildSug();}
 function buildSug(){
   const q=$("fq").value.toUpperCase().replace(/[^A-Z0-9]/g,"");const items=[];
   for(const r of recents)if(!q||r.code.startsWith(q))items.push({code:r.code,sub:(r.o&&r.d?r.o+" » "+r.d+" · ":"")+"recent"});
@@ -2791,6 +2826,9 @@ function buildSug(){
   if(f&&!items.some(i=>i.code===f.code)){const rr=routes[f.code];items.unshift({code:f.code,sub:(f.airline?f.airline[2]:"")+(rr?" · "+rr.o.c+" » "+rr.d.c:"")});}
   if(/^[A-Z0-9]{1,3}$/.test(q)&&!/^\d+$/.test(q))
     for(const a of AIRLINES)if(a[0].startsWith(q)||a[1].startsWith(q)||a[2].toUpperCase().startsWith(q))items.push({fill:a[0],code:a[0],sub:a[2]+" ("+a[1]+")"});
+  if(dfwPicks.length&&(!q||q===curFlight||dfwPicks.some(p=>p.code.startsWith(q))))
+    dfwPicks.slice().reverse().forEach(p=>{const k=items.findIndex(i=>i.code===p.code);if(k>=0)items.splice(k,1);
+      items.unshift({code:p.code,sub:"Live now · DFW » "+p.to+" · "+fmt(p.mi)+" mi"});});
   sugItems=items.slice(0,7);sugIdx=-1;
   $("fsug").innerHTML=sugItems.map((it,i)=>'<li role="option" data-i="'+i+'"><span class="sc">'+esc(it.code)+'</span><span class="ss">'+esc(it.sub)+"</span></li>").join("");
   $("fsug").hidden=!sugItems.length||document.activeElement!==$("fq");
@@ -3207,8 +3245,11 @@ $("relayForm").addEventListener("submit",e=>{e.preventDefault();
 window.addEventListener("resize",()=>{draw();drawCharts();});
 readouts();draw();drawCharts();
 {let start="AA3101";try{start=localStorage.getItem("sfm-cur")||start;}catch(e){}
- const h=location.hash.slice(1);if(h&&normFlight(h))start=h;
- chooseFlight(start,"init");}
+ const h=location.hash.slice(1),fromLink=!!(h&&normFlight(h));if(fromLink)start=h;
+ chooseFlight(start,"init");
+ // default: an American flight airborne right now out of DFW, staying in North America, preferring long ones
+ findDfwFlights().then(L=>{if(!L.length)return;dfwPicks=L;buildSugIfOpen();
+   const typed=document.activeElement===$("fq");if(!fromLink&&!typed&&L[0].code!==curFlight)chooseFlight(L[0].code,"init");});}
 /* ---------- analog instrument panel (Su-24M flavour): airspeed, altimeter, attitude (estimated), HSI ---------- */
 (function(){
   const cells={spd:$("gSpd"),alt:$("gAlt"),adi:$("gAdi"),hsi:$("gHsi")};

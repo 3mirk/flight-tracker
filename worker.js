@@ -119,6 +119,11 @@ async function api(request, env, u, CORS) {
   if (!env.DATA) return json({ error: "no-storage", detail: "KV binding DATA is not set up" }, 503, CORS);
   const path = u.pathname;
   if (path === "/api/faa" && request.method === "GET") return json(await faaStatus(u.searchParams.get("code") || ""), 200, CORS);
+  if (path === "/api/routeset" && request.method === "POST") {
+    const body = await request.text(); if (body.length > 20000) return json({ error: "too-big" }, 413, CORS);
+    const r = await fetch("https://api.adsb.lol/api/0/routeset", { method: "POST", headers: { "Content-Type": "application/json", "User-Agent": "personal-flight-tracker-relay" }, body });
+    return new Response(await r.text(), { status: r.status, headers: { ...CORS, "Content-Type": "application/json" } });
+  }
   if (path === "/api/route" && request.method === "GET") return json(await liveRoute(u), 200, CORS);
   if (path === "/api/flights" && request.method === "GET") return json(await listFlights(env, u.searchParams.get("code") || ""), 200, CORS);
   if (path === "/api/flight" && request.method === "GET") {
