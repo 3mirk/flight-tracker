@@ -415,6 +415,10 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .sonartip{position:absolute;z-index:3;pointer-events:none;padding:4px 7px;background:rgba(10,5,2,.92);border:1px solid rgba(255,122,36,.7);border-radius:4px;
   font:14px/1.05 "VT323",var(--mono);color:#ffb070;max-width:calc(100% - 8px);white-space:normal;text-shadow:0 0 4px rgba(255,110,30,.6);box-shadow:0 0 10px rgba(255,90,20,.3)}
 .sonartip b{font-weight:400;color:#ffd2a0}
+.acphoto{position:relative}
+.acphoto canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+.acphoto canvas[hidden]{display:none}
+.dossier .acphoto canvas{filter:sepia(.3) contrast(1.15) saturate(.85)}
 </style>
 </head>
 <body>
@@ -516,7 +520,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
     <div class="dsub">Subject: airframe operating this flight · <span id="dDate"></span></div></div>
     <div class="dstamp" id="dStamp">ON FILE</div></div>
   <div class="acmain">
-    <div class="dphoto"><i class="clip"></i><a class="acphoto" id="acPhotoL" target="_blank" rel="noopener"><img id="acImg" alt="" hidden><span id="acNoImg">No photo</span></a><div class="accredit" id="acCredit"></div></div>
+    <div class="dphoto"><i class="clip"></i><a class="acphoto" id="acPhotoL" target="_blank" rel="noopener"><img id="acImg" alt="" hidden><canvas id="acPix" aria-hidden="true" hidden></canvas><span id="acNoImg">No photo</span></a><div class="accredit" id="acCredit"></div></div>
     <dl class="acid"><dt>Registration</dt><dd class="acreg" id="acReg">—</dd><dt>Type</dt><dd class="s" id="acType"></dd><dt>Operator</dt><dd class="s" id="acOwner"></dd></dl>
   </div>
   <div class="kpigrid">
@@ -1951,6 +1955,14 @@ function renderFlightDate(){renderFlightRow();return;
   const txt=live&&live.from!=="?"?"Dep "+fmtDT(live.t0):live?"Up "+fmtDT(live.t0):hist.alt.length?"Since "+fmtDT(hist.alt[0][0]):fmtDT(Date.now()).slice(0,9);
   set("frDate",txt);
 }
+/* dossier photo, pixelated: drawn small, then blown up with hard edges (display only, nothing is read back) */
+function pixPhoto(){
+  const img=$("acImg"),cv=$("acPix");if(!img.naturalWidth)return;
+  const W=54,H=36,g=cv.getContext("2d");cv.width=W;cv.height=H;g.imageSmoothingEnabled=true;
+  const r=Math.max(W/img.naturalWidth,H/img.naturalHeight),w=img.naturalWidth*r,h=img.naturalHeight*r;
+  g.drawImage(img,(W-w)/2,(H-h)/2,w,h);cv.hidden=false;img.style.visibility="hidden";
+}
+$("acImg").addEventListener("load",pixPhoto);
 function renderAircraft(){
   renderFlightDate();
   const i=ac.info||{},m=ac.meta||{},f=fix||{};
@@ -1966,11 +1978,11 @@ function renderAircraft(){
   // photo: planespotters first, then the database's own thumbnail
   let ph=ac.photo;if(!ph&&httpsOk(i.url_photo_thumbnail||i.url_photo))ph={src:i.url_photo_thumbnail||i.url_photo,link:i.url_photo,by:"",site:"airport-data.com"};
   const img=$("acImg");
-  if(ph&&httpsOk(ph.src)){if(img.getAttribute("src")!==ph.src)img.src=ph.src;img.hidden=false;$("acNoImg").hidden=true;
+  if(ph&&httpsOk(ph.src)){if(img.getAttribute("src")!==ph.src)img.src=ph.src;img.hidden=false;$("acNoImg").hidden=true;if(img.complete&&img.naturalWidth)pixPhoto();
     img.alt="Photo of "+(i.registration||"this aircraft");
     if(httpsOk(ph.link))$("acPhotoL").href=ph.link;else $("acPhotoL").removeAttribute("href");
     set("acCredit","Photo"+(ph.by?" © "+esc(ph.by):"")+" · "+esc(ph.site));
-  }else{img.hidden=true;$("acNoImg").hidden=false;$("acNoImg").textContent=ac.hex&&acBusy?"Looking for a photo…":"No photo";$("acPhotoL").removeAttribute("href");set("acCredit","");}
+  }else{img.hidden=true;$("acPix").hidden=true;$("acNoImg").hidden=false;$("acNoImg").textContent=ac.hex&&acBusy?"Looking for a photo…":"No photo";$("acPhotoL").removeAttribute("href");set("acCredit","");}
   // built / first flight
   const y=s=>{const mm=/(19|20)\d\d/.exec(String(s||""));return mm?+mm[0]:null;};
   const X=acx.v&&acx.v.info||{};
