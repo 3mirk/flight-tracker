@@ -624,6 +624,28 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .kglare{position:absolute;inset:0;border-radius:50%;pointer-events:none;mix-blend-mode:screen;
   background:radial-gradient(ellipse 60% 40% at 35% 25%,rgba(255,255,255,.28),transparent 70%)}
 @media(prefers-reduced-motion:reduce){.krot{transition:none}}
+/* turbulence readouts as little CRT screens: black bezel, glass glare, curved image */
+.kpi .kpigrid .c{border:3px solid transparent!important;border-radius:9px / 11px!important;
+  background:linear-gradient(#0a0503,#0a0503) padding-box,linear-gradient(160deg,#2a2826,#111010 35%,#060606 65%,#1a1917) border-box!important;
+  box-shadow:0 0 0 1px #000,0 2px 4px rgba(0,0,0,.6),inset 0 0 10px rgba(0,0,0,.85)!important}
+.kpi .kpigrid .c>.ct,.kpi .kpigrid .c>.vbar{filter:url(#crtBulge)}
+.kpi .kpigrid .c::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 45% 25% at 70% 8%,rgba(170,235,220,.10),transparent 70%),radial-gradient(ellipse 60% 14% at 40% 0%,rgba(255,255,255,.08),transparent 80%),
+    linear-gradient(180deg,rgba(120,150,140,.05),transparent 55%)}
+/* flight phase chip as a small CRT: keeps its solid colour */
+.fr-ph{position:relative;overflow:hidden;border:3px solid transparent!important;border-radius:8px / 10px!important;
+  font:22px/1 "VT323",var(--mono)!important;letter-spacing:.06em;
+  box-shadow:0 0 0 1px #000,0 2px 5px rgba(0,0,0,.6),inset 0 0 10px rgba(0,0,0,.55)}
+.fr-ph>*,.fr-ph{text-shadow:0 0 4px currentColor,0 0 10px currentColor}
+.ph-idle{background:linear-gradient(#2b2926,#2b2926) padding-box,linear-gradient(160deg,#2a2826,#111010 35%,#060606 65%,#1a1917) border-box!important}
+.ph-go{background:linear-gradient(#173a22,#173a22) padding-box,linear-gradient(160deg,#2a2826,#111010 35%,#060606 65%,#1a1917) border-box!important;color:#6dff8c!important}
+.ph-warn{background:linear-gradient(#41300f,#41300f) padding-box,linear-gradient(160deg,#2a2826,#111010 35%,#060606 65%,#1a1917) border-box!important}
+.ph-done{background:linear-gradient(#402512,#402512) padding-box,linear-gradient(160deg,#2a2826,#111010 35%,#060606 65%,#1a1917) border-box!important}
+.fr-ph::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%)}
+.fr-ph::after{content:"";position:absolute;inset:0;pointer-events:none;mix-blend-mode:screen;
+  background:radial-gradient(ellipse 40% 30% at 75% 10%,rgba(200,255,235,.14),transparent 70%),radial-gradient(ellipse 70% 18% at 40% 0%,rgba(255,255,255,.10),transparent 80%)}
+.fr-ph .phx{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;filter:url(#crtBulge)}
 </style>
 </head>
 <body>
@@ -631,13 +653,18 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <button type="button" class="net" id="net" title="Tap to re-test download speed"><span class="bars" id="netBars" aria-hidden="true"><i></i><i></i><i></i></span><span id="netT">Checking…</span></button></div>
 
 <input type="hidden" id="flight" value="AA3101"><input type="hidden" id="from" value="CLT"><input type="hidden" id="to" value="DFW">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="crtBulge" primitiveUnits="objectBoundingBox" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+    <feImage id="crtBulgeMap" x="0" y="0" width="1" height="1" preserveAspectRatio="none" result="m"/>
+    <feDisplacementMap in="SourceGraphic" in2="m" scale=".09" xChannelSelector="R" yChannelSelector="G"/>
+  </filter></defs></svg>
 <div class="flightrow">
   <div class="frow"><div class="fr1">
       <div class="fsearch"><input id="fq" value="AA3101" aria-label="Flight number" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" maxlength="8">
         <ul id="fsug" role="listbox" hidden></ul></div>
       <select id="finst" aria-label="Which flight with this number"><option value="live">Live · today</option></select>
     </div>
-    <span class="fr-ph ph-idle" id="frPhase">Not seen yet</span></div>
+    <span class="fr-ph ph-idle" id="frPhase"><span class="phx">Not seen yet</span></span></div>
   <div class="frow"><div class="fr-dt" id="frDate">—</div>
     <button type="button" id="gps" title="Use your phone's own GPS for position, speed and altitude"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-5.6-6-10.5a6 6 0 0 1 12 0C18 15.4 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.2"/></svg><span>Enable GPS</span></button></div>
   <div class="frow"><div class="status" id="statusLine" role="button" tabindex="0" title="Tap for data sources"><span class="dot" id="dot"></span><span id="msg">Starting.</span></div>
@@ -776,6 +803,12 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 
 
 <script>
+/* barrel map for the CSS CRT curve on small DOM screens: each pixel samples a little further out, more at the corners */
+(function(){const N=64,c=document.createElement("canvas");c.width=c.height=N;const g=c.getContext("2d"),im=g.createImageData(N,N);
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){const u=x/(N-1)*2-1,v=y/(N-1)*2-1,r2=(u*u+v*v)/2,i=(y*N+x)*4;
+    im.data[i]=Math.round(255*(.5+.5*u*r2));im.data[i+1]=Math.round(255*(.5+.5*v*r2));im.data[i+2]=128;im.data[i+3]=255;}
+  g.putImageData(im,0,0);const fe=document.getElementById("crtBulgeMap");if(fe){fe.setAttribute("href",c.toDataURL());fe.setAttributeNS("http://www.w3.org/1999/xlink","href",c.toDataURL());}})();
+
 "use strict";
 /* ---------- reference data ---------- */
 const AIRPORTS={CLT:[35.214,-80.943],DFW:[32.897,-97.038],ATL:[33.637,-84.428],ORD:[41.978,-87.905],LAX:[33.942,-118.408],
@@ -2190,7 +2223,7 @@ function takeoffT(live){
 function renderFlightRow(){
   let [label,cls]=PH[phase()];const ph=phase();
   if(mode==="planned"&&planned){label="Expected";cls="ph-idle";}
-  const chip=$("frPhase");if(chip.textContent!==label)chip.textContent=label;chip.className="fr-ph "+cls;
+  const chip=$("frPhase");if(chip.textContent!==label)chip.innerHTML='<span class="phx">'+esc(label)+'</span>';chip.className="fr-ph "+cls;
   const live=ac.legs.find(l=>l.live)||ac.legs.find(l=>Date.now()-l.t1<6*3600000);
   const t0=takeoffT(live);
   // one short line: route, then departure → arrival/ETA, then duration
