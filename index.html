@@ -930,7 +930,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16e</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16f</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -2089,7 +2089,7 @@ function crt(c,opt){
 /* Slight CRT barrel warp, applied in place to a finished canvas. Each output pixel samples the image a little further
    from the centre the further it is from the centre (two separable passes of thin strips), so straight lines bow
    like on curved glass and the corners pull in. k ≈ how much the corners pull in (0.04 = 4%). */
-let waitBox=null,scaleBox=null;const CRT_WARP=.048,MAP_WARP=.078,warpA=document.createElement("canvas"),warpB=document.createElement("canvas");
+let waitBox=null,scaleBox=null;const CRT_WARP=.025,MAP_WARP=.035,warpA=document.createElement("canvas"),warpB=document.createElement("canvas");
 function crtWarp(cv,k,bg){
   const W=cv.width,H=cv.height;if(!W||!H||!k)return;
   for(const c of [warpA,warpB])if(c.width<W||c.height<H){c.width=Math.max(c.width,W);c.height=Math.max(c.height,H);}
