@@ -708,6 +708,18 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .fr-ph{font-size:19px!important;letter-spacing:.02em!important}
 .fr-ph .phx{white-space:nowrap;padding:0 4px;text-shadow:0 0 3px currentColor!important}
 .ph-idle{background:linear-gradient(#0d0b09,#0d0b09) padding-box,linear-gradient(160deg,#2a2826,#111010 35%,#060606 65%,#1a1917) border-box!important;color:#c9a27a!important}
+/* knob v3: glossy two-tier fluted knob, fixed scale around it */
+.kdial.k2{width:140px!important;height:96px!important}
+.k2 .knob{left:50%!important;top:56%!important;width:66px!important;height:66px!important;margin:-33px 0 0 -33px!important;perspective:none;box-shadow:none!important;border-radius:50%}
+.k2 .kbody{position:absolute;inset:0;filter:drop-shadow(0 1px 0 #1a1a1c) drop-shadow(0 1px 0 #111113) drop-shadow(0 1px 0 #0c0c0d) drop-shadow(0 1px 0 #080808) drop-shadow(0 4px 5px rgba(0,0,0,.8))}
+.k2 .ksvg{position:absolute;inset:0;width:100%;height:100%;transition:transform .34s cubic-bezier(.3,1.45,.5,1)}
+.k2 .klight{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;mix-blend-mode:screen}
+.k2 .klbl{position:absolute;left:50%;top:50%;width:30px;margin:-5px 0 0 -15px;text-align:center;pointer-events:none;
+  font:800 8px/10px "Arial Narrow","Roboto Condensed",Arial,sans-serif;letter-spacing:.06em;color:#efe6cc;opacity:.85;transition:transform .34s cubic-bezier(.3,1.45,.5,1)}
+.seg.knobrow .k2 .kl{position:absolute;left:50%;top:56%;transform:translate(-50%,-50%) rotate(var(--a)) translateY(-50px) rotate(calc(-1 * var(--a)));
+  border:0;background:none;padding:2px;font:17px/1 "VT323",var(--mono);color:#7d6a5c;min-width:0;height:auto}
+.seg.knobrow .k2 .kl[aria-pressed="true"]{color:#ff8a2a;text-shadow:0 0 4px rgba(255,122,36,.9),0 0 10px rgba(255,90,20,.5)}
+.k2 .ktick{position:absolute;left:50%;top:56%;width:2px;height:5px;margin:-2.5px 0 0 -1px;background:#8a8580;border-radius:1px;transform:rotate(var(--a)) translateY(-37px)}
 </style>
 </head>
 <body>
@@ -790,23 +802,25 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
 <div class="seg knobrow" id="win" role="group" aria-label="Chart time window">
   <div class="kcap-l"><span class="k">Chart window</span><span class="kread" id="kRead">ALL</span></div>
-  <div class="kdial">
-    <div class="kbtns" hidden><button type="button" data-w="all">ALL</button><button type="button" data-w="60">60</button><button type="button" data-w="5">5</button><button type="button" data-w="1">1</button></div>
-    <i class="kmark" aria-hidden="true"></i>
+  <div class="kdial k2">
+    <button type="button" class="kl" data-w="all" style="--a:-90deg">ALL</button>
+    <button type="button" class="kl" data-w="60" style="--a:-30deg">60</button>
+    <button type="button" class="kl" data-w="5" style="--a:30deg">5</button>
+    <button type="button" class="kl" data-w="1" style="--a:90deg">1</button>
+    <i class="ktick" style="--a:-90deg"></i><i class="ktick" style="--a:-30deg"></i><i class="ktick" style="--a:30deg"></i><i class="ktick" style="--a:90deg"></i>
     <div class="knob" id="knob" role="slider" tabindex="0" aria-label="Chart time window" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
-      <div class="ktilt">
-        <div class="kshadow"></div>
-        <div class="kskirt"></div>
-        <div class="kprint" id="krot">
-          <span class="ks" data-i="0" style="--a:0deg">ALL</span><span class="ks" data-i="1" style="--a:-60deg">60</span>
-          <span class="ks" data-i="2" style="--a:-120deg">5</span><span class="ks" data-i="3" style="--a:-180deg">1</span>
-          <i class="kdot" style="--a:-30deg"></i><i class="kdot" style="--a:-90deg"></i><i class="kdot" style="--a:-150deg"></i><i class="kdot" style="--a:-240deg"></i><i class="kdot" style="--a:-300deg"></i>
-        </div>
-        <div class="kcap"><div class="ktop"><span id="kLbl">MINS</span></div></div>
-        <i class="kshine"></i>
-      </div>
+      <div class="kbody"><svg id="krot" class="ksvg" viewBox="0 0 100 100" aria-hidden="true"></svg></div>
+      <svg class="klight" viewBox="0 0 100 100" aria-hidden="true">
+        <defs><radialGradient id="kgl1" cx="38%" cy="28%" r="40%"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+          <radialGradient id="kgl2" cx="40%" cy="34%" r="26%"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>
+        <ellipse cx="34" cy="26" rx="20" ry="9" transform="rotate(-28 34 26)" fill="url(#kgl1)"/>
+        <ellipse cx="42" cy="38" rx="12" ry="5" transform="rotate(-25 42 38)" fill="url(#kgl2)"/>
+        <path d="M14 58 A37 37 0 0 1 30 18" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M30 56 A21 21 0 0 1 40 32" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+      <span class="klbl" id="kLbl">MINS</span>
     </div>
-  </div>
+  </div></div>
 </div>
 <div class="charts">
   <div class="tile chart"><div class="head"><div class="k">Altitude</div><div class="scr"><div class="v" id="alt">—</div><div class="s" id="altS"></div></div></div>
@@ -2216,7 +2230,7 @@ function sonar(g,cx,cy,r,P){
 const KDET=[["all",-90,"ALL"],["60",-30,"60 MIN"],["5",30,"5 MIN"],["1",90,"1 MIN"]];
 function winButtons(){document.querySelectorAll("#win button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.w===String(win))));
   const i=Math.max(0,KDET.findIndex(d=>d[0]===String(win)));$("krot").style.transform="rotate("+(60*i)+"deg)";$("kLbl").style.transform="rotate("+(60*i)+"deg)";
-  document.querySelectorAll("#krot .ks").forEach(e=>e.classList.toggle("on",+e.dataset.i===i));
+
   $("knob").setAttribute("aria-valuenow",String(i));$("knob").setAttribute("aria-valuetext",KDET[i][2]);$("kRead").textContent=KDET[i][2];}
 /* rotary knob: drag to turn (snaps to detents), tap to step, wheel or arrow keys */
 {const knob=$("knob"),pick=i=>{i=(i+KDET.length)%KDET.length;const b=document.querySelector('#win button[data-w="'+KDET[i][0]+'"]');if(b&&b.dataset.w!==String(win))b.click();};
@@ -3472,6 +3486,26 @@ readouts();draw();drawCharts();
   setInterval(()=>{renderApt("dep",false);renderApt("arr",false);if(tab!=="ac"){const a=aptOf(tab);if(a)load(a);}},30000);
   setTimeout(()=>{renderApt("dep",false);renderApt("arr",false);},1500);
   window.renderAptTabs=()=>{renderApt("dep",tab==="dep");renderApt("arr",tab==="arr");};
+})();
+/* two-tier fluted knob body (rotates); lighting is a separate fixed layer */
+(function(){const sv=document.getElementById("krot");if(!sv)return;
+  const lobed=(R,d,n,ph)=>{let p="";for(let k=0;k<=360;k+=3){const t=k*Math.PI/180,f=Math.pow(.5-.5*Math.cos(n*(t+ph)),4),r=R-d*f;
+      p+=(k?"L":"M")+(50+Math.sin(t)*r).toFixed(2)+" "+(50-Math.cos(t)*r).toFixed(2);}return p+"Z";};
+  const flutes=(R0,R1,n,ph)=>{let p="";for(let i=0;i<n;i++){const t=(i/n)*2*Math.PI-ph;p+="M"+(50+Math.sin(t)*R0).toFixed(2)+" "+(50-Math.cos(t)*R0).toFixed(2)+"L"+(50+Math.sin(t)*R1).toFixed(2)+" "+(50-Math.cos(t)*R1).toFixed(2);}return p;};
+  const ph=Math.PI/9;
+  sv.innerHTML='<defs><radialGradient id="kb1" cx="45%" cy="40%" r="60%"><stop offset="0" stop-color="#2a2a2e"/><stop offset=".7" stop-color="#121214"/><stop offset="1" stop-color="#050506"/></radialGradient>'+
+    '<radialGradient id="kb2" cx="45%" cy="40%" r="55%"><stop offset="0" stop-color="#2c2c30"/><stop offset=".8" stop-color="#101012"/><stop offset="1" stop-color="#060607"/></radialGradient></defs>'+
+    '<path d="'+lobed(47,2.6,9,ph)+'" fill="url(#kb1)" stroke="#000" stroke-width=".8"/>'+
+    '<path d="'+flutes(33,47,9,0)+'" stroke="#000" stroke-opacity=".55" stroke-width="1.6"/>'+
+    '<path d="'+flutes(33,46,9,-.05)+'" stroke="#fff" stroke-opacity=".07" stroke-width="1"/>'+
+    '<circle cx="50" cy="50" r="31" fill="#030303"/>'+
+    '<path d="'+lobed(29,1.8,9,ph)+'" fill="url(#kb2)" stroke="#000" stroke-width=".7"/>'+
+    '<path d="'+flutes(22,29,9,0)+'" stroke="#000" stroke-opacity=".7" stroke-width="1.6"/>'+
+    '<circle cx="50" cy="50" r="21.5" fill="#141416" stroke="#000" stroke-opacity=".6" stroke-width=".8"/>'+
+    // indicators point left (ALL) at rest: line down the base flute + dot, line on the top
+    '<path d="M3.5 50H15" stroke="#efe6cc" stroke-width="2.4" stroke-linecap="round"/>'+
+    '<circle cx="19.5" cy="50" r="1.8" fill="#efe6cc"/>'+
+    '<path d="M22.5 50H28" stroke="#efe6cc" stroke-width="1.8" stroke-linecap="round"/>';
 })();
 </script>
 </body>
