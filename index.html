@@ -845,6 +845,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .vknob{transition:transform .18s cubic-bezier(.5,0,.2,1)!important}
 .tbat{transition:transform .17s cubic-bezier(.75,0,.25,1)!important}
 .tbat::after{transition:transform .17s cubic-bezier(.75,0,.25,1)}
+/* note marker etched into the metal frame, top-left corner */
+.mapwrap .mapref{opacity:1!important;left:4px!important;top:3px!important;width:14px!important;height:14px!important;display:flex;align-items:center;justify-content:center;z-index:4;background:none!important;border:0!important;
+  font:700 10px/1 "Arial Narrow","Roboto Condensed",Arial,sans-serif!important;color:#e0661c!important;
+  text-shadow:0 1px 0 rgba(255,255,255,.45),0 -1px 0 rgba(0,0,0,.55)!important}
+.mapwrap .mapref .ref{font:inherit!important;color:inherit!important;background:none!important;border:0!important;padding:0!important;margin:0!important;vertical-align:baseline;text-shadow:inherit;box-shadow:none!important;min-width:0;width:auto;height:auto;line-height:1}
 </style>
 </head>
 <body>
@@ -997,7 +1002,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <div class="dsheet" id="dsArr" hidden></div>
 </section>
 
-<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16i</span></summary><ol>
+<details class="notes" id="notes"><summary>Notes <span style="opacity:.6">· build 2026-11-16j</span></summary><ol>
   <li id="note1">The turbulence box is an estimate from a weather model and the plane's own data, not pilot reports. Turbulence is uncomfortable, but airliners are built to handle far more than passengers feel.</li>
   <li id="note2">Map: pinch or double-tap to zoom in, tap with two fingers to zoom out, or double-tap and hold then drag up to zoom in and down to zoom out; on a computer, Ctrl + scroll or a trackpad pinch zooms the map; drag to move once zoomed. Wind streaks show the air's direction at your altitude; amber marks stronger shear. Traffic shows up to 40 aircraft within 60 miles and 8,000 ft of you in flight; below 10,000 ft it shows up to 80, including aircraft on the ground. Tap one for details. Zoom in on an airport to see its runways, taxiways and gates (from OpenStreetMap) and which one you're on.</li>
   <li id="note3">The heading trace spirals outward over time: the center is when tracking began and the edge is now.</li>
@@ -1811,13 +1816,9 @@ function draw(){
     m.font='18px "VT323",monospace';m.textAlign="center";m.textBaseline="top";m.lineJoin="round";m.strokeStyle=OUT;m.lineWidth=3;m.strokeText(label,cx,y0+6);
     m.fillStyle=CRM;m.shadowColor=GLW;m.shadowBlur=5;m.fillText(label,cx,y0+6);m.restore();}
   if(waitBox&&!planeAt&&mode!=="planned"){const t=(waitBox.bl?"▸ ":"")+"WAITING FOR POSITION";m.save();
-    m.font='19px "VT323",monospace';m.textAlign="right";m.textBaseline="alphabetic";m.lineJoin="round";m.strokeStyle=OUT;m.lineWidth=3.2;
-    m.globalAlpha=waitBox.bl?1:.8;m.strokeText(t,w-16,h-16);m.fillStyle=CRM;m.shadowColor=GLW;m.shadowBlur=6;m.fillText(t,w-16,h-16);m.restore();}
+    m.font='14px "VT323",monospace';m.textAlign="right";m.textBaseline="alphabetic";m.lineJoin="round";m.strokeStyle=OUT;m.lineWidth=2.6;
+    m.globalAlpha=waitBox.bl?1:.8;m.strokeText(t,w-20,h-14);m.fillStyle=CRM;m.shadowColor=GLW;m.shadowBlur=5;m.fillText(t,w-20,h-14);m.restore();}
   waitBox=null;scaleBox=null;
-  // note "2" marker, small, bends with the screen
-  m.setTransform(dpr,0,0,dpr,0,0);m.save();m.strokeStyle="rgba(255,90,31,.6)";m.lineWidth=1;m.fillStyle="rgba(7,4,0,.75)";
-  m.beginPath();m.arc(19,19,7,0,7);m.fill();m.stroke();m.fillStyle="#ff6a2a";m.font='13px "VT323",monospace';m.textAlign="center";m.textBaseline="middle";
-  m.shadowColor="rgba(255,90,31,.8)";m.shadowBlur=4;m.fillText("2",19,19.5);m.restore();
   crtWarp(m.canvas,MAP_WARP,"#080200");m.setTransform(dpr,0,0,dpr,0,0);
 }
 /* ---------- map gestures: pinch or double-tap to zoom in, two-finger tap to zoom out, drag to move ---------- */
