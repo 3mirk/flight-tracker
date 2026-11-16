@@ -296,6 +296,24 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .charts .tile.chart .tr svg{width:16px;height:16px;fill:currentColor;filter:drop-shadow(0 0 3px rgba(255,100,20,.9));image-rendering:pixelated;shape-rendering:crispEdges}
 .charts .tile.chart .tr b{font-weight:400}
 .charts .tile.chart .tr small{font-size:15px;color:#c25a1e}
+/* map + vertical control strip on its left edge */
+.maprow{display:flex;align-items:stretch;gap:0;min-width:0}
+.maprow .mapwrap{flex:1 1 auto;min-width:0;border-top-left-radius:0;border-bottom-left-radius:0;border-left-width:0}
+.maprow .mapwrap::after{border-top-left-radius:0;border-bottom-left-radius:0}
+.maprow .mapbar{order:-1;flex:none;flex-direction:column;justify-content:flex-start;width:44px;padding:8px 5px;gap:4px;margin:0;
+  border:8px solid #17110e;border-right:0;border-radius:22px 0 0 22px;background:#0d0d0e;box-shadow:inset -1px 0 0 #2a2a2a}
+.maprow .mapbar .mb{width:34px;height:32px;flex:none}
+.maprow .mapbar .mstat{flex:1 1 auto;min-height:56px;width:34px;height:auto;padding:6px 0;justify-content:flex-end;flex-direction:column;
+  writing-mode:vertical-rl;transform:rotate(180deg);font-size:18px;gap:6px;align-items:center}
+.maprow .mapbar .mstat i{order:-1}
+.maprow .mapbar{box-sizing:border-box}
+/* badge in the VS / heading tiles: orange plate, black text, phosphor glow */
+.charts .tile.chart .trs,.charts .tile.chart .tr .r1{background:#ff7a24;color:#140800;padding:2px 6px 1px 4px;border-radius:3px;text-shadow:none;
+  box-shadow:0 0 6px rgba(255,110,30,.75),0 0 14px rgba(255,80,10,.35),inset 0 -2px 0 rgba(0,0,0,.18);gap:4px;line-height:1}
+.charts .tile.chart .trs svg,.charts .tile.chart .tr .r1 svg{width:12px;height:12px;filter:none;fill:#140800}
+.charts .tile.chart .tr .r1 b,.charts .tile.chart .trs b{font:17px/1 "VT323",var(--mono);color:#140800}
+.charts .tile.chart .tr{text-shadow:none}
+.charts .tile.chart .tr .r1 b{font-size:15px}.charts .tile.chart .tr .r1{padding:1px 4px 1px 3px}.charts .tile.chart .tr{top:6px;right:8px}
 </style>
 </head>
 <body>
@@ -339,12 +357,13 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   </div>
 </section>
 
+<div class="maprow">
 <div class="mapwrap">
   <canvas id="map"></canvas>
   <span class="mapref"><sup class="ref" data-n="2" role="button" tabindex="0" aria-label="Note 2">2</sup></span>
   <span class="banner" id="banner" hidden>DEMO · SIMULATED</span>
 </div>
-<div class="mapbar" role="toolbar" aria-label="Map controls">
+<div class="mapbar" role="toolbar" aria-label="Map controls" aria-orientation="vertical">
   <span class="mstat" id="mStat"><i></i><span>Offline</span></span>
   <button type="button" class="mb" id="view" aria-label="View"><svg viewBox="0 0 24 24" aria-hidden="true"></svg></button>
   <button type="button" class="mb" id="traf" aria-label="Nearby traffic" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/><circle cx="16.5" cy="15" r="1" fill="currentColor"/><circle cx="8" cy="8.5" r="1" fill="currentColor"/></svg></button>
@@ -353,6 +372,7 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
   <button type="button" class="mb" id="radar" aria-label="Storm radar" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14h10a3.5 3.5 0 0 0 .5-7A5.2 5.2 0 0 0 6.6 7.4 3.4 3.4 0 0 0 7 14z"/><path d="M13 14l-2.5 4h3L11 22"/></svg></button>
   <button type="button" class="mb" id="zin" aria-label="Zoom in"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
   <button type="button" class="mb" id="zout" aria-label="Zoom out"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+</div>
 </div>
 
 <div class="prog"><span id="pFrom">CLT</span><div class="bar"><i id="pBar"></i></div><span id="pTo">DFW</span></div>
@@ -1133,7 +1153,7 @@ function draw(){
     if(old&&mode!=="past"){g.fillStyle=LBLC;g.font="700 9px "+C("--mono");g.textAlign="center";g.textBaseline="middle";g.fillText("LAST KNOWN",x,y-22);}
     planeAt={x,y,trk:fix.track||0,old};}
   else if(mode!=="planned"){g.fillStyle=LBL(.8);g.font="700 11px "+C("--mono");g.textAlign="center";g.fillText("WAITING FOR POSITION",w/2,h-16);}
-  if(mode==="demo"){const t="DEMO · SIMULATED";g.font='17px "VT323",monospace';const tw=g.measureText(t).width+16;
+  if(false){const t="DEMO · SIMULATED";g.font='17px "VT323",monospace';const tw=g.measureText(t).width+16;
     g.fillStyle="rgba(7,8,10,.85)";g.fillRect(w/2-tw/2,40,tw,20);g.strokeStyle="rgba(255,138,42,.9)";g.lineWidth=2;g.strokeRect(w/2-tw/2,40,tw,20);
     pxText(g,t,w/2,51,"#ff8a2a","center","middle",12);}
   if(radarShown){g.fillStyle=LBL(.5);g.font="8px "+C("--mono");g.textAlign="left";g.textBaseline="top";g.fillText("RADAR: RAINVIEWER",10,30);}
@@ -1183,7 +1203,7 @@ function fitMap(){
   if(!wrap||!ch)return;
   const top=wrap.getBoundingClientRect().top+scrollY,gap=ch.getBoundingClientRect().top-wrap.getBoundingClientRect().bottom;
   const want=Math.round(vh-top-gap-48);     // 48 px of the chart tiles show below the fold
-  const hgt=Math.max(230,Math.min(520,want));
+  const hgt=Math.max(340,Math.min(560,want));
   if(Math.abs(cv.clientHeight-hgt)>2){cv.style.height=hgt+"px";cv.style.maxHeight="none";cv.style.aspectRatio="auto";draw();}
 }
 addEventListener("resize",fitMap);if(window.visualViewport)visualViewport.addEventListener("resize",fitMap);
