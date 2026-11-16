@@ -498,6 +498,26 @@ footer{font-size:.72rem;color:var(--muted);line-height:1.45}
 .duo.dsopen #turb .kpititle{flex-direction:column;align-items:center;gap:4px;margin:0}
 .duo.dsopen #turb .kpilabel{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.72rem;max-height:120px}
 .duo.dsopen #turb .kpifor{font-size:.62rem}
+/* collapsed sources: thin 2 x 6 column of lamp + button, like the expanded list */
+.duo{grid-template-columns:minmax(0,96px) minmax(0,1fr)}
+.duo .srcs:not([open]){padding:6px 5px}
+.duo .srcs:not([open]) .srctitle{font-size:0;flex:1 1 auto}
+.duo .srcs:not([open]) .srctitle::before{content:"SRC";font-size:.58rem;letter-spacing:.08em}
+.duo .srcs:not([open]) .srctitle .ref{font-size:.6rem}
+.duo .srcs:not([open]) .srcicons{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:6px;column-gap:4px;margin-top:4px}
+.duo .srcs:not([open]) .si{flex-direction:row;gap:3px;justify-content:center}
+.duo .srcs:not([open]) .si .lb{display:none}
+.duo .srcs:not([open]) .si .led{margin:0;width:11px;height:11px}
+.duo .srcs:not([open]) .si .led::after{inset:2.4px}
+.duo .srcs:not([open]) .si .ic{width:24px;height:22px}
+.duo .srcs:not([open]) .si svg{width:14px;height:14px}
+.duo .srcs:not([open]) .srcsum{display:none}
+.duo .srcs:not([open]) .srcbot{margin-top:6px;justify-content:center}
+.duo .srcs:not([open]) .srctop{flex-wrap:wrap}
+/* morph animation */
+#srcBox{view-transition-name:dsbox}#turb{view-transition-name:turbbox}
+::view-transition-group(dsbox),::view-transition-group(turbbox){animation-duration:.32s;animation-timing-function:cubic-bezier(.2,.7,.2,1)}
+::view-transition-old(dsbox),::view-transition-new(dsbox),::view-transition-old(turbbox),::view-transition-new(turbbox){animation-duration:.32s;height:100%;object-fit:none;object-position:left top;overflow:clip}
 </style>
 </head>
 <body>
@@ -825,8 +845,13 @@ function renderSrcs(){
 }
 /* Animate the data sources box open and closed. */
 function setSrcOpen(want){
-  const box=$("srcBox"),body=box.querySelector(".srcbody");$("duo").classList.toggle("dsopen",!!want);
+  const box=$("srcBox"),body=box.querySelector(".srcbody");
   if(box._anim){box._anim.cancel();box._anim=null;}
+  if(want===box.open&&$("duo").classList.contains("dsopen")===!!want)return;
+  // smooth morph of both boxes where the browser supports view transitions
+  if(!reduced&&document.startViewTransition){
+    document.startViewTransition(()=>{box.open=!!want;$("duo").classList.toggle("dsopen",!!want);});return;}
+  $("duo").classList.toggle("dsopen",!!want);
   if(want===box.open)return;
   if(reduced||!body.animate){box.open=want;return;}
   if(want){
